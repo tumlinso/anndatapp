@@ -37,7 +37,7 @@ ASan used `ASAN_OPTIONS=detect_leaks=0`, and UBSan used `UBSAN_OPTIONS=halt_on_e
 
 The [reference environment instructions](../tests/reference/README.md), six lock files, and small generators are retained. Fixtures were generated in separate environments without upgrading the existing interoperability environment. The machine-readable report records observed byte hashes; HDF5 metadata can produce different byte hashes on regeneration. Temporary TreeData and AnnDataSet cases record their hashes before cleanup. Generated stores and environments are not distributed with the library.
 
-Native regressions additionally check retained lifetimes, nested dataset roots and sibling isolation, close/replacement invalidation, duplicate and reverse selections, dense/sparse caller buffers, manifest copy versus materialization, named-axis composition and singular inverses, strided geometry, valid dangling spatial references, disabled capabilities, and bounded validation/packing failures that preserve existing destinations.
+Native regressions additionally check retained lifetimes, nested dataset roots and sibling isolation, raw-array prepared contexts retained beyond store owners, close/replacement invalidation, duplicate and reverse selections, dense/sparse caller buffers, manifest copy versus materialization, named-axis composition and singular inverses, strided geometry, valid dangling spatial references, disabled capabilities, and bounded validation/packing failures that preserve existing destinations.
 
 ## Memory, interface, and cost checks
 
@@ -47,7 +47,16 @@ Coordinate-transform allocation tests pass for fresh and repeated caller-buffer 
 
 Caller scratch budgets cover the documented library transfer, serialization, packing and validation staging. Retained metadata, explicitly returned owners/output buffers, and third-party internal allocations are separate. A selected noncontiguous sparse array must fit its packing budget; increase the budget or explicitly copy to a contiguous owner when it does not. This implementation does not claim a general streaming sparse exporter.
 
-Bounded import, coordinate-transform and retained backed-transfer measurements are recorded with the [reproducible probe](../tools/format-family-probe/README.md). They describe fixed workloads on this host and make no comparative performance claim.
+The [reproducible probe](../tools/format-family-probe/README.md) records these bounded observations in the machine-readable report:
+
+| Observation | Measured cost and scope |
+| --- | --- |
+| Fresh installed consumer, `import anndata;` | 8.63 s including generation of 15 consumer-local module interfaces; the consumer translation unit itself took 0.05 s with its BMIs available. |
+| Fresh installed consumer, `import anndatapp;` | 8.69 s including the same 15 interfaces; the consumer translation unit took 0.05 s. |
+| One million borrowed FP64 coordinate pairs | Five affine calls took 7.36–7.60 ms, excluding caller buffer allocation; sampled output checks passed. |
+| Retained raw HDF5 selection into strided caller memory | Five 4 MiB transfers took 8.36–10.11 ms (median 8.66 ms). Each reported 1,024 reads, 4 MiB read, 4 KiB retained scratch under a 64 KiB limit, and zero additional scratch allocations. All values and padding were checked. |
+
+The two consumer builds ran sequentially with Ninja's default internal parallelism. Import and coordinate measurements preceded the private raw-geometry repair; the report verifies that all 15 public interface hashes remained unchanged. The transfer measurement used the repaired Release library. Normal OS/HDF5 caches remained active, without eviction or a controlled cold-cache claim. These fixed observations do not establish comparative performance or total third-party allocation bounds.
 
 ## Reproduction and retained evidence
 

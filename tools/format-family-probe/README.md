@@ -41,8 +41,9 @@ Run the workload executable after compilation. Fixture creation is separate
 from timed reads:
 
 ```sh
-build/cost-probe-prep/workload/format-family-probe --prepare /tmp/anndatapp-format-family-costprobe.h5
-build/cost-probe-prep/workload/format-family-probe --transfer /tmp/anndatapp-format-family-costprobe.h5
+mkdir -p build/qualification/cost-probe/raw
+build/cost-probe-prep/workload/format-family-probe --prepare build/qualification/cost-probe/raw/format-family-fixture.h5
+build/cost-probe-prep/workload/format-family-probe --transfer build/qualification/cost-probe/raw/format-family-fixture.h5
 build/cost-probe-prep/workload/format-family-probe --transform
 ```
 

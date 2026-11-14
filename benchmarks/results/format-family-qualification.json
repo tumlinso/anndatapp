@@ -355,15 +355,15 @@
   ],
   "fixtures": {
     "mudata-0.4.1": {
-      "axis--1-native.h5mu": "df18ffe4f506369c863a11e972a304e05ada07852125435f06f7616982fdd130",
+      "axis--1-native.h5mu": "8ba34261e5f9180da4483472cd7fd6e04e59fb92a19ebf9b9356250223196e51",
       "axis--1-native.zarr": "846e2fdea43b02c3416c64b7f0003d45c72aa28b16dcd428cd7f9159b166970d",
       "axis--1-reference.h5mu": "49fb23e1d4b799f70ddb19c8fef86bf5b35ccf792b5a0a92ce4e61e2f7348bff",
       "axis--1-reference.zarr": "b3d65533f44308b79b9c8b90fd94871b7d16d5787757f98b63b57037e58db9a5",
-      "axis-1-native.h5mu": "41b9df4ac90c05fb9bba28aa70c66d022e1d20dbf9e76bb468da4e7ba003cc7f",
+      "axis-1-native.h5mu": "38eae46ac80f81a165212b9fa866ec77bec261415e27ad4c928744a12377cfc7",
       "axis-1-native.zarr": "3cacfdc7602e5ea92216527ef96389b6439980e265135a2febef969e67a210d0",
       "axis-1-reference.h5mu": "a1e99829f4364b65f4adc48b28b07365f0f290312aadb8faf9c174ceff95b752",
       "axis-1-reference.zarr": "ea8a02fddea799ea990572c7a7b64d0abdb0f3beba89c24ea454c527e0527788",
-      "native.h5mu": "aff4ce087bc4d4cac5159bcfef40dfb2ec591775797be5b617151f2f16436c59",
+      "native.h5mu": "dc917223f7283b2644a5caf59da2ec8db539260ee96dda4ca6775a06e52afb2e",
       "native.zarr": "b37a721361cf190ef90c1d126e6694c476187b8ba1c48391265717110e2bc68a",
       "reference.h5mu": "fef5df68a7d7627792117c986849c46def499b616d68b11a3291d8852489d14b",
       "reference.zarr": "624add024aeb408f5d49ac5382121f509a68a2912d8badfe3c69619d92632dea"
@@ -372,17 +372,20 @@
       "native.h5mu": "9308703e073db69eacbbb5ca4a1d99653fb0a7bf22bb4227f603f40f228b4fff",
       "native.zarr": "929845b5eae1bdfe7b848472931b4729946d6fb941d6780daa2d2e71f6afc7af",
       "reference.h5mu": "f74c571a493dded841eedb98915aa66d6e9c7739f50288e0cae4fa50d67b2693",
-      "reference.zarr": "219b1d0f4f7986496f346cebc11ec560a52a1b73554026410b5859b600ededcb"
+      "reference.zarr": "219b1d0f4f7986496f346cebc11ec560a52a1b73554026410b5859b600ededcb",
+      "delivery/native.h5mu": "e4e347837d757e92e796eabaf8214280fd1476d88c6c105d0689537297c765d7",
+      "delivery/native.zarr": "929845b5eae1bdfe7b848472931b4729946d6fb941d6780daa2d2e71f6afc7af",
+      "delivery_readback": "passed through repaired native library and current upstream reader"
     },
     "dataset-2.10.0": {
       "compressed/first.h5ad": "4927bd5ce3542b563eb63d9bd87bdd3f684ea1b77a2496a0c3710fe1b2229892",
-      "compressed/manifest": "fc33feaa99d96cf71be47ba467eab268c941487ef9fcac64a8c596d45dc82dd3",
+      "compressed/manifest": "763541efbd66603593497bd67d0efc164137087b2dd8a1bac611f5ed678d94bf",
       "compressed/second.h5ad": "bfded2ee2fff672d3b138d071f10a4185200977e9fe3459923e0d9155b6cc9ee",
-      "native/copied.h5ads": "9d3ec1977195b5ca0624c8c2a09be49465d37573ddb5c1ddf23d653d89424e53",
-      "native/created.h5ads": "0955a3114ff5aa39e4fcd91b8b37f5e44012845030d0dfee96de0395fa48d8cb",
-      "native/filtered.h5ads": "2c62c0111b9263348f59a8870a88404374ad53cf7f8ce8033ff0daa069ebc305",
+      "native/copied.h5ads": "e9d4c4af7e541d036429e9c4437b5e2d3b5c67041e31788e753d7e2c9d82a756",
+      "native/created.h5ads": "10dfc53588ee045891cd1573a59aec3de0146b0d1cd1d6de3beb20ff6337ab96",
+      "native/filtered.h5ads": "4b8c2fefaf1591520a9735bb67a775c50fdd3a6344bd145e343a569cbc8253d9",
       "reference/first.h5ad": "304a1b3ed71d8ff2ce767e993d8e0c681bf8017292596a983ddcd69c6d7d1738",
-      "reference/manifest": "fc33feaa99d96cf71be47ba467eab268c941487ef9fcac64a8c596d45dc82dd3",
+      "reference/manifest": "763541efbd66603593497bd67d0efc164137087b2dd8a1bac611f5ed678d94bf",
       "reference/second.h5ad": "41ae36d2f33a167cab9f3252cb2ae5b373d090305880cc16aeba585257af52d8"
     },
     "treedata": {
@@ -405,8 +408,8 @@
           "input_sha256": "5b861e58f8516e35b8ae3ed646bfedb9358f33ac08984bfd3abf5b7f2ee49efc",
           "output": {
             "format": "h5td",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-leaves.h5td",
-            "sha256": "9d6332981c59e76b91403494cc733f8b4bd5f0a8a14cfe880d9b43f03023799b"
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-leaves.h5td",
+            "sha256": "15a694f96bc444c7101a4ec03abc780009da775631ab9cbec42c6925b6e161ea"
           }
         },
         {
@@ -414,7 +417,7 @@
           "input_sha256": "19c30e9c8f57f99245de5211f573432fd4edaf5edcaa8945e0463cd4f2e884b4",
           "output": {
             "format": "zarr",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-leaves.zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-leaves.zarr",
             "sha256": "9fa52ab7a8d6f3754c689b4b9ad8ccfb6378b4bce9ce554de16065af153af88b"
           }
         },
@@ -423,8 +426,8 @@
           "input_sha256": "0dca3264946de2edd942b1b92d890cb0f4eee8ed049a1941a85b4450069b4421",
           "output": {
             "format": "h5td",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-nodes.h5td",
-            "sha256": "3f6e1dc61faf44fba78beba62f2a7720179ba5eeed7d2ea4439e5db98c6d3af7"
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-nodes.h5td",
+            "sha256": "65f63bb9e39badf4c2ac72ceacb34dc233908be56503e62ab0f61a177d6a2dd5"
           }
         },
         {
@@ -432,7 +435,7 @@
           "input_sha256": "3e4fd5dea55043491161ae28380afd4c7f7253a15c51cad1b7fa9febfbfbfafc",
           "output": {
             "format": "zarr",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-nodes.zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-nodes.zarr",
             "sha256": "ece31a428cc3b8a7417d49ac0a72dceecfd15fd8f81f7d64dc1cf8e8c7a3130d"
           }
         },
@@ -441,8 +444,8 @@
           "input_sha256": "d7e529867cdb9aba90dca20e6675b986c4c661a2714c54337325991fba86e2ef",
           "output": {
             "format": "h5td",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-subset.h5td",
-            "sha256": "81f7d08a075582d96f1d993cc45925cc01dc072c1d6316df2cbb69c87151b8e4"
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-subset.h5td",
+            "sha256": "0e996eb1b74c78912822b0a8dba90a272673b4dcad4d2d4573ef3f5e6195f277"
           }
         },
         {
@@ -450,7 +453,7 @@
           "input_sha256": "3546cee46c9b91350fc88c01baa7fea6ca8b20c01e5509522a187f1a350eaa78",
           "output": {
             "format": "zarr",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-subset.zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-subset.zarr",
             "sha256": "c55e746e6521ebf30e27a9a2eb0d32309974b33c28339d0fcd71f946063f79fa"
           }
         },
@@ -459,8 +462,8 @@
           "input_sha256": "1a068537981ab0e8df2ab0274624f16c6c4c83501b22100223c451045f4151ae",
           "output": {
             "format": "h5td",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-raw.h5td",
-            "sha256": "1f0726e0d367b5fc06d2ba9f2afa50db90f1e2dcbdbcf7c224a23a347177b11a"
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-raw.h5td",
+            "sha256": "82275d03b737ce81c16f4c9f1605dca3fb86d2ec4a77518906e5b6dee2ba0425"
           },
           "raw_shape": [
             4,
@@ -477,7 +480,7 @@
           "input_sha256": "539b6b15e7626214c62007df2f985551059f63e5b3dce16d4e09738bba127525",
           "output": {
             "format": "zarr",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-raw.zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-raw.zarr",
             "sha256": "ca12688c0f71d6928495a70eb87319d6d067e01438a3cbf2d81647a9d598daba"
           },
           "raw_shape": [
@@ -495,12 +498,12 @@
           "input_sha256": "2d36892752a79f4762972833b56dd8c61e1583d61d5a6c2dc515cc2af64c607f",
           "output": {
             "format": "zarr",
-            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-legacy-current.zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-oyxj7fyh/native/treedata-legacy-current.zarr",
             "sha256": "9fa52ab7a8d6f3754c689b4b9ad8ccfb6378b4bce9ce554de16065af153af88b"
           }
         }
       ],
-      "hash_algorithm": "treedata_reference.hash_path: SHA256(raw bytes) for files, SHA256(sorted relative path + NUL + raw file bytes) for directories"
+      "hash_algorithm": "treedata_reference.hash_path: raw file bytes, or sorted relative path + NUL + raw file bytes for directory trees"
     },
     "spatialdata": {
       "current-wkb": {
@@ -572,5 +575,186 @@
     "consumer_objects_unchanged": 2,
     "restored_binary_hashes_match": true
   },
-  "raw_evidence_root": "build/format-family-qualification-2026-11-14"
+  "raw_evidence_root": "build/format-family-qualification-2026-11-14",
+  "implementation_commit": "7999fa67a1b62fec7ce2533e135a4bd28f20d1d2",
+  "cost_probe_source_files": {
+    "tools/format-family-probe/CMakeLists.txt": "6ceef2eca75debb54bc6d3a3aac9bc7633499b91d7c5771c9e99a15498798900",
+    "tools/format-family-probe/README.md": "35972bc1025b40d4107078ff46349d6523c347240068288d124716b597f4be4c",
+    "tools/format-family-probe/compiler-time-launcher.sh": "7743632002f04f3b9e8c3803ae9274f9ad8ed1f3bdd59202b732f76b7aa20ae4",
+    "tools/format-family-probe/import_anndata.cpp": "6e51772d7e0aa95f3b823152ea4f8797289af15bb9feb66fd71e9667d7cdd1f6",
+    "tools/format-family-probe/import_anndatapp.cpp": "1a9d266e106ad6266b616faff7e3c6bcc73da001db85ece6f0bff9ab0d4c2140",
+    "tools/format-family-probe/workload.cpp": "bbaca540a4b374caf6f4cb78e2d09ae81468c29ae276c2b264330f02f349700d"
+  },
+  "bounded_cost_probe": {
+    "schema": "anndatapp.format_family_cost_probe.v1",
+    "status": "passed",
+    "comparative_performance_claim": false,
+    "source": {
+      "branch_head_at_report": "7999fa67a1b62fec7ce2533e135a4bd28f20d1d2",
+      "source_freeze_sha256": "180223eca95339848eb144bfa3bd312e8fe4f2196d4c6fdb44f1848e2f68dff8",
+      "package_version": "1.0.0",
+      "release_prefix": "build/release/installed-test-v3/prefix",
+      "anndatapp_library_sha256_before_private_fix": "e83b41342ba9d7a6cbeac252a423adc2aff6f25b3f069e449554ffb4bb626116",
+      "anndatapp_library_sha256_after_private_fix": "af07a42748b69ebf151775ee52ea8f1f76aa88ec0d2f81efbed9b6907822d6ec",
+      "anndatapp_core_library_sha256": "1a02b4e493e7d291623f130defce949e0a82ebebae5554020635f40935ef4b02",
+      "private_source_sha256_after_fix": {
+        "src/backed_geometry.cpp": "7b55a3079e82556a4ddbb0e19380a943752c3e2485ee72714717c3fa36556986",
+        "src/backed_array.cpp": "4d4be1b3ad140f8f5070f928c6506946e782fcb5768782ab022d7b6290490d8d"
+      },
+      "public_module_file_count": 15,
+      "public_module_manifest_sha256_before_and_after": "d3e426beecf51f05d067caf6d99851af7385bb63562023551c1da8380c060df4",
+      "public_interfaces_unchanged": true
+    },
+    "environment": {
+      "os": "Linux x86_64, kernel 6.8.0-149-generic",
+      "cpu": "2x Intel Xeon E5-2698 v4 @ 2.20 GHz; 80 logical CPUs",
+      "compiler": "Ubuntu Clang 18.1.3 (1ubuntu1)",
+      "module_scanner": "clang-scan-deps-18, LLVM 18.1.3",
+      "cmake": "3.28.3",
+      "ninja": "1.11.1",
+      "configuration": "Release; -O3 -DNDEBUG -std=c++20; C++ extensions off",
+      "features": {
+        "HDF5": true,
+        "Zarr": true,
+        "Parquet": true,
+        "HDF5_version": "1.10.10",
+        "Arrow_root": "build/reference/current/lib/python3.12/site-packages/pyarrow",
+        "dependency_prefix": "${DEPENDENCY_PREFIX}"
+      },
+      "cache_policy": "No OS cache clearing or eviction; fixture was written immediately before transfer and read immediately; cache warmth was not controlled."
+    },
+    "imports_before_private_fix": {
+      "measurement": "Each spelling used a separate fresh CMake build. The installed package provides module sources, not prebuilt consumer BMIs: each build compiled 15 module-interface units into consumer-local BMI/archive artifacts, then compiled one consumer TU. Compiler-log elapsed values are per process; module elapsed sums are not wall time.",
+      "build_scheduling": "The two modes ran sequentially; Ninja used default intra-build parallelism.",
+      "anndata": {
+        "import": "import anndata;",
+        "consumer_build_elapsed_s": 8.63,
+        "consumer_build_max_rss_kib": 268572,
+        "module_interface_compile_count": 15,
+        "module_interface_elapsed_sum_s": 17.01,
+        "module_interface_peak_compiler_rss_kib": 268572,
+        "consumer_tu_elapsed_s": 0.05,
+        "consumer_tu_peak_rss_kib": 140160,
+        "runtime_smoke_exit_code": 0
+      },
+      "anndatapp": {
+        "import": "import anndatapp;",
+        "consumer_build_elapsed_s": 8.69,
+        "consumer_build_max_rss_kib": 266860,
+        "module_interface_compile_count": 15,
+        "module_interface_elapsed_sum_s": 16.94,
+        "module_interface_peak_compiler_rss_kib": 266860,
+        "consumer_tu_elapsed_s": 0.05,
+        "consumer_tu_peak_rss_kib": 139520,
+        "runtime_smoke_exit_code": 0
+      }
+    },
+    "coordinate_transform_before_private_fix": {
+      "shape": [
+        1000000,
+        2
+      ],
+      "dtype": "float64",
+      "caller_input_bytes": 16000000,
+      "caller_output_bytes": 16000000,
+      "operation": "SpatialTransform affine over borrowed_dense input and caller-owned output; timed call excludes allocation and input initialization.",
+      "elapsed_ns": [
+        7356285,
+        7595824,
+        7488440,
+        7480494,
+        7434697
+      ],
+      "correctness": "All five samples passed first, middle and final coordinate checks."
+    },
+    "retained_transfer_after_private_fix": {
+      "status": "passed",
+      "relink_elapsed_s": 0.29,
+      "library_sha256": "af07a42748b69ebf151775ee52ea8f1f76aa88ec0d2f81efbed9b6907822d6ec",
+      "fixture": {
+        "path": "build/qualification/cost-probe/raw/format-family-fixture-delivery.h5",
+        "sha256": "39f36c50616c8170b5565508aaf4835f2d0986d175d218761060e4236f0a519f",
+        "file_bytes": 16779264,
+        "shape": [
+          4096,
+          1024
+        ],
+        "dtype": "float32",
+        "storage": "uncompressed contiguous HDF5 raw array written without encoding attributes"
+      },
+      "selection": {
+        "rows": {
+          "start": 0,
+          "stop": 4096,
+          "step": 4
+        },
+        "columns": "all",
+        "logical_shape": [
+          1024,
+          1024
+        ],
+        "logical_bytes_per_sample": 4194304,
+        "retained_backed_selection_outlived_store_owner": true
+      },
+      "destination": {
+        "owner": "caller",
+        "strides_bytes": [
+          8192,
+          8
+        ],
+        "allocated_bytes": 8388608
+      },
+      "scratch_limit_bytes": 65536,
+      "context_setup_ns": 1298665,
+      "retained_scratch_bytes": 4096,
+      "samples": [
+        {
+          "elapsed_ns": 10113544,
+          "read_calls": 1024,
+          "read_bytes": 4194304,
+          "scratch_allocations_delta": 0,
+          "correctness": "pass"
+        },
+        {
+          "elapsed_ns": 8460093,
+          "read_calls": 1024,
+          "read_bytes": 4194304,
+          "scratch_allocations_delta": 0,
+          "correctness": "pass"
+        },
+        {
+          "elapsed_ns": 8361163,
+          "read_calls": 1024,
+          "read_bytes": 4194304,
+          "scratch_allocations_delta": 0,
+          "correctness": "pass"
+        },
+        {
+          "elapsed_ns": 8660894,
+          "read_calls": 1024,
+          "read_bytes": 4194304,
+          "scratch_allocations_delta": 0,
+          "correctness": "pass"
+        },
+        {
+          "elapsed_ns": 8679377,
+          "read_calls": 1024,
+          "read_bytes": 4194304,
+          "scratch_allocations_delta": 0,
+          "correctness": "pass"
+        }
+      ],
+      "median_elapsed_ns": 8660894,
+      "process_elapsed_s": 0.07,
+      "process_max_rss_kib": 38400,
+      "correctness": "All selected values matched; every caller-output stride gap retained its sentinel.",
+      "cache_note": "Five samples ran in one process after fixture creation; normal OS and HDF5 caches were left in their ambient state."
+    },
+    "pre_fix_transfer_diagnostic": {
+      "raw_log": "build/qualification/cost-probe/raw/transfer.samples.log",
+      "message": "/X: missing attribute 'encoding-type'",
+      "interpretation": "No transfer timings were produced; excluded from the passing post-fix result."
+    },
+    "raw_evidence_directory": "build/qualification/cost-probe/raw"
+  }
 }

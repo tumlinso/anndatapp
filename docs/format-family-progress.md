@@ -1,28 +1,27 @@
-# Durable format-family checkpoint
+# Durable format-family delivery record
 
-Implementation and final build qualification are complete on `codex/anndata-format-family`. This file and the source are committed as a recovery checkpoint before the remaining delivery steps. All task files and evidence needed to finish are on persistent storage under `/home/tumlinson`; temporary directories are not required to resume.
+The implementation, final qualification matrix, and bounded measurements are committed. The source checkpoint is `7999fa67a1b62fec7ce2533e135a4bd28f20d1d2`; subsequent commits carry the final evidence and this delivery record. Source recovery and completion do not depend on a running agent, its connection, or temporary files.
 
-## Authorized outcome
+The local merge/archive state and preserved-file hashes are recorded outside the managed checkout at `/home/tumlinson/anndatapp/build/format-family-qualification-2026-11-14/delivery-state.json`. Inspect that receipt and actual Git state if delivery is interrupted. The source and qualification are described in [the format guide](format-family.md), [validation report](format-family-validation.md), and [machine-readable record](../benchmarks/results/format-family-qualification.json).
 
-Finish the approved four-format implementation, preserve the repository/package/namespace `anndatapp`, expose `import anndata;`, merge the validated branch into local `main`, then archive its managed worktree. Do not publish a release or change downstream projects. Preserve unrelated work.
+## Persistent locations
 
-## Locations and accepted evidence
+- Primary checkout: `/home/tumlinson/anndatapp`. The reviewed baseline was clean main `e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629`.
+- Task branch: `codex/anndata-format-family`.
+- Managed checkout, until archive: `/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp`.
+- Preserved source bundles, full test output, input hashes, raw measurement logs, fixture manifests, and private-rebuild receipts: `/home/tumlinson/anndatapp/build/format-family-qualification-2026-11-14`.
+- All necessary source, six reference locks, and small fixture/probe generators are tracked. Large generated stores and environments are reproducible artifacts, not source dependencies.
 
-- Managed checkout: `/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp`.
-- Primary checkout: `/home/tumlinson/anndatapp`; original clean main was `e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629`.
-- Frozen implementation/test input digest: `180223eca95339848eb144bfa3bd312e8fe4f2196d4c6fdb44f1848e2f68dff8`; per-file hashes are in `build/qualification/source-freeze-final.json` and `benchmarks/results/format-family-qualification.json`.
-- Final matrix receipts: `build/qualification/*-delivery-{build.log,tests.log,tests.xml,full-tests.log}`. Debug 33/33, Parquet/reference 49/49, core-only 20/20, HDF5-only 28/28, Zarr-only 26/26, shared 34/34, Release 34/34, ASan/UBSan 34/34, focused TSan 4/4. The full reference suite includes current and selected legacy formats.
-- The final raw-array geometry repair is included and the entire matrix above passed afterwards. It is a private implementation fix, with raw prepared-context read/write and lifetime regressions in `tests/test_store.cpp`.
-- Private edit probe: `build/qualification/private-rebuild-delivery/result.json`; 15 public BMIs and two consumer objects unchanged; restored binaries match.
-- Independent generators and six environment locks are tracked under `tests/reference/`. Raw environments/fixtures live under `build/reference/` and may be regenerated from those locks; they are not source dependencies.
-- Final reference Python: `build/reference/full/bin/python3`. Private Arrow prefix: `build/reference/current/lib/python3.12/site-packages/pyarrow`. Existing storage prefix: `/home/tumlinson/anndatapp/build/dependencies/usr`.
+The accepted implementation/test input digest is `180223eca95339848eb144bfa3bd312e8fe4f2196d4c6fdb44f1848e2f68dff8`; its per-file hashes are in the tracked qualification JSON. That includes the final raw-array prepared-context repair. Debug passed 33/33, Parquet/reference 49/49, core-only 20/20, HDF5-only 28/28, Zarr-only 26/26, shared 34/34, Release 34/34, ASan/UBSan 34/34, and focused TSan 4/4. The final private-edit probe preserved 15 public BMIs and two consumer objects. The bounded raw-array transfer passed all five samples.
 
-## Remaining delivery steps at this checkpoint
+## Completion and interrupted-delivery recovery
 
-1. Finish the bounded cost probe against the repaired Release installed prefix at `build/release/installed-test-v3/prefix`. Its owner is the Codex subagent `/root/bounded_cost_probe`; if unavailable, use the tracked recipe in `tools/format-family-probe/README.md`. Files/results live in `build/qualification/cost-probe/`; no `/tmp` artifact is needed. Import and transform measurements already passed. Preserve their pre-private-repair source scope. The transfer observation must use the repaired library, retain raw arrays without adding encoding attributes, validate output/padding, and record its hashes and scratch statistics. Save compact results to `build/qualification/cost-probe/result.json`.
-2. Refresh the tracked qualification JSON with the final independent fixture records and measured probe results. Update `docs/format-family-validation.md` with the bounded observations and their limits. Do not claim general performance improvements.
-3. Preserve raw logs/receipts/manifests outside the managed checkout at `/home/tumlinson/anndatapp/build/format-family-qualification-2026-11-14` before archiving. Include full CTest logs, the input hash manifest, private-rebuild receipt, and probe raw logs. Generated store binaries and environments are reproducible and need not be copied. Verify the copied file hashes.
-4. Commit the final evidence/docs. Check both checkouts for unrelated edits. In the primary checkout, merge `codex/anndata-format-family` into `main` without resetting or overwriting user work. A fast-forward is appropriate if primary main remains at the recorded base.
-5. Use the Codex app's `list_artifacts` and `archive_worktree` tools to archive the managed checkout after the merge. Its attachment identity is `/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp`. Do not delete the primary checkout or manually remove Git worktree state. Verify main HEAD, clean status and worktree closure, then report completion.
+The user authorized completing the four formats, merging the validated task branch into local main, then archiving the managed worktree. Preserve unrelated work; publication and downstream changes are outside this task.
 
-If interrupted, inspect actual Git state and these persistent receipts before resuming. Git operations require approved access to shared Git metadata. There is no need to rerun the accepted matrix unless implementation or required tests change.
+1. Inspect the persistent delivery receipt, both Git checkouts, and branch ancestry. Do not reset, clean, or overwrite unrelated work. Existing accepted qualification need not be repeated unless implementation or required tests change.
+2. Before archiving, preserve the raw logs, manifests and source bundle in the primary checkout's persistent evidence directory. Verify `preserved-files.json` hashes and `git bundle verify` the source bundle.
+3. If main does not yet contain the task branch, merge it into main in the primary checkout. A fast-forward is appropriate when main still points to the reviewed baseline; otherwise preserve intervening history. Record the resulting main commit in `delivery-state.json` using atomic replacement.
+4. If the worktree is still active, use the Codex app's `list_artifacts` and `archive_worktree` tools with its exact attachment identity. Archive only after main contains the completed work and evidence is preserved. Do not manually delete the primary checkout, authority data or shared Git metadata.
+5. Verify main HEAD and clean status, confirm worktree closure, then atomically mark the persistent receipt complete. The receipt is the local lifecycle record; the tracked documents remain useful after the managed path disappears.
+
+A source bundle is a local recovery copy, not publication. Recreate optional reference environments from `tests/reference/README.md` and its locks when fresh qualification is wanted. Neither a transient fixture nor an old build directory is required to recover the implementation.
