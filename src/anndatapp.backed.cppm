@@ -80,6 +80,7 @@ struct TransferStats {
 namespace detail {
 struct BackedNode;
 struct BackedDataset;
+struct BackedStoreImpl;
 struct PreparedReadImpl;
 struct StructureEditImpl;
 struct BackedAccess;
@@ -373,6 +374,54 @@ private:
     explicit BackedAnnData(std::shared_ptr<detail::BackedDataset>);
     std::shared_ptr<detail::BackedDataset> impl_;
 };
+// Generic hierarchical storage. Acquired descriptors retain the physical
+// session; explicit close invalidates them. Paths are absolute within the store.
+class BackedStore {
+public:
+    BackedStore();
+    ~BackedStore();
+    BackedStore(BackedStore&&) noexcept;
+    BackedStore& operator=(BackedStore&&) noexcept;
+    BackedStore(const BackedStore&) = delete;
+    BackedStore& operator=(const BackedStore&) = delete;
+    bool is_open() const noexcept;
+    bool writable() const;
+    std::string location() const;
+    bool exists(std::string_view path) const;
+    std::vector<std::string> children(std::string_view path = "/") const;
+    Element attributes(std::string_view path = "/") const;
+    // Merge supplied attributes; unrelated metadata remains in the store.
+    void set_attributes(std::string_view path, ElementView attributes);
+    void create_group(std::string_view path, ElementView attributes = {});
+    BackedArray array(std::string_view path) const;
+    BackedStringArray strings(std::string_view path) const;
+    BackedArray create_array(std::string_view path, DType, std::vector<std::size_t> shape,
+                            ElementView attributes = {});
+    BackedStringArray create_strings(std::string_view path, std::vector<std::size_t> shape,
+                                    ElementView attributes = {});
+    std::string read_string(std::string_view path) const;
+    BackedElement element(std::string_view path) const;
+    void write_array(std::string_view path, ArrayView, ElementView attributes = {});
+    void write_strings(std::string_view path, StringArrayView, ElementView attributes = {});
+    // The batch is caller-owned. Backend workspace uses the session budget;
+    // callers reserve their own packing buffers separately from that budget.
+    void write_strings(std::string_view path, const std::vector<std::size_t>& start,
+                       const std::vector<std::size_t>& count, const std::vector<std::string>& values);
+    void write_string(std::string_view path, std::string_view value, ElementView attributes = {});
+    void write_element(std::string_view path, ElementView);
+    // Legacy root admission is explicit for linked AnnDataSet manifests only;
+    // element codecs and ordinary H5AD entry points remain version-strict.
+    BackedAnnData anndata(std::string_view root = "/", bool allow_unversioned_root = false) const;
+    void write_anndata(std::string_view root, AnnDataView, Validation = Validation::full);
+    void write_anndata(std::string_view root, BackedAnnDataView, Validation = Validation::full);
+    void erase(std::string_view path);
+    void flush();
+    void close();
+private:
+    friend struct detail::BackedAccess;
+    explicit BackedStore(std::shared_ptr<detail::BackedStoreImpl>);
+    std::shared_ptr<detail::BackedStoreImpl> impl_;
+};
 namespace detail {
 // Internal cross-module bridges, excluded from the public API contract.
 BackedAnnData open_h5ad_backed(std::string_view path, BackedOptions options);
@@ -380,5 +429,9 @@ BackedAnnData open_zarr_backed(std::string_view path, BackedOptions options);
 void write_zarr_backed(std::string_view, const BackedAnnDataView&, int format, bool exclusive, std::size_t scratch_bytes, std::string_view compression, int compression_level, Validation validation);
 void write_zarr_eager(std::string_view, const AnnDataView&, int format, bool exclusive, std::size_t scratch_bytes, std::string_view compression, int compression_level, Validation validation);
 void write_h5ad_backed(std::string_view, const BackedAnnDataView&, bool exclusive, bool gzip, int gzip_level, std::optional<ByteOrder> byte_order, Validation validation);
+BackedStore open_hdf5_store_impl(std::string_view, BackedOptions);
+BackedStore create_hdf5_store_impl(std::string_view, bool, bool, int, std::optional<ByteOrder>, Validation, std::size_t, std::size_t = 64u * 1024u * 1024u);
+BackedStore open_zarr_store_impl(std::string_view, BackedOptions);
+BackedStore create_zarr_store_impl(std::string_view, int, bool, std::size_t, std::string_view, int, Validation);
 }
 } // namespace anndatapp

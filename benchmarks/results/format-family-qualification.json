@@ -1,0 +1,576 @@
+{
+  "schema": "anndatapp-format-family-qualification/1",
+  "date": "2026-11-14",
+  "base": "e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629",
+  "source_inputs_sha256": "180223eca95339848eb144bfa3bd312e8fe4f2196d4c6fdb44f1848e2f68dff8",
+  "source_input_files": {
+    "CMakeLists.txt": "4b27a6a4780e4bdab8298fbefbb79bebfd43331b5f3f57e0a09899b3984c4986",
+    "CMakePresets.json": "7a3b00685c3b68591ad924d197ee5408559cd9804b6cf3c3b338fb4cdd554a89",
+    "cmake/FindArrowParquet.cmake": "814bddcb6cb8debcaa3ad86d1e3c50524964d78c401180168b3f25f0542bd30f",
+    "cmake/FindBlosc.cmake": "f165d11616a18f4c14b270ce2cdecafdc727b36ae910cd036d81a83ae65ac022",
+    "cmake/anndatappConfig.cmake.in": "89dee9c83848315f572aba0b5bb84bc5bbedc8575bbbaf630520f813b15b87c0",
+    "cmake/anndatappModuleProvider.cmake": "881c63fc3ba474d970682279d62106c60694f37e3fe4d3b7c5b78200dc5bbd68",
+    "cmake/test-installed-consumer.cmake": "0613b2a315514b91bad25aac91c00fda5b10f3237b9b9269561628b5e31b46e8",
+    "examples/format_family.cpp": "f2e3200b93e61cdf4521b4062b4320df5f61a24d4a952bd632e8b9205dff80df",
+    "examples/foundation.cpp": "ccada00a33ec1861f9cee43d52e8ba3d1e48e134a5b600075b7f3dbc9d107214",
+    "src/anndata.cppm": "adcd33e3b65110b16bcba9a2d848090c67771285c834c325332f36395d110dd5",
+    "src/anndatapp.arrays.cppm": "53d13635188b2de9afb40a761bab080c4a162db1d5929003b48deb3ebf7b2461",
+    "src/anndatapp.backed.cppm": "63c931b3e43909ddbe0a9e85f51f030266628883f35160a6396fb3c02d457335",
+    "src/anndatapp.backed.storage.cppm": "91d08dbe6e1291b6aba53668ce64ee7c0ea1745a36fbc4c9fd288ad204ae7ee7",
+    "src/anndatapp.core.cppm": "715a25b39c33254135c710035e9c3aad4a524da543618904c454e485972e934d",
+    "src/anndatapp.cppm": "f6655ce8634b5cffead436a8745257d68ea0479e4f023671fb49ed691aef64a9",
+    "src/anndatapp.data.cppm": "e5e4a5278ffdcaec0f28fbbe2935f71e66414cad3243001b904a525258696357",
+    "src/anndatapp.dataset.cppm": "7ed8781e5fcf03f63a2d5939b2484e816d979be54d90723127842e6a3191bf0a",
+    "src/anndatapp.h5ad.cppm": "3306950261f04543e8673e9de40828b375e7be30967434597075df5adcdb7798",
+    "src/anndatapp.mudata.cppm": "bdad9e360aa40881bb5f01d54f2ccb62cfd5af596bfbfe92a77756521f863d78",
+    "src/anndatapp.records.cppm": "58b425897bd39311e2294963a1070aa97e2c62693d17389da0a7bdba8cef280b",
+    "src/anndatapp.spatialdata.cppm": "d77dbe7581c3c560f786135fe10bf587403c3063bc0c639cc6e9a83b56bf3685",
+    "src/anndatapp.streaming.cppm": "bb57c31c02cdccb2d5b734f125011c8298a898d32a73229c3cf01c2334448c57",
+    "src/anndatapp.strings.cppm": "624346a578f6ae093de10c3e1e8d9ceaa1684ad734ee09a3dd19ee1d9d3bbab1",
+    "src/anndatapp.treedata.cppm": "de48e7cf93e04b4dd5ef8b7fd243b710540edf8b9ec0bb16319f8dc45bf92daf",
+    "src/anndatapp.zarr.cppm": "d281314ed487a320384f63c3b470bff922d409f158892e72de08f29d4235ed17",
+    "src/arrays.cpp": "cc419113a14731bcc6cbfa0828f2ec16aa42cff10960e5838b25b12ca05af8af",
+    "src/backed.cpp": "4bfff64037dd669c6320a8b9fe01f06fafbad6720225ffae25d2c1e5a276e0dd",
+    "src/backed_array.cpp": "4d4be1b3ad140f8f5070f928c6506946e782fcb5768782ab022d7b6290490d8d",
+    "src/backed_category.cpp": "6d0399e7b4f91b845a5aec8217bef824c1dbd3bf26d6a298924c58aed0e29360",
+    "src/backed_codec.cpp": "87d8c5a3690779fe707652add6aff19c05682f63d37ace168450db03056cc5ce",
+    "src/backed_colors.cpp": "f8b44101b3ec6f554ba138723c784b6d860312fc6be32512885277040289772e",
+    "src/backed_copy.cpp": "ce31d49f1198932c461a5b6eaa725ec2203fff41f348a0f6757d9930f18f999c",
+    "src/backed_geometry.cpp": "7b55a3079e82556a4ddbb0e19380a943752c3e2485ee72714717c3fa36556986",
+    "src/backed_hdf5.cpp": "97daf66ea3eed8d9dec23dbe66a4efc41f598a0d3abd1479371e8e49a84a85a9",
+    "src/backed_index.cpp": "1bfddc9f65dc24375ccf257e2d0ddca23e2822586b43df24cff6fc1273ef3ec6",
+    "src/backed_records.cpp": "7b77a6f1abbf0d1eeb49047bbcef60c412a2522a63b0e90d5070609b96d6e728",
+    "src/backed_structure.cpp": "33bf6f915bf974d401d2dc4d33a72672d494f03405148cd910a5a09a5dd58e32",
+    "src/backed_writer.cpp": "800a527267b01caa39b8fc874c381cd0c2a86e1c145b2b78709cbc9ca2399595",
+    "src/backed_zarr.cpp": "3c9422ccb9fcaf882621b2a74de14d90149477ac6c09e912d246deff38f3d1a3",
+    "src/data.cpp": "ae8095f87265bc3cccb488f77bbc9920875322c95a9c2a48cbb8de79098dc38b",
+    "src/dataset.cpp": "91b7b0424d91821f981c74569ccc27d3ffca610993b5d99971b0a20c9a8d0fa9",
+    "src/h5ad.cpp": "d0fea12c54c78dcd38e666af428a25189fccbcf7d1da30bb48949aa1eefc15a2",
+    "src/h5ad_object.hpp": "b93856777a470763fcc80e535cfb6d31656393cca834a1f5c7b7d92fcd1b110f",
+    "src/h5ad_record_scratch.hpp": "b429a1f1de2d68f025ffc4097185900e190ab084e6be86f35b5426c10149c993",
+    "src/h5ad_text.hpp": "483cb95fede7a2cf90bc046ac9ba365db4858172dad23e7ae1d48244edf8e308",
+    "src/mudata.cpp": "aa20573f0672bdf80e1f363d84329148c9094d103397009f16a6367be04a043d",
+    "src/records.cpp": "a5de9d4b856cfd6fdc3ba6f95fb8066ac94e62b81d4b955ced94f30becc24422",
+    "src/spatialdata.cpp": "70322b1c9fa2ebf102baa08042e6044df47cf0c41d120b7127fc418ab9bd72da",
+    "src/spatialdata_io.cpp": "ccab70e410eb2f44e247178edf85e60d98ef6f4dbff449bae2dea26ba758858d",
+    "src/spatialdata_names.hpp": "772fef02d56faa1e15ff393766b92fb6627e946733d410edf3a97aa4bb23c5cb",
+    "src/spatialdata_parquet.cpp": "cca47de6ae837507943a5f200edd7002dd6015f8428eba15e26e4467edaebb91",
+    "src/spatialdata_parquet.hpp": "4eab771b7ecd4d9ec3b70b364522632f8fe7828a02205fa9c955d2bd3cb28a2a",
+    "src/spatialdata_transform.cpp": "fb3d4ca6e149eb9c9cb109cb30544d86c00c5a9ad9ea869b69d21cbdb0a06483",
+    "src/spatialdata_wkb.hpp": "de19caf82dca2aa7127fab7df80eeea756872f587b51b24223f6347fe56cc91a",
+    "src/store.cpp": "316b9daa8f651b7a6a8a43f24465f55f847cdae25ba4ca23b2aca23581af39aa",
+    "src/streaming.cpp": "d314eb1ada7b065ce76ce44118baa12b8d87e108b4cedc276266aa79ce93de41",
+    "src/strings.cpp": "661a5e244f6a33ff062887c327f796d0aa81281acf4c951b1eaef5ad918e87e5",
+    "src/treedata.cpp": "e492150e719a9530dc656d828fb43b48be706ce1ece342df208714235cfcedb7",
+    "src/treedata_io.cpp": "ca3ef0bbe9b206a5897a871682689be4ea05fd8675285fe82fa96f97d75f30b4",
+    "src/treedata_json.hpp": "6640d748eb5df33102840143c91c7a377369817ed531b7602bd1570c606c1120",
+    "src/utf8.hpp": "6bfe2ed98be36a2f79d14dd83e2d0fa03636196342de41d03903e85a5af06536",
+    "src/zarr.cpp": "28e581ddde702fcd6e65e08b0c78efc623b7cf6995f6b7023d345d3e3ce7d318",
+    "src/zarr_codecs.cpp": "af036a5b1d38136f3544ecda3afa9ac387e97c2df66b8b9202c575ca73f2dec0",
+    "src/zarr_engine.cpp": "e3e981a2fd03554bb22c35e0fc1315a8836347b309c6b4d0478e88d019df673b",
+    "src/zarr_engine.hpp": "eb372b7871b6a65d01f04f2ec0416d3407fa95be3e3e2f470e17020e8bd1caf4",
+    "src/zarr_sharding.cpp": "81231a18b43bc642f085f1a1696f3ccd82ec89992de7cb383dec44df9aa52ae8",
+    "tests/completeness_interop_driver.cpp": "0c99e8a46b51389236dd1955f0361b54f26b78884c90229498b746471e2209d2",
+    "tests/consumer/CMakeLists.txt": "7c47ae019e5569fcf0a60f70f64485b3eab7237e4273edc94b349cca6492f85a",
+    "tests/consumer/anndata.cpp": "5a36ffa0c2eaaadb45b467093b9322d72b975736c8d0a9655955b9552dda6515",
+    "tests/consumer/backed.cpp": "91f7cb8ca8eaa8a10f3e7464d89a4b0bf1cd72a767a93309d97f02359bc8cd86",
+    "tests/consumer/core/CMakeLists.txt": "c55fbed26f460e5cc419d33ce894344d6489f11dec85e6c4f216670c219fd198",
+    "tests/consumer/core/first/CMakeLists.txt": "7a6635f64088c5d6caf99a8dec6fec16c91f01abddfef2a5c010864f6b1f432b",
+    "tests/consumer/core/records/CMakeLists.txt": "2019c4a3886cd8ac2fa111eed5bfab2da83618d36b8b8b8693a2c977a271bc97",
+    "tests/consumer/core-export/CMakeLists.txt": "6f2871d7af76437f2eb405278bdb7324707903d35d2e6ce5f188c50c8f8be561",
+    "tests/consumer/export/CMakeLists.txt": "64a9872b95e962924157400433987926865c5755692d0203593072d3db853636",
+    "tests/consumer/export/main.cpp": "76d68bf0118f3af57e1ba37b01a74631a7c71c9ce0c12a87d7d1c5222bf2e5ea",
+    "tests/consumer/facade.cpp": "765f0b3a560a5185a705c9354fde195247a4682c0736565ee12cf07afe1f7195",
+    "tests/consumer/h5ad.cpp": "964e1ee5dc0a5f4dcb58ecf908bfa77567e9764153214e9e70ddc869f93ef66e",
+    "tests/consumer/main.cpp": "efa2f851cde600b09219d55ee5184fbe6a3c3d06a18ae769dafea0bfa0bb46df",
+    "tests/consumer/records.cpp": "b88381e85022e07903632770f51ab019961cd3084d096dcbccda25bd35faa39a",
+    "tests/consumer/streaming.cpp": "55d437d9183bbb18b9b30079dbe1878aa0603dd483fe000a7a79a2b674e8754e",
+    "tests/consumer/zarr.cpp": "b44312d723d95745365dcfeb360a0d226442053f268c957b5a968f133381e6d1",
+    "tests/dtype_rejection_driver.cpp": "ee19262d669f2be629631fbbf606256e4539165817b2733dbb1ff6c10d9aa194",
+    "tests/h5ad_interop_driver.cpp": "b1a630bd2fd30684419e66ed2c75b478af1d1e04828a782a882f4208d177c297",
+    "tests/h5ad_padding_fixture.py": "8a923c3990412a74912a1c36078f097b04c442e279991bd6ade78e34dd2f11fd",
+    "tests/h5ad_read_observer.cpp": "50b2b70e9ac1a10323297f86cbcb418db0eb2d7d26f4f728c215af696fe02f38",
+    "tests/hdf5_link_probe.py": "2e5c9fc1934fa0e92a45a346fa57bc8ee20533a677e102f08f1102489c3b4fb0",
+    "tests/interop_driver.cpp": "e7229d187f301e5c19dec0c6fd98940862fe2558724e498b9ce91739909cacc5",
+    "tests/python_completeness.py": "97efe400b0ade4516a78df623b73933e103bb005fec06751a346deeb1b005d62",
+    "tests/python_dataset.py": "4669a4d5b463e5e3ca3628d0cd3664de728c8a6e2544e2b9be6544d038a78d21",
+    "tests/python_dataset_roundtrip.py": "dff4b9d5d815f882842e1a90c7e844b9563c55f0a36731e453508159288cd570",
+    "tests/python_h5ad.py": "b8375f4a0bbbc1bedd1e8ce452eac9e828a2fe7c6ebd5d9b30323eaa91b96fa6",
+    "tests/python_mudata.py": "cf1ba51f02b67826e35de49149e997f34e69b36ef91d38263411666d38731fc7",
+    "tests/python_records.py": "de5441a7b6e86525749036481f375af282d546caf2de67b85f14d5fa8d8a767e",
+    "tests/python_semantics.py": "79c634a3385563b8c0ff39888a2cfa695710df7d5323308de618b29b98f42bd0",
+    "tests/python_spatialdata_roundtrip.py": "c511aadd5f1320717b9a520aa9210bf334111e4cbbee7dec039ce74ad1b9544a",
+    "tests/python_storage.py": "fb6478f9c0d06c65fbb0a690ae8d28df9b230660ce82f1c60eda4366e1b09a18",
+    "tests/python_streaming.py": "78a1fa0f38397f4d282377e04352f0dc3795cca3f2e611c1d7e7e8e2d9eeeb9b",
+    "tests/python_treedata_roundtrip.py": "1871f6cddd47fcd030f53c5630deb6705aa22e2b9d7d4c7e10969f3afc7b5736",
+    "tests/python_unsupported_dtype.py": "664daece8b9661e471197cc1a539d2b8e7737612c9063d66f20fc4a2c154bd36",
+    "tests/records_interop_driver.cpp": "4990a4e86f2914c0c18d816fcbcf85f8bf56e25c4a1bbc3d399b0055e2c06f37",
+    "tests/reference/README.md": "84750734a998ea1c613629de13e27625241f536fd54dcdcf0ab20e8e5e43f39d",
+    "tests/reference/generate_spatial_current.py": "9b60f9bf38949b422d5b324fa1f061e908bd35478aa9b80d29d9db17641069ba",
+    "tests/reference/generate_spatial_legacy.py": "050c0df6d9f0712528cd97647a220d7b920c81d6d7314d084e186f10b69ab042",
+    "tests/reference/requirements-basic.lock": "b4818049453fe812ad7d53dce0e19fd6547683c3db24b71fcf896f1725d81ea6",
+    "tests/reference/requirements-full.lock": "b99424040f699fc92ad3bbfd91fa66ed4b8df838710fd1b2a491ad0d5d7fdcb1",
+    "tests/reference/requirements-legacy-mudata.lock": "e215b40e7e61c02a9550f81fc2e5f70b4b07783f822e4e5a8674323e06731985",
+    "tests/reference/requirements-legacy-spatial-02.lock": "f93547c61872ccf88657a60f830074793c8a34b17e401cb8c26b8b211c6b33d8",
+    "tests/reference/requirements-legacy-spatial-03.lock": "d583318d3f4bb68f6300efae318ac137c3b48bab4f4d6938ce104bfbe596d4b5",
+    "tests/reference/requirements-legacy-tree.lock": "b3a1c6a91e44e1141a2f446cf11637203b88ea7492f026449cc46b6e8b55e922",
+    "tests/requirements-interop.txt": "1e3f58211bddcfdf07ec5fa460e484dd91552e3846685999a4d83cb454791726",
+    "tests/requirements-records.txt": "2bc3bc6afb53af8b03533465fc1b53d40caa8cc3912f50e704f06ac52056b000",
+    "tests/results/completeness-matrix.json": "9f7e89e28ef24155674097669bd853f77776eda56d5917d6e3d912b9926e1305",
+    "tests/results/completeness-python.json": "8af385775bc37bbf3750261b85c5ea3930cf16a6b26ed7e12182d77e6862e929",
+    "tests/results/completeness-validation.json": "062a2a0f0e48ee9911653a47a80caeace1d3742b498d4792f598d9303e097067",
+    "tests/results/compliance-fixes.json": "3f49c3c7f279826bd69a14abe00ff78a777d632471f43e38eab965e9e95050dd",
+    "tests/results/gather-read-validation.json": "fcd5f8ff947621b89d5e665e00c09b5b7591f9e9ba5f2feb7c732258a10ed8d0",
+    "tests/results/h5ad-validation.json": "f2f6f1b636b829a729989253ebfabdb0ed0398b57ba581feeca33399f00ae5ab",
+    "tests/results/package-boundary.json": "f96b0bf980cbd903305a9807be5d40052a264c84e714f3ba83126114a86d596a",
+    "tests/results/records-integration-matrix.json": "b40f04b898e89f483a6c709a074f2565aa5b63502a2f1df3aa8e8c680ac061a2",
+    "tests/results/records-integration-python.json": "05b468a0a137d96bbaa3f08dde2717e74ae0682b32a384c8e744395bd6ce6a07",
+    "tests/results/records-integration.json": "2910f71dd74335aa8281597e61ed9e2af415d2fec69b1de53fb58f0da56ce2a9",
+    "tests/results/records-interop.json": "4abceff85da41cd8c50aa12d0bd3823046dbab1e2bed1c1638d4836a57dc3550",
+    "tests/results/records-matrix.json": "ca432e727971434547220ed3fed61b223b3e16223ea06fcffe1da9b9edc41dff",
+    "tests/results/selection-validation.json": "6d9114376ff1e419463da60f415cce4f3278e8159441a52fcfb5ba9637cab5c3",
+    "tests/results/storage-validation.json": "1bd74a6c46c316e0033faac30aabdc0b0ba899e4cbb4c9d8e0798f32f3d5f06e",
+    "tests/results/streaming-matrix.final.json": "0cfb95880e9ea67affa9521ea71ab9a9c1b56509bad191a6c8196db52257f9a4",
+    "tests/results/streaming-matrix.json": "00d50798b4c882776d9f028d75ab7ba8e960812e203c2e4b1b23a3d3d100542a",
+    "tests/results/streaming-validation.json": "e40fc92bdd05257936d853820d73f5846298c03a99bce52e41c65bb81814fe15",
+    "tests/results/v1-arm.json": "24da54862ab241b36ab9dd11325f1d87325efd55569f4fba5b592b93dc1dcb20",
+    "tests/results/v1-local.json": "d344451c41ad3ec24b56b20a1aac46869c8e30c2efaadf16d68e9f0246d5fd99",
+    "tests/results/v1-release-linux.json": "2d5021946615b75e8ed6f0365e643c8f92b0b0ffd3af2a95ae9a3754fb6bf9d5",
+    "tests/results/validation.json": "e1ac3cd6c2cf0eb0ed8386f3fc10c1eaecb9e701639506e1d296ab3d6fb8effe",
+    "tests/spatialdata_parquet_reference.py": "ea5f8c6221fe8a022b08db619c47fa35b1c76539563dce957e43a18c9b9c480d",
+    "tests/storage_interop_driver.cpp": "c5d39c96818b0a796cb2520eb309cacd631005a45af79de7a47d056702956f92",
+    "tests/streaming_interop_driver.cpp": "645aa76e8fa40e9a7a342c2bc3ffef25eca2c62e2f9730b684bf7638a68ae322",
+    "tests/test_arrays.cpp": "d5799e6f59238b07e1c1622d11369980166d0f0a1d628d7ee0c37d17801868ab",
+    "tests/test_backed.cpp": "01f0325b3b953c526806245d859edca71bc81123af722e188151ee6f9ef3dc21",
+    "tests/test_backed_categories.cpp": "3d593f922a5854428a80ed3817679c9470fb34415234ba441f8f208a89215ede",
+    "tests/test_backed_h5ad.cpp": "3ab884de3473958b9485143946d405079d5296a5d0de71b49777df8d340413ea",
+    "tests/test_backed_records.cpp": "8586779ad1fcd8da2c4d8acc0103ec3f8c393b1759659d306f54a252b8efedb2",
+    "tests/test_bounded_sparse_export.cpp": "046ecc4a5220e60a3951e1f80846b5b4fad9532d953629c70a498b45cdc0f6ee",
+    "tests/test_copy_into.cpp": "2fd0315a4d8c57d1db465095a6b5efd892edd20927ed9a26180b3192ccaabe0b",
+    "tests/test_data.cpp": "1f6ab081e970f651e51f704a84288c57143398d39617f517841d8b836537f9d6",
+    "tests/test_dataset.cpp": "c6645b325ad42c3e5ffab00ad726f68fc2462113105192a6cfae91f7834dbcf5",
+    "tests/test_gather_transfer.cpp": "79a149716f2226c162767322581e0cf73d9bba61aaef5f369a4e12bb6e4903f1",
+    "tests/test_geometry.cpp": "01517bc310dcb225a841f3ecd879ffa53de33d8bf83ea97cbeb3c82469d9fcda",
+    "tests/test_h5ad.cpp": "9aadbc67c554699c0868ca353beab375770ab6a3a91a68e9f5946cfa4bf82118",
+    "tests/test_mudata.cpp": "de087d3c8b6128e2f8bf4079dc27a96595e5df8c8a3731c88f36e8b536881860",
+    "tests/test_record_zarr_rejection.cpp": "2c8e1f50672487b92d2f09704020b1e47bd4c301e1be51d8ebd669c951b14e21",
+    "tests/test_records.cpp": "5c2b8df2bd052c0e9916c236e010ec980b9322b84266de3262cc9f1217085899",
+    "tests/test_records_h5ad.cpp": "48437da356006a634a2e73a98f616014dbc8f1a10435b406e5208380c443c655",
+    "tests/test_sequence.cpp": "209aa8b7ce6cf13f8491d68ee762f144611edcfccf807cdeceeb30e2537b96a3",
+    "tests/test_shard_selection.cpp": "f205ab130360e0994c3f1b64d36704b040b44b99391db8606c6157df8cc0ae13",
+    "tests/test_spatialdata.cpp": "f013eb415fee6e103ac6a704e0d9f2f1da0dd46dcd56ea8789ab38d28073deb9",
+    "tests/test_spatialdata_parquet.cpp": "0f1e32e77334f7ba3dc374e0d0b1d134f3edfc85d2fed5f41ee2031827defba4",
+    "tests/test_spatialdata_parquet_main.cpp": "98b71be5d7cd3a06679332b15d98eb79205de8ef6648eab7e1496a1a96973bcb",
+    "tests/test_spatialdata_transform.cpp": "f699a8b5478657062e87bc6dbbb8b03e1d46c2149afdcfb9a0ee40df5bd46873",
+    "tests/test_spatialdata_wkb.cpp": "89c4e9a55f05d67c1ba622e85ae3a2bcdff3db868b21fee9353982ee2a14c15a",
+    "tests/test_store.cpp": "b15e8e8d96b8a390c00dca256223e5f0e95208ab28bea76269a1af4544e5c05b",
+    "tests/test_store_hdf5.cpp": "9a4558ad7b0aab532c5ff81db9497551b458a8778b3a96b3309a2d75113b8b0e",
+    "tests/test_streaming.cpp": "2206a95de5813d256e013b51c4fb23f6f0c9cd62bf15edb794347d99055f125f",
+    "tests/test_strings.cpp": "7a040261e80340bae47fe30cfd16be8db59a3144fd74fb8088aa5251944fee07",
+    "tests/test_transfer_context.cpp": "36bbb5d0b302604f201aecdea9971a8943e72ac3d45153ba352d7e30f389cebd",
+    "tests/test_treedata.cpp": "711121f1ff05d726bb8f88f3b5ee9470423cb5033f4d6bbb3413f4b6d556d00d",
+    "tests/test_treedata_json.cpp": "4c43d3ce83c27ec0aa76cb1e788af2167137564fd296e878fb8568f81bbf21b8",
+    "tests/test_zarr_sharding.cpp": "da668119b8d587eca7b8caf330ca3af7321ccaf335418f0b90f66998104093c8",
+    "tests/test_zarr_unicode.cpp": "414ab6bd9d7604e1e506decd6710d8e4e764e44cb7c0c055fb1e1ec87308dfb0",
+    "tests/treedata_reference.py": "4820c6d6835dfb429179b19d022d77e5bd0c9f07453feb0cd5fffa5bdd36711a"
+  },
+  "environment": {
+    "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2698 v4 @ 2.20GHz",
+    "logical_cpus": 80,
+    "versions": {
+      "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+      "scanner": "clang-scan-deps-18\nUbuntu LLVM version 18.1.3\n  Optimized build.",
+      "cmake": "cmake version 3.28.3\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+      "ninja": "1.11.1",
+      "hdf5": "1.10.10"
+    },
+    "configurations": {
+      "debug": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": ""
+      },
+      "parquet": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "ON",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": "${SOURCE}/build/reference/full/bin/python3",
+        "ANNDATAPP_ARROW_ROOT": "${SOURCE}/build/reference/current/lib/python3.12/site-packages/pyarrow"
+      },
+      "core-only": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": ""
+      },
+      "hdf5-only": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": ""
+      },
+      "zarr-only": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": ""
+      },
+      "shared": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": "ON",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": "${SOURCE}/build/reference/current/lib/python3.12/site-packages/pyarrow"
+      },
+      "release": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": "${SOURCE}/build/reference/current/lib/python3.12/site-packages/pyarrow"
+      },
+      "sanitizers": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "Python3_EXECUTABLE": null,
+        "ANNDATAPP_ARROW_ROOT": "${SOURCE}/build/reference/current/lib/python3.12/site-packages/pyarrow"
+      },
+      "thread-sanitizers": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_SHARED_LIBS": null,
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "CMAKE_CXX_FLAGS": "-fsanitize=thread -fno-omit-frame-pointer",
+        "Python3_EXECUTABLE": "${SOURCE}/build/reference/full/bin/python3",
+        "ANNDATAPP_ARROW_ROOT": ""
+      }
+    }
+  },
+  "matrix": [
+    {
+      "configuration": "debug",
+      "tests": 33,
+      "failures": 0
+    },
+    {
+      "configuration": "parquet",
+      "tests": 49,
+      "failures": 0
+    },
+    {
+      "configuration": "core-only",
+      "tests": 20,
+      "failures": 0
+    },
+    {
+      "configuration": "hdf5-only",
+      "tests": 28,
+      "failures": 0
+    },
+    {
+      "configuration": "zarr-only",
+      "tests": 26,
+      "failures": 0
+    },
+    {
+      "configuration": "shared",
+      "tests": 34,
+      "failures": 0
+    },
+    {
+      "configuration": "release",
+      "tests": 34,
+      "failures": 0
+    },
+    {
+      "configuration": "sanitizers",
+      "tests": 34,
+      "failures": 0
+    },
+    {
+      "configuration": "thread-sanitizers",
+      "tests": 4,
+      "failures": 0
+    }
+  ],
+  "fixtures": {
+    "mudata-0.4.1": {
+      "axis--1-native.h5mu": "df18ffe4f506369c863a11e972a304e05ada07852125435f06f7616982fdd130",
+      "axis--1-native.zarr": "846e2fdea43b02c3416c64b7f0003d45c72aa28b16dcd428cd7f9159b166970d",
+      "axis--1-reference.h5mu": "49fb23e1d4b799f70ddb19c8fef86bf5b35ccf792b5a0a92ce4e61e2f7348bff",
+      "axis--1-reference.zarr": "b3d65533f44308b79b9c8b90fd94871b7d16d5787757f98b63b57037e58db9a5",
+      "axis-1-native.h5mu": "41b9df4ac90c05fb9bba28aa70c66d022e1d20dbf9e76bb468da4e7ba003cc7f",
+      "axis-1-native.zarr": "3cacfdc7602e5ea92216527ef96389b6439980e265135a2febef969e67a210d0",
+      "axis-1-reference.h5mu": "a1e99829f4364b65f4adc48b28b07365f0f290312aadb8faf9c174ceff95b752",
+      "axis-1-reference.zarr": "ea8a02fddea799ea990572c7a7b64d0abdb0f3beba89c24ea454c527e0527788",
+      "native.h5mu": "aff4ce087bc4d4cac5159bcfef40dfb2ec591775797be5b617151f2f16436c59",
+      "native.zarr": "b37a721361cf190ef90c1d126e6694c476187b8ba1c48391265717110e2bc68a",
+      "reference.h5mu": "fef5df68a7d7627792117c986849c46def499b616d68b11a3291d8852489d14b",
+      "reference.zarr": "624add024aeb408f5d49ac5382121f509a68a2912d8badfe3c69619d92632dea"
+    },
+    "mudata-0.3.10": {
+      "native.h5mu": "9308703e073db69eacbbb5ca4a1d99653fb0a7bf22bb4227f603f40f228b4fff",
+      "native.zarr": "929845b5eae1bdfe7b848472931b4729946d6fb941d6780daa2d2e71f6afc7af",
+      "reference.h5mu": "f74c571a493dded841eedb98915aa66d6e9c7739f50288e0cae4fa50d67b2693",
+      "reference.zarr": "219b1d0f4f7986496f346cebc11ec560a52a1b73554026410b5859b600ededcb"
+    },
+    "dataset-2.10.0": {
+      "compressed/first.h5ad": "4927bd5ce3542b563eb63d9bd87bdd3f684ea1b77a2496a0c3710fe1b2229892",
+      "compressed/manifest": "fc33feaa99d96cf71be47ba467eab268c941487ef9fcac64a8c596d45dc82dd3",
+      "compressed/second.h5ad": "bfded2ee2fff672d3b138d071f10a4185200977e9fe3459923e0d9155b6cc9ee",
+      "native/copied.h5ads": "9d3ec1977195b5ca0624c8c2a09be49465d37573ddb5c1ddf23d653d89424e53",
+      "native/created.h5ads": "0955a3114ff5aa39e4fcd91b8b37f5e44012845030d0dfee96de0395fa48d8cb",
+      "native/filtered.h5ads": "2c62c0111b9263348f59a8870a88404374ad53cf7f8ce8033ff0daa069ebc305",
+      "reference/first.h5ad": "304a1b3ed71d8ff2ce767e993d8e0c681bf8017292596a983ddcd69c6d7d1738",
+      "reference/manifest": "fc33feaa99d96cf71be47ba467eab268c941487ef9fcac64a8c596d45dc82dd3",
+      "reference/second.h5ad": "41ae36d2f33a167cab9f3252cb2ae5b373d090305880cc16aeba585257af52d8"
+    },
+    "treedata": {
+      "versions": {
+        "anndata": "0.13.4",
+        "h5py": "3.16.0",
+        "numpy": "2.2.6",
+        "treedata": "0.4.0",
+        "zarr": "3.4.2"
+      },
+      "legacy": {
+        "python_reader": "treedata==0.4.0",
+        "reader": "native C++",
+        "status": "passed",
+        "writer": "treedata==0.2.5"
+      },
+      "cases": [
+        {
+          "case": "hdf5-leaves",
+          "input_sha256": "5b861e58f8516e35b8ae3ed646bfedb9358f33ac08984bfd3abf5b7f2ee49efc",
+          "output": {
+            "format": "h5td",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-leaves.h5td",
+            "sha256": "9d6332981c59e76b91403494cc733f8b4bd5f0a8a14cfe880d9b43f03023799b"
+          }
+        },
+        {
+          "case": "zarr-leaves",
+          "input_sha256": "19c30e9c8f57f99245de5211f573432fd4edaf5edcaa8945e0463cd4f2e884b4",
+          "output": {
+            "format": "zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-leaves.zarr",
+            "sha256": "9fa52ab7a8d6f3754c689b4b9ad8ccfb6378b4bce9ce554de16065af153af88b"
+          }
+        },
+        {
+          "case": "hdf5-nodes",
+          "input_sha256": "0dca3264946de2edd942b1b92d890cb0f4eee8ed049a1941a85b4450069b4421",
+          "output": {
+            "format": "h5td",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-nodes.h5td",
+            "sha256": "3f6e1dc61faf44fba78beba62f2a7720179ba5eeed7d2ea4439e5db98c6d3af7"
+          }
+        },
+        {
+          "case": "zarr-nodes",
+          "input_sha256": "3e4fd5dea55043491161ae28380afd4c7f7253a15c51cad1b7fa9febfbfbfafc",
+          "output": {
+            "format": "zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-nodes.zarr",
+            "sha256": "ece31a428cc3b8a7417d49ac0a72dceecfd15fd8f81f7d64dc1cf8e8c7a3130d"
+          }
+        },
+        {
+          "case": "hdf5-subset",
+          "input_sha256": "d7e529867cdb9aba90dca20e6675b986c4c661a2714c54337325991fba86e2ef",
+          "output": {
+            "format": "h5td",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-subset.h5td",
+            "sha256": "81f7d08a075582d96f1d993cc45925cc01dc072c1d6316df2cbb69c87151b8e4"
+          }
+        },
+        {
+          "case": "zarr-subset",
+          "input_sha256": "3546cee46c9b91350fc88c01baa7fea6ca8b20c01e5509522a187f1a350eaa78",
+          "output": {
+            "format": "zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-subset.zarr",
+            "sha256": "c55e746e6521ebf30e27a9a2eb0d32309974b33c28339d0fcd71f946063f79fa"
+          }
+        },
+        {
+          "case": "raw-h5td",
+          "input_sha256": "1a068537981ab0e8df2ab0274624f16c6c4c83501b22100223c451045f4151ae",
+          "output": {
+            "format": "h5td",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-raw.h5td",
+            "sha256": "1f0726e0d367b5fc06d2ba9f2afa50db90f1e2dcbdbcf7c224a23a347177b11a"
+          },
+          "raw_shape": [
+            4,
+            3
+          ],
+          "raw_var_names": [
+            "raw-gene-a",
+            "raw-gene-b",
+            "raw-gene-c"
+          ]
+        },
+        {
+          "case": "raw-zarr",
+          "input_sha256": "539b6b15e7626214c62007df2f985551059f63e5b3dce16d4e09738bba127525",
+          "output": {
+            "format": "zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-raw.zarr",
+            "sha256": "ca12688c0f71d6928495a70eb87319d6d067e01438a3cbf2d81647a9d598daba"
+          },
+          "raw_shape": [
+            4,
+            3
+          ],
+          "raw_var_names": [
+            "raw-gene-a",
+            "raw-gene-b",
+            "raw-gene-c"
+          ]
+        },
+        {
+          "case": "zarr-legacy-0.2.5",
+          "input_sha256": "2d36892752a79f4762972833b56dd8c61e1583d61d5a6c2dc515cc2af64c607f",
+          "output": {
+            "format": "zarr",
+            "path": "/tmp/anndatapp-treedata-roundtrip-g8x0ii8s/native/treedata-legacy-current.zarr",
+            "sha256": "9fa52ab7a8d6f3754c689b4b9ad8ccfb6378b4bce9ce554de16065af153af88b"
+          }
+        }
+      ],
+      "hash_algorithm": "treedata_reference.hash_path: SHA256(raw bytes) for files, SHA256(sorted relative path + NUL + raw file bytes) for directories"
+    },
+    "spatialdata": {
+      "current-wkb": {
+        "tree_sha256": "25323a198cb03c8cfbb1846339495a33fb384d55a4a88cce356cb51ea2796506",
+        "per_file_manifest_sha256": "142e1772634b512da4ebea28724a030c52030f91d473a9ecd7c3851fb9b185d7",
+        "files": 51,
+        "writer_summary": {
+          "anndata": "0.13.4",
+          "geopandas": "1.2.0",
+          "numpy": "2.2.6",
+          "pandas": "2.3.3",
+          "pyarrow": "21.0.0",
+          "spatialdata": "0.9.0",
+          "zarr": "3.4.2"
+        }
+      },
+      "current-geoarrow": {
+        "tree_sha256": "34ffa450f2020f87efc34dec58dae413e6711789be6a02f15f577d8ebe8348fb",
+        "per_file_manifest_sha256": "3ef6c4267a45ad449c6ac37a8e5668f5c8956473eac3b264f1b4707b7e335054",
+        "files": 51,
+        "writer_summary": {
+          "anndata": "0.13.4",
+          "geopandas": "1.2.0",
+          "numpy": "2.2.6",
+          "pandas": "2.3.3",
+          "pyarrow": "21.0.0",
+          "spatialdata": "0.9.0",
+          "zarr": "3.4.2"
+        }
+      },
+      "legacy02": {
+        "tree_sha256": "8d1e620d8518476deff7e80e7e3fa2f190d03b9d8c3ff2b164483d3fa7298efe",
+        "per_file_manifest_sha256": "954c2a80d4504e01c67c3d67d8e48f392cf4534524737281e1de7b4a355743e2",
+        "files": 81,
+        "writer_summary": {
+          "spatialdata": "0.3.0",
+          "anndata": "0.12.19",
+          "zarr": "2.18.7",
+          "geopandas": "1.0.1",
+          "datashader": "0.19.1",
+          "numpy": "2.5.4",
+          "pandas": "2.3.3",
+          "setuptools": "80.9.0",
+          "ome-zarr": "0.11.1"
+        }
+      },
+      "legacy03": {
+        "tree_sha256": "d23494922b7e0255a01ebe1a2f35937bf60f2dc42e7193e3606f91a8ab94da6e",
+        "per_file_manifest_sha256": "067091efa0e52dc458cdb34ce8a8368cb7c54216bdde628030f83e4c5b65a83a",
+        "files": 81,
+        "writer_summary": {
+          "spatialdata": "0.5.0",
+          "anndata": "0.12.19",
+          "zarr": "2.18.7",
+          "geopandas": "1.0.1",
+          "datashader": "0.19.1",
+          "numpy": "2.5.4",
+          "pandas": "2.3.3",
+          "setuptools": "80.9.0",
+          "ome-zarr": "0.11.1"
+        }
+      }
+    }
+  },
+  "fixture_hash_note": "Observed fixture bytes; HDF5 metadata can vary on regeneration. Pinned generators and locks define the reproducible cases. Directory hashing matches treedata_reference.hash_path unless a per-file manifest is named.",
+  "private_rebuild": {
+    "source_sha256": "fb3d4ca6e149eb9c9cb109cb30544d86c00c5a9ad9ea869b69d21cbdb0a06483",
+    "public_bmis_unchanged": 15,
+    "consumer_objects_unchanged": 2,
+    "restored_binary_hashes_match": true
+  },
+  "raw_evidence_root": "build/format-family-qualification-2026-11-14"
+}

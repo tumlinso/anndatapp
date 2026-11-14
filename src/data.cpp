@@ -66,9 +66,10 @@ struct TableViewImpl {
 };
 
 using ElementMapping = std::vector<std::pair<std::string, Element>>;
+using ElementSequence = std::vector<Element>;
 using ElementPayload = std::variant<std::monostate, bool, std::int64_t, std::uint64_t, double,
     std::string, Array, ArrayView, StringArray, StringArrayView, RecordArray,
-    Column, ColumnView, Table, TableView, ElementMapping>;
+    Column, ColumnView, Table, TableView, ElementMapping, ElementSequence>;
 
 struct ElementImpl {
     ElementKind kind{ElementKind::null};
@@ -378,6 +379,11 @@ Selection::Selection(const char* v) : Selection() {
 }
 bool Selection::is_all() const noexcept { return kind_ == Kind::all; }
 
+Axis Selection::resolve(std::size_t length, std::string_view path) const {
+    if (kind_ == Kind::label || kind_ == Kind::labels)
+        fail(ErrorCode::invalid_argument, path, "label selection requires axis names");
+    return resolve_impl(length, path, nullptr, nullptr);
+}
 Axis Selection::resolve(const std::vector<std::string>& names,
                                            std::string_view path) const {
     return resolve_impl(names.size(), path, &names, nullptr);
@@ -604,6 +610,16 @@ ArrayView ColumnView::values() const {
     if (kind() != ColumnKind::numeric) fail(ErrorCode::invalid_argument, "column", "column is not numeric");
     auto v = impl_->source->values->view();
     return impl_->rows.is_all() ? v : v.select({impl_->rows});
+}
+ArrayView ColumnView::source_values() const {
+    if (!impl_) fail(ErrorCode::invalid_argument, "column", "column has no storage");
+    if (kind() != ColumnKind::numeric) fail(ErrorCode::invalid_argument, "column", "column is not numeric");
+    return impl_->source->values->view();
+}
+std::size_t ColumnView::source_row(std::size_t row) const {
+    if (!impl_) fail(ErrorCode::invalid_argument, "column", "column has no storage");
+    if (kind() != ColumnKind::numeric) fail(ErrorCode::invalid_argument, "column", "column is not numeric");
+    return impl_->row(row);
 }
 std::string_view ColumnView::string(std::size_t row) const {
     if (kind() != ColumnKind::string) fail(ErrorCode::invalid_argument, "column", "column is not a string column");
@@ -894,6 +910,7 @@ Element::Element(RecordArray v) : Element() { impl_->kind = ElementKind::record_
 Element::Element(Column v) : Element() { impl_->kind = ElementKind::column; impl_->value = std::move(v); }
 Element::Element(Table v) : Element() { impl_->kind = ElementKind::table; impl_->value = std::move(v); }
 Element Element::mapping() { Element e; e.impl_->kind = ElementKind::mapping; e.impl_->value = detail::ElementMapping{}; return e; }
+Element Element::sequence() { Element e; e.impl_->kind = ElementKind::sequence; e.impl_->value = detail::ElementSequence{}; return e; }
 Element Element::scalar_from_bytes(DType dtype, const void* bytes) {
     return visit_numeric(dtype, [&]<class T>() {
         T value;
@@ -920,6 +937,10 @@ void Element::set(std::string key, Element value) {
     check_kind(impl_->kind, ElementKind::mapping);
     put(std::get<detail::ElementMapping>(impl_->value), std::move(key), std::move(value));
 }
+void Element::append(Element value) {
+    check_kind(impl_->kind, ElementKind::sequence);
+    std::get<detail::ElementSequence>(impl_->value).push_back(std::move(value));
+}
 void Element::set_serialization_byte_order(ByteOrder byte_order) {
     if (impl_->kind == ElementKind::array) {
         std::get<Array>(impl_->value).set_serialization_byte_order(byte_order);
@@ -937,6 +958,7 @@ void Element::erase(std::string_view key) {
     if (it != mapping.end()) mapping.erase(it);
 }
 ElementView Element::at(std::string_view key) const { return view().at(key); }
+ElementView Element::at(std::size_t index) const { return view().at(index); }
 void Element::validate() const {
     if (auto p = std::get_if<Array>(&impl_->value)) p->validate();
     else if (auto p = std::get_if<StringArray>(&impl_->value)) p->validate();
@@ -945,6 +967,8 @@ void Element::validate() const {
     else if (auto p = std::get_if<Table>(&impl_->value)) p->validate();
     else if (auto p = std::get_if<detail::ElementMapping>(&impl_->value))
         for (const auto& [name, value] : *p) validate_at(value, name);
+    else if (auto p = std::get_if<detail::ElementSequence>(&impl_->value))
+        for (std::size_t i = 0; i < p->size(); ++i) validate_at((*p)[i], std::to_string(i));
 }
 ElementKind ElementView::kind() const { return impl_ ? impl_->kind : ElementKind::null; }
 DType ElementView::dtype() const {
@@ -993,6 +1017,16 @@ std::vector<std::string> ElementView::keys() const {
     check_kind(kind(), ElementKind::mapping);
     return anndatapp::keys(std::get<detail::ElementMapping>(impl_->value));
 }
+std::size_t ElementView::mapping_size() const {
+    check_kind(kind(), ElementKind::mapping);
+    return std::get<detail::ElementMapping>(impl_->value).size();
+}
+std::string_view ElementView::mapping_key(std::size_t index) const {
+    check_kind(kind(), ElementKind::mapping);
+    const auto& mapping = std::get<detail::ElementMapping>(impl_->value);
+    if (index >= mapping.size()) fail(ErrorCode::out_of_bounds, "element/mapping", "key index is out of bounds");
+    return mapping[index].first;
+}
 bool ElementView::contains(std::string_view key) const {
     check_kind(kind(), ElementKind::mapping);
     const auto& mapping = std::get<detail::ElementMapping>(impl_->value);
@@ -1002,6 +1036,17 @@ ElementView ElementView::at(std::string_view key) const {
     check_kind(kind(), ElementKind::mapping);
     return require_key(std::get<detail::ElementMapping>(impl_->value), key, "element").view();
 }
+std::size_t ElementView::size() const {
+    check_kind(kind(), ElementKind::sequence);
+    return std::get<detail::ElementSequence>(impl_->value).size();
+}
+ElementView ElementView::at(std::size_t index) const {
+    check_kind(kind(), ElementKind::sequence);
+    const auto& values = std::get<detail::ElementSequence>(impl_->value);
+    if (index >= values.size()) fail(ErrorCode::out_of_bounds, "element/sequence", "index is out of bounds");
+    return values[index].view();
+}
+void ElementView::validate() const { if (impl_) Element(impl_).validate(); }
 Element ElementView::copy() const {
     auto scalar = [&](auto value) {
         Element e;
@@ -1024,6 +1069,11 @@ Element ElementView::copy() const {
     case ElementKind::mapping: {
         auto e = Element::mapping();
         for (const auto& [name, value] : std::get<detail::ElementMapping>(impl_->value)) e.set(name, value.copy());
+        return e;
+    }
+    case ElementKind::sequence: {
+        auto e = Element::sequence();
+        for (const auto& value : std::get<detail::ElementSequence>(impl_->value)) e.append(value.copy());
         return e;
     }
     }

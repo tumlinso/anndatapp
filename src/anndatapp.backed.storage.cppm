@@ -89,6 +89,8 @@ public:
     virtual std::size_t retained_scratch_bytes() const { return 0; }
     virtual std::size_t scratch_allocations() const { return 0; }
     virtual NodeInfo inspect(std::string_view path) = 0;
+    virtual Element metadata(std::string_view path);
+    virtual void metadata(std::string_view path, ElementView attributes);
     // Conservative payload workspace retained during one numeric operation.
     // Read and write calls are serial; a copying caller reserves their maximum.
     // Third-party internal allocations are outside this private-owned hint.
@@ -158,8 +160,13 @@ public:
     virtual std::optional<MappedArray> map_numeric(std::string_view) { return std::nullopt; }
 };
 BackedAnnData make_store(std::unique_ptr<Backend> backend, BackedOptions options);
+BackedStore make_backed_store(std::unique_ptr<Backend>, BackedOptions);
+Element attributes_element(const Attributes&);
+Attributes element_attributes(ElementView, std::string_view path);
 void write_element(Backend&, std::string_view path, ElementView, std::size_t scratch_bytes);
 void validate_serializable(ElementView, std::string_view path);
+void write_raw_array(Backend&, std::string_view, ArrayView, std::size_t);
+void write_raw_strings(Backend&, std::string_view, StringArrayView, std::size_t);
 void initialize_store(Backend& backend, const AnnDataView& source, std::size_t scratch_bytes,
                       Validation validation = Validation::full);
 void export_store(Backend&, const BackedAnnDataView&, std::size_t scratch_bytes, Validation validation = Validation::full);
@@ -215,9 +222,14 @@ struct Session {
     bool open = true;
     std::size_t dataset_revision = 0;
     std::map<std::string, std::shared_ptr<Revision>, std::less<>> revisions;
+    std::shared_ptr<Session> parent;
+    std::string root;
+    std::vector<std::weak_ptr<Session>> children;
     void check_open() const;
     void check_writable() const;
     void invalidate(std::string_view path);
+    void invalidate_local(std::string_view path);
+    void invalidate_children(std::string_view path, const Session* origin = nullptr);
 };
 std::string child(std::string_view parent, std::string_view name);
 std::string encoding(const NodeInfo&, std::string_view path);
@@ -245,7 +257,7 @@ std::optional<Element> read_color_override(const std::shared_ptr<detail::BackedN
 void copy_promoted_color(Backend&, std::string_view path, const std::shared_ptr<detail::BackedNode>&, std::size_t scratch_bytes);
 
 void check_node(const std::shared_ptr<detail::BackedNode>&);
-std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session>, std::string path, std::vector<Axis> axes = {});
+std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session>, std::string path, std::vector<Axis> axes = {}, bool raw = false);
 Axis select_axis(const Axis& parent, const Selection& selection, const std::shared_ptr<detail::BackedNode>& labels = {});
 BackedAnnDataView root_view(const std::shared_ptr<detail::BackedDataset>&);
 } // namespace backed_detail
@@ -258,6 +270,7 @@ struct BackedNode {
     std::size_t observed_revision = 0;
     bool writable = false;
     bool empty_mapping = false;
+    bool raw_array = false;
     std::size_t observed_dataset_revision = 0;
     bool prune_categories = false;
     std::shared_ptr<backed_detail::CategoryPlan> code_recode;
@@ -268,6 +281,8 @@ struct BackedAccess {
     static BackedAnnData owner(std::shared_ptr<BackedDataset> value) { return BackedAnnData(std::move(value)); }
     static BackedElement element(std::shared_ptr<BackedNode> value) { return BackedElement(std::move(value)); }
     static BackedArray array(std::shared_ptr<BackedNode> value) { return BackedArray(std::move(value)); }
+    static BackedStore store(std::shared_ptr<BackedStoreImpl> value) { return BackedStore(std::move(value)); }
+    static BackedStringArray strings(std::shared_ptr<BackedNode> value) { return BackedStringArray(std::move(value)); }
     static const std::shared_ptr<BackedNode>& get(const BackedArray& v) { return v.node_; }
     static const std::shared_ptr<BackedNode>& get(const BackedStringArray& v) { return v.node_; }
     static const std::shared_ptr<BackedNode>& get(const BackedColumn& v) { return v.node_; }
@@ -282,5 +297,6 @@ struct BackedDataset {
     bool prune_categories = false;
     std::shared_ptr<const std::vector<backed_detail::SliceStage>> slice_history;
 };
+struct BackedStoreImpl { std::shared_ptr<backed_detail::Session> session; };
 } // namespace detail
 } // namespace anndatapp

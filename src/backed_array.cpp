@@ -72,7 +72,7 @@ Descriptor describe(const NodePtr& n) {
     auto& s = *n->session;
     auto info = s.backend->inspect(n->path);
     if (!info.exists) fail(ErrorCode::out_of_bounds, n, "backed array does not exist");
-    auto code = backed_detail::encoding(info, n->path);
+    auto code = n->raw_array ? std::string("array") : backed_detail::encoding(info, n->path);
     Descriptor d;
     if (n->color_override) {
         if (n->color_override->kind != backed_detail::ColorPromotion::numeric_array ||
@@ -1026,10 +1026,11 @@ BackedArray BackedArray::select(std::vector<Selection> selections) const {
         selected->color_override->axis = d.axes.front();
         return BackedArray(std::move(selected));
     }
-    auto selected = backed_detail::node(node_->session, node_->path, std::move(d.axes));
+    auto selected = backed_detail::node(node_->session, node_->path, std::move(d.axes), node_->raw_array);
     selected->writable = node_->writable;
     selected->code_recode = node_->code_recode;
     selected->prune_categories = node_->prune_categories;
+    selected->raw_array = node_->raw_array;
     return BackedArray(std::move(selected));
 }
 PreparedRead BackedArray::prepare_read() const {

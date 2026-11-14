@@ -1303,6 +1303,7 @@ void write_null(Context& c, hid_t parent, std::string_view key, std::string_view
 
 void write_element(Context& c, hid_t parent, std::string_view key, ElementView element, std::string_view path) {
     switch (element.kind()) {
+        case ElementKind::sequence: c.fail(ErrorCode::unsupported_encoding, path, "sequence has no generic H5AD encoding");
         case ElementKind::null: write_null(c, parent, key, path); return;
         case ElementKind::array: write_array(c, parent, key, element.array(), path); return;
         case ElementKind::string_array: write_string_array(c, parent, key, element.string_array(), path); return;
@@ -1399,6 +1400,19 @@ AnnData read_h5ad(std::string_view path, ReadOptions options) {
 
 BackedAnnData open_h5ad(std::string_view path, BackedOptions options) {
     return detail::open_h5ad_backed(path, options);
+}
+
+BackedStore open_hdf5_store(std::string_view path, BackedOptions options) {
+    return detail::open_hdf5_store_impl(path, options);
+}
+
+BackedStore create_hdf5_store(std::string_view path, WriteOptions options, std::size_t userblock_bytes, std::size_t scratch_bytes) {
+    std::optional<ByteOrder> order;
+    if (options.byte_order == FileByteOrder::native) order = ByteOrder::native;
+    else if (options.byte_order == FileByteOrder::little) order = ByteOrder::little;
+    else if (options.byte_order == FileByteOrder::big) order = ByteOrder::big;
+    return detail::create_hdf5_store_impl(path, options.mode == WriteMode::exclusive,
+        options.compression == Compression::gzip, options.gzip_level, order, options.validation, userblock_bytes, scratch_bytes);
 }
 
 bool hdf5_library_threadsafe() {

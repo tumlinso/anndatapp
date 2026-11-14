@@ -29,6 +29,9 @@ struct ArrayMetadata {
     int format = 3;
     Type type = Type::float64;
     std::size_t item_size = 8;
+    // Zarr v2 NumPy fixed-width Unicode, measured in UTF-32 code units.
+    // Zero denotes the regular variable-length string representation.
+    std::size_t unicode_width = 0;
     char endian = '=';
     Shape shape, chunks;
     Json codecs = Json::array();

@@ -31,15 +31,18 @@ checked("${CMAKE_COMMAND}" -S "${ANNDATAPP_SOURCE_DIR}/tests/consumer/core-expor
 checked("${CMAKE_COMMAND}" --build "${_consumer}-export" --parallel 2)
 checked("${_consumer}-export/export_consumer")
 checked("${CMAKE_COMMAND}" -S "${ANNDATAPP_SOURCE_DIR}/tests/consumer" -B "${_consumer}" -G Ninja
+  "-DANNDATAPP_ARROW_ROOT=${ANNDATAPP_ARROW_ROOT}"
   "-DCMAKE_CXX_COMPILER=${ANNDATAPP_COMPILER}" "-DCMAKE_BUILD_TYPE=${ANNDATAPP_CONFIG}"
   "-DCMAKE_PREFIX_PATH=${_prefix}\;${ANNDATAPP_DEPENDENCY_PREFIX}")
 checked("${CMAKE_COMMAND}" --build "${_consumer}" --parallel 2)
 checked("${_consumer}/consumer")
 checked("${_consumer}/consumer_records")
+checked("${_consumer}/consumer_anndata")
 checked("${_consumer}/consumer_backed")
 checked("${_consumer}/consumer_streaming")
 checked("${CMAKE_COMMAND}" --install "${_consumer}" --prefix "${_consumer}-facade-bridge")
 checked("${CMAKE_COMMAND}" -S "${ANNDATAPP_SOURCE_DIR}/tests/consumer/export" -B "${_consumer}-facade-export" -G Ninja
+  "-DANNDATAPP_ARROW_ROOT=${ANNDATAPP_ARROW_ROOT}"
   "-DCMAKE_CXX_COMPILER=${ANNDATAPP_COMPILER}" "-DCMAKE_BUILD_TYPE=${ANNDATAPP_CONFIG}"
   "-DCMAKE_PREFIX_PATH=${_prefix}\;${ANNDATAPP_DEPENDENCY_PREFIX}"
   "-DBRIDGE_PREFIX=${_consumer}-facade-bridge")

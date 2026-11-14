@@ -1,12 +1,12 @@
 # AnnData++
 
-AnnData++ is an independently developed C++20 implementation of the AnnData data model. It is a separate project from the Python AnnData package. No affiliation with or endorsement by the AnnData or scverse maintainers is implied.
+AnnData++ is an independently developed C++20 implementation of the AnnData data model. It is a separate project from the Python AnnData package. The additional C++ module spelling, `import anndata;`, does not change the project's ownership or status. No affiliation with or endorsement by the AnnData or scverse maintainers is implied.
 
 A standalone C++20 library for annotated biological data, with named modules and direct control of numerical memory.
 
 The [Python AnnData project](https://github.com/scverse/anndata) defines the data model and [storage conventions](https://anndata.readthedocs.io/en/stable/fileformat-prose.html) followed here.
 
-The library provides **in-memory and backed AnnData data, H5AD, and Zarr v2/v3**: dense arrays, CSR/CSC, heterogeneous metadata, annotated matrices, read-only slices, and versioned codecs. Backed access loads selected data into owned or caller-provided buffers and supports direct structural updates. Python, Cellerator, Torch, and Arrow are not runtime dependencies; a core-only build requires no storage backend.
+The library provides **in-memory and backed AnnData, MuData, TreeData, linked AnnDataSet collections, and SpatialData**, with H5AD, H5MU, H5TD, Zarr, and HDF5-linked collection storage. Its native data includes dense arrays, CSR/CSC, heterogeneous metadata, and annotated matrices. Backed access reads selections into owned or caller-provided buffers and supports explicit structural updates. Python, Cellerator, and Torch are not runtime dependencies. Arrow/Parquet is optional and used for SpatialData vector-file payloads; a core-only build requires no storage backend.
 
 ```cmake
 find_package(anndatapp CONFIG REQUIRED)
@@ -14,7 +14,7 @@ target_link_libraries(my_app PRIVATE anndatapp::anndatapp)
 ```
 
 ```cpp
-import anndatapp;
+import anndata;
 
 int main() {
     auto data = anndatapp::AnnData::empty(3, 2);
@@ -49,15 +49,17 @@ cmake --build --preset debug
 ctest --preset debug
 ```
 
-The native test suite needs no Python. Optional interoperability tests independently generate and reopen H5AD and Zarr files with Python AnnData. See the [H5AD encoding subset](docs/h5ad.md) and [backed storage contracts](docs/storage.md).
+The native test suite needs no Python. `ANNDATAPP_ENABLE_INTEROP_TESTS` enables the AnnData reference checks; `ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS` enables the separate pinned format-family checks. See the [H5AD encoding subset](docs/h5ad.md), [backed storage contracts](docs/storage.md), and [format-family guide](docs/format-family.md).
 
-Use `cmake --workflow --preset core-only` for a dependency-free build. `hdf5-only` and `zarr-only` qualify single-backend packages. `import anndatapp.core;` remains the smallest in-memory interface; `anndatapp.backed`, `anndatapp.streaming`, `anndatapp.h5ad`, and `anndatapp.zarr` are independently importable named modules.
+Use `cmake --workflow --preset core-only` for a dependency-free build. `hdf5-only` and `zarr-only` qualify single-backend packages. The default facade imports `anndata` or `anndatapp`; both export the same `anndatapp` C++ types. `import anndatapp.core;` remains the smallest in-memory interface, while `anndatapp.backed`, `anndatapp.streaming`, `anndatapp.h5ad`, `anndatapp.zarr`, `anndatapp.mudata`, `anndatapp.treedata`, `anndatapp.dataset`, and `anndatapp.spatialdata` are the named modules.
 
-Consumers can use `add_subdirectory()` or install the package and link `anndatapp::anndatapp` through `find_package(anndatapp CONFIG REQUIRED)`. `import anndatapp.core;` provides the independently importable core; `import anndatapp;` is the convenience facade. Module sources and CMake metadata are installed so consumers build BMIs with their own compatible toolchain. There is no public umbrella header and no requirement for `import std;`.
+Consumers can use `add_subdirectory()` or install the package and link `anndatapp::anndatapp` through `find_package(anndatapp CONFIG REQUIRED)`. The independently importable core is `import anndatapp.core;`. Both `import anndatapp;` and `import anndata;` are convenience facades; the package, targets, and C++ namespace remain `anndatapp`. Module sources and CMake metadata are installed so consumers build BMIs with their own compatible toolchain. There is no public umbrella header and no requirement for `import std;`.
 
 ## Design and evidence
 
 - [Architecture and compatibility matrix](docs/architecture.md)
+- [AnnData format family APIs and file-version scope](docs/format-family.md)
+- [Format-family C++ example](examples/format_family.cpp)
 - [Thin-library review and implementation backlog](docs/review/README.md)
 - [1.0 cleanup status](docs/v1-status.md), [support contract](docs/support.md), and [migration notes](docs/migration-1.0.md)
 - [1.0.0 release notes](docs/release-notes-1.0.md) and [final Linux qualification](docs/v1-release-linux.md)

@@ -2,6 +2,7 @@ module;
 #include "zarr_engine.hpp"
 #include <bit>
 #include <cerrno>
+#include <cmath>
 #include <cstring>
 #include <fcntl.h>
 #include <functional>
@@ -45,6 +46,87 @@ ze::Json to_json(const backed_detail::Attributes& attrs) {
     ze::Json result=ze::Json::object();
     for(const auto& [name,value]:attrs) std::visit([&](const auto& v) { result[name]=v; },value);
     return result;
+}
+Element json_element(const ze::Json& value) {
+    if(value.is_null()) return Element(nullptr);
+    if(value.is_boolean()) return Element(value.get<bool>());
+    if(value.is_number_unsigned()) return Element(value.get<std::uint64_t>());
+    if(value.is_number_integer()) return Element(value.get<std::int64_t>());
+    if(value.is_number_float()) return Element(value.get<double>());
+    if(value.is_string()) return Element(value.get<std::string>());
+    if(value.is_array()) {
+        auto result=Element::sequence();
+        for(const auto& item:value) result.append(json_element(item));
+        return result;
+    }
+    if(value.is_object()) {
+        auto result=Element::mapping();
+        for(const auto& [key,item]:value.items()) result.set(key,json_element(item));
+        return result;
+    }
+    throw Error(ErrorCode::unsupported_encoding,"attributes","unsupported Zarr JSON metadata value");
+}
+template<class T> T load_scalar(const std::byte* data) { T result; std::memcpy(&result,data,sizeof result); return result; }
+ze::Json array_scalar(DType type,const std::byte* data) {
+    switch(type) {
+        case DType::boolean: return load_scalar<bool>(data);
+        case DType::int8: return load_scalar<std::int8_t>(data);
+        case DType::uint8: return load_scalar<std::uint8_t>(data);
+        case DType::int16: return load_scalar<std::int16_t>(data);
+        case DType::uint16: return load_scalar<std::uint16_t>(data);
+        case DType::int32: return load_scalar<std::int32_t>(data);
+        case DType::uint32: return load_scalar<std::uint32_t>(data);
+        case DType::int64: return load_scalar<std::int64_t>(data);
+        case DType::uint64: return load_scalar<std::uint64_t>(data);
+        case DType::float32: { auto v=load_scalar<float>(data); if(std::isfinite(v)) return v; break; }
+        case DType::float64: { auto v=load_scalar<double>(data); if(std::isfinite(v)) return v; break; }
+    }
+    throw Error(ErrorCode::unsupported_encoding,"attributes","non-finite floating point metadata is not JSON");
+}
+ze::Json element_json(ElementView value) {
+    switch(value.kind()) {
+        case ElementKind::null: return nullptr;
+        case ElementKind::boolean: return value.boolean();
+        case ElementKind::signed_integer: return value.signed_integer();
+        case ElementKind::unsigned_integer: return value.unsigned_integer();
+        case ElementKind::floating:
+            if(!std::isfinite(value.floating())) throw Error(ErrorCode::unsupported_encoding,"attributes","non-finite floating point metadata is not JSON");
+            return value.floating();
+        case ElementKind::string: return std::string(value.string());
+        case ElementKind::mapping: {
+            auto result=ze::Json::object();
+            for(const auto& key:value.keys()) result[key]=element_json(value.at(key));
+            return result;
+        }
+        case ElementKind::sequence: {
+            auto result=ze::Json::array();
+            for(std::size_t i=0;i<value.size();++i) result.push_back(element_json(value.at(i)));
+            return result;
+        }
+        case ElementKind::array: {
+            auto array=value.array();
+            if(array.layout()!=Layout::dense) throw Error(ErrorCode::unsupported_encoding,"attributes","sparse metadata arrays are not JSON");
+            auto bytes=array.bytes();
+            std::function<ze::Json(std::size_t,const std::byte*)> convert = [&](std::size_t axis,const std::byte* data) -> ze::Json {
+                if(axis==bytes.rank()) return array_scalar(array.dtype(),data);
+                auto result=ze::Json::array();
+                for(std::size_t i=0;i<bytes.extent(axis);++i) result.push_back(convert(axis+1,data+static_cast<std::ptrdiff_t>(i)*bytes.stride_bytes(axis)));
+                return result;
+            };
+            return convert(0,bytes.data());
+        }
+        case ElementKind::string_array: {
+            auto array=value.string_array(); std::size_t index=0;
+            std::function<ze::Json(std::size_t)> convert = [&](std::size_t axis) -> ze::Json {
+                if(axis==array.rank()) return std::string(array.string(index++));
+                auto result=ze::Json::array();
+                for(std::size_t i=0;i<array.extent(axis);++i) result.push_back(convert(axis+1));
+                return result;
+            };
+            return convert(0);
+        }
+        default: throw Error(ErrorCode::unsupported_encoding,"attributes","metadata element cannot be represented as JSON");
+    }
 }
 bool semantic_attribute(std::string_view name) {
     return name=="encoding-type" || name=="encoding-version" || name=="_index" ||
@@ -243,6 +325,15 @@ public:
     }); }
     void create_strings(std::string_view path,const std::vector<std::size_t>& shape,const backed_detail::Attributes& attrs) override { zarr_call([&] { store().create_array(std::string(path),ze::Type::string,shape,to_json(attrs),'|',create_); }); }
     void attributes(std::string_view path,const backed_detail::Attributes& attrs) override { zarr_call([&] { store().attributes(std::string(path),to_json(attrs)); }); }
+    Element metadata(std::string_view path) override { return zarr_call([&] {
+        const auto node=store().inspect(std::string(path));
+        if(!node.exists) throw Error(ErrorCode::invalid_argument,std::string(path),"Zarr element does not exist");
+        return json_element(node.attributes);
+    }); }
+    void metadata(std::string_view path,ElementView attrs) override { zarr_call([&] {
+        if(attrs.kind()!=ElementKind::mapping) throw Error(ErrorCode::invalid_argument,std::string(path),"Zarr attributes must be a mapping");
+        store().attributes(std::string(path),element_json(attrs));
+    }); }
     void copy_attributes(std::string_view source,std::string_view target) override { zarr_call([&] {
         const auto old=store().inspect(std::string(source)); const auto replacement=store().inspect(std::string(target));
         if(!old.exists || !replacement.exists) throw ze::Error(ze::Failure::argument,std::string(source),"attribute copy requires existing Zarr elements");
@@ -315,6 +406,23 @@ template<class V> void require_zarr_metadata(const V& value,const std::string& p
 }
 } // namespace
 namespace detail {
+BackedStore open_zarr_store_impl(std::string_view path,BackedOptions options) {
+    return zarr_call([&] {
+        auto backend=std::make_unique<ZarrBackend>(std::string(path),options.mode==AccessMode::read_write,options.scratch_bytes);
+        return backed_detail::make_backed_store(std::move(backend),options);
+    });
+}
+BackedStore create_zarr_store_impl(std::string_view path,int format,bool exclusive,std::size_t scratch_bytes,std::string_view compression,int level,Validation validation) {
+    return zarr_call([&] {
+        auto create=creation(format,compression,level);
+        if(scratch_bytes<1024) throw Error(ErrorCode::invalid_argument,std::string(path),"scratch_bytes must be at least 1024");
+        prepare_destination(path,exclusive);
+        auto backend=std::make_unique<ZarrBackend>(std::string(path),true,scratch_bytes,create);
+        backend->create_group("/",{}); backend->flush();
+        BackedOptions options; options.mode=AccessMode::read_write; options.scratch_bytes=scratch_bytes; options.validation=validation;
+        return backed_detail::make_backed_store(std::move(backend),options);
+    });
+}
 BackedAnnData open_zarr_backed(std::string_view path,BackedOptions options) {
     return zarr_call([&] {
         auto backend=std::make_unique<ZarrBackend>(std::string(path),options.mode==AccessMode::read_write,options.scratch_bytes);

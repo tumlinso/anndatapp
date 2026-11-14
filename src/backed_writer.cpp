@@ -215,6 +215,7 @@ void validate_table(TableView table, std::string_view path, Validation validatio
 void validate_element(ElementView value, std::string_view path, Validation validation = Validation::full) {
     with_validation_path(path, [&] {
     switch (value.kind()) {
+        case ElementKind::sequence: fail(ErrorCode::unsupported_encoding, path, "AnnData element codecs do not encode heterogeneous sequences");
         case ElementKind::null: return;
         case ElementKind::boolean:
         case ElementKind::signed_integer:
@@ -256,8 +257,21 @@ std::vector<std::size_t> coordinates(Shape shape, std::size_t linear) {
     return result;
 }
 
+// A newly created array does not yet have a NodeInfo. Reserve the backend's
+// conservative sharded-write workspace, including any scratch retained from
+// prior operations, while a caller-independent numerical buffer is live.
+std::size_t packing_budget(Backend& backend, std::string_view path, std::size_t scratch_bytes) {
+    NodeInfo planned;
+    planned.sharded_payload = true;
+    const auto reserved = std::max(backend.numeric_workspace_bytes(planned, true),
+                                   backend.retained_scratch_bytes());
+    if (reserved > scratch_bytes)
+        fail(ErrorCode::invalid_argument, path, "backend workspace exceeds scratch budget");
+    return scratch_bytes - reserved;
+}
+
 void write_array(Backend& backend, std::string_view path, ArrayView array, std::size_t scratch_bytes,
-                 Validation validation, bool prevalidated) {
+                 Validation validation, bool prevalidated, bool raw = false) {
     if (!prevalidated) validate_array(array, path, validation);
     const auto type = array.dtype();
     if (array.layout() != Layout::dense) {
@@ -266,7 +280,7 @@ void write_array(Backend& backend, std::string_view path, ArrayView array, std::
         try { auto view = array.sparse_bytes(); bytes.emplace(view); }
         catch (const Error& error) {
             if (error.code() != ErrorCode::non_contiguous) throw;
-            copied.emplace(array.copy(Validation::none));
+            copied.emplace(array.copy(Validation::none, packing_budget(backend, path, scratch_bytes)));
             // As with byte views above, avoid Clang 18's unresolved module-view moves.
             const auto copied_view = copied->view();
             array = copied_view;
@@ -297,7 +311,7 @@ void write_array(Backend& backend, std::string_view path, ArrayView array, std::
 
     const auto shape = shape_of(array);
     const auto count = element_count(shape, path);
-    const auto attrs = encoding("array", "0.2.0");
+    const auto attrs = raw ? Attributes{} : encoding("array", "0.2.0");
     backend.create_numeric(path, type, shape, attrs, array.serialization_byte_order());
     if (!count) return;
 
@@ -309,16 +323,17 @@ void write_array(Backend& backend, std::string_view path, ArrayView array, std::
         backend.write_numeric(path, origin, shape, bytes->data());
         return;
     }
+    const auto available = packing_budget(backend, path, scratch_bytes);
     if (shape.empty()) {
-        auto scalar = array.copy(Validation::none);
+        auto scalar = array.copy(Validation::none, available);
         auto scalar_bytes = scalar.view().bytes();
         backend.write_numeric(path, {}, {}, scalar_bytes.data());
         return;
     }
     const auto width = dtype_size(type);
-    if (scratch_bytes < width)
-        fail(ErrorCode::invalid_argument, path, "scratch buffer must hold at least one numerical element for strided transfer");
-    const auto tile_limit = std::max<std::size_t>(1, scratch_bytes / width);
+    if (available < width)
+        fail(ErrorCode::invalid_argument, path, "scratch budget after backend workspace must hold at least one numerical element for strided transfer");
+    const auto tile_limit = available / width;
     const auto columns = shape.back();
     const auto outer_count = count / columns;
     std::vector<std::byte> packed;
@@ -348,7 +363,7 @@ void write_array(Backend& backend, std::string_view path, ArrayView array, std::
                 for (std::size_t axis = 0; axis + 1 < shape.size(); ++axis)
                     selectors.push_back(anndatapp::Axis::stride(start[axis], 1));
                 selectors.push_back(anndatapp::Axis::stride(first, length));
-                auto tile = array.select(selectors.data(), selectors.size()).copy(Validation::none);
+                auto tile = array.select(selectors.data(), selectors.size()).copy(Validation::none, available);
                 auto tile_bytes = tile.view().bytes();
                 backend.write_numeric(path, start, tile_shape, tile_bytes.data());
             }
@@ -562,6 +577,7 @@ void write_null(Backend& backend, std::string_view path) {
 void write_element_impl(Backend& backend, std::string_view path, ElementView value, std::size_t scratch_bytes,
                         Validation validation, bool prevalidated) {
     switch (value.kind()) {
+        case ElementKind::sequence: fail(ErrorCode::unsupported_encoding, path, "AnnData element codecs do not encode heterogeneous sequences");
         case ElementKind::null: write_null(backend, path); return;
         case ElementKind::array: write_array(backend, path, value.array(), scratch_bytes, validation, prevalidated); return;
         case ElementKind::record_array: write_record(backend, path, value.record_array(), scratch_bytes); return;
@@ -709,6 +725,15 @@ void validate_dataset_serializable(const AnnDataView& data, Validation validatio
 
 void validate_serializable(ElementView value, std::string_view path) {
     validate_element(value, path);
+}
+
+void write_raw_array(Backend& backend, std::string_view path, ArrayView source, std::size_t scratch) {
+    if (source.layout() != Layout::dense) fail(ErrorCode::unsupported_layout, path, "raw storage arrays must be dense");
+    write_array(backend, path, source, scratch, Validation::full, false, true);
+}
+void write_raw_strings(Backend& backend, std::string_view path, StringArrayView source, std::size_t scratch) {
+    source.validate();
+    write_strings(backend, path, source.shape(), [&](std::size_t i) { return source.string(i); }, scratch, {});
 }
 
 void write_element(Backend& backend, std::string_view path, ElementView value, std::size_t scratch_bytes) {

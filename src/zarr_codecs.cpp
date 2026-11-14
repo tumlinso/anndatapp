@@ -209,13 +209,14 @@ Pipeline pipeline(const PayloadMeta& meta, const Shape& shape) {
             } else if (n == "bytes" && m.format == 3 && m.item_size > 1) fail(Failure::encoding,"missing bytes endian");
         } else if (n == "gzip" || n == "zlib" || n == "zstd" || n == "blosc" || n == "crc32c") {
             if (!serialized) {
-                if (m.format != 2 || m.type == Type::string) fail(Failure::encoding,"byte codec precedes serializer");
+                if (m.format != 2 || (m.type == Type::string && !m.unicode_width)) fail(Failure::encoding,"byte codec precedes serializer");
                 serialized = true;
+                p.strings = m.unicode_width != 0;
             }
             p.byte_codecs.push_back(codec);
         } else fail(Failure::codec,"unsupported Zarr codec: " + n);
     }
-    if (!serialized && m.format == 2 && m.type != Type::string) serialized = true;
+    if (!serialized && m.format == 2 && (m.type != Type::string || m.unicode_width)) { serialized = true; p.strings = m.unicode_width != 0; }
     if (!serialized) fail(Failure::encoding,"missing array-to-bytes codec");
     if (p.strings != (m.type == Type::string)) fail(Failure::encoding,"serializer does not match array data type");
     return p;
@@ -288,6 +289,39 @@ std::vector<std::string> deserialise_strings(std::span<const std::byte> input, s
     }
     if (pos != input.size()) fail(Failure::encoding,"trailing bytes in vlen UTF-8 payload");
     return out;
+}
+std::vector<std::string> deserialise_unicode(std::span<const std::byte> input, std::size_t expected, const ArrayMetadata& m, std::size_t limit) {
+    if(input.size()!=multiply(expected,m.item_size)) fail(Failure::encoding,"decoded Unicode chunk has wrong byte size");
+    if(expected>limit/sizeof(std::string)) fail(Failure::argument,"string chunk exceeds the codec working-memory limit");
+    const bool little=m.endian=='<' || (m.endian=='=' && std::endian::native==std::endian::little);
+    if(m.endian!='<' && m.endian!='>' && m.endian!='=') fail(Failure::encoding,"invalid Unicode byte order");
+    auto codepoint=[&](const std::byte* p) {
+        std::uint32_t value=0;
+        for(unsigned k=0;k<4;++k) value |= std::uint32_t(std::to_integer<unsigned char>(p[k])) << (8*(little?k:3-k));
+        return value;
+    };
+    std::vector<std::string> result; result.reserve(expected);
+    std::size_t used=expected*sizeof(std::string);
+    for(std::size_t i=0;i<expected;++i) {
+        const auto* data=input.data()+i*m.item_size;
+        std::size_t length=m.unicode_width;
+        while(length && codepoint(data+(length-1)*4)==0) --length;
+        std::string text;
+        for(std::size_t j=0;j<length;++j) {
+            const auto c=codepoint(data+j*4);
+            if(c>0x10ffff || (c>=0xd800 && c<=0xdfff)) fail(Failure::encoding,"invalid UTF-32 code point");
+            const std::size_t n=c<0x80?1:c<0x800?2:c<0x10000?3:4;
+            if(n>limit-used) fail(Failure::argument,"string chunk exceeds the codec working-memory limit");
+            used+=n;
+            if(n==1) text.push_back(static_cast<char>(c));
+            else {
+                text.push_back(static_cast<char>((n==2?0xc0:n==3?0xe0:0xf0) | (c >> (6*(n-1)))));
+                for(std::size_t k=n-1;k>0;--k) text.push_back(static_cast<char>(0x80 | ((c >> (6*(k-1))) & 0x3f)));
+            }
+        }
+        result.push_back(std::move(text));
+    }
+    return result;
 }
 Bytes apply(Bytes bytes, const Json& codec, bool encode, std::size_t item_size, std::size_t limit) {
     const auto n = name(codec); const auto c = config(codec);
@@ -370,7 +404,7 @@ Chunk decode_payload(const PayloadMeta& meta, const Shape& shape, std::span<cons
     Bytes bytes(encoded.begin(), encoded.end());
     for (auto i = p.byte_codecs.rbegin(); i != p.byte_codecs.rend(); ++i) bytes = apply(std::move(bytes), *i, false, m.item_size, limit);
     Chunk result; const auto n = checked_product(shape);
-    if (p.strings) result.strings = deserialise_strings(bytes, n, limit);
+    if (p.strings) result.strings = m.unicode_width ? deserialise_unicode(bytes,n,m,limit) : deserialise_strings(bytes, n, limit);
     else {
         bounded(multiply(n, m.item_size), limit);
         if (bytes.size() != multiply(n, m.item_size)) fail(Failure::encoding,"decoded chunk has wrong byte size");
@@ -385,6 +419,7 @@ Chunk decode_payload(const PayloadMeta& meta, const Shape& shape, std::span<cons
 }
 Bytes encode_payload(const PayloadMeta& meta, const Shape& shape, const Chunk& chunk) {
     const auto& m = meta.array;
+    if(m.unicode_width) fail(Failure::dtype,"writing fixed-width Unicode arrays is unsupported");
     auto p = pipeline(meta, shape); auto n = checked_product(shape);
     const auto limit = meta.scratch_bytes / 4;
     if (limit < 4) fail(Failure::argument,"codec working-memory budget is too small");

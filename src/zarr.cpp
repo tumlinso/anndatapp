@@ -18,6 +18,13 @@ std::string_view compression_name(ZarrCompression compression) {
 BackedAnnData open_zarr(std::string_view path,BackedOptions options) {
     return detail::open_zarr_backed(path,options);
 }
+BackedStore open_zarr_store(std::string_view path,BackedOptions options) {
+    return detail::open_zarr_store_impl(path,options);
+}
+BackedStore create_zarr_store(std::string_view path,ZarrWriteOptions options) {
+    return detail::create_zarr_store_impl(path,static_cast<int>(options.format),options.mode==ZarrWriteMode::exclusive,
+        options.scratch_bytes,compression_name(options.compression),options.compression_level,options.validation);
+}
 AnnData read_zarr(std::string_view path,ZarrReadOptions options) {
     BackedOptions backed; backed.validation=options.validation; backed.scratch_bytes=options.scratch_bytes;
     return open_zarr(path,backed).read();

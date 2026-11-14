@@ -1027,8 +1027,13 @@ void sparse_repeated_minor_gather() {
             auto source = Array::borrow_sparse(layout, layout == Layout::csr ? 2 : minor_extent,
                 layout == Layout::csr ? minor_extent : 2, values.size(), values.data(), indices.data(), offsets.data());
             const auto major = Axis::gather({1, 0, 1}), minor = Axis::gather({minor_extent - 1, 0, minor_extent - 1});
-            auto copy = source.view().select({layout == Layout::csr ? major : minor,
-                                             layout == Layout::csr ? minor : major}).copy();
+            auto selected = source.view().select({layout == Layout::csr ? major : minor,
+                                                 layout == Layout::csr ? minor : major});
+            const std::size_t budget = 4 * sizeof(std::size_t) + 6 * sizeof(std::size_t) +
+                9 * (sizeof(float) + sizeof(Index)) + 4 * sizeof(std::uint32_t);
+            expect_error(ErrorCode::invalid_argument, [&] { (void)selected.copy(Validation::none, budget - 1); },
+                         "bounded sparse copy rejects insufficient staging and result capacity");
+            auto copy = selected.copy(Validation::none, budget);
             copy.validate();
             auto out = layout == Layout::csr ? copy.view().template csr<float, Index, std::uint32_t>()
                                              : copy.view().template csc<float, Index, std::uint32_t>();

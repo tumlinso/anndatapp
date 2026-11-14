@@ -28,12 +28,17 @@ option(ANNDATAPP_BUILD_TESTS "Build standalone native tests" ${PROJECT_IS_TOP_LE
 option(ANNDATAPP_BUILD_EXAMPLES "Build import-only examples" ${PROJECT_IS_TOP_LEVEL})
 option(ANNDATAPP_BUILD_BENCHMARKS "Build numerical memory benchmarks" OFF)
 option(ANNDATAPP_ENABLE_INTEROP_TESTS "Compare semantics using Python AnnData fixtures" OFF)
+option(ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS "Check the format family with independent pinned Python references" OFF)
 option(ANNDATAPP_ENABLE_RECORD_INTEROP_TESTS "Compare records using the isolated Scanpy reference" OFF)
 option(ANNDATAPP_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(ANNDATAPP_ENABLE_HDF5 "Enable native H5AD reading and writing" ON)
 option(ANNDATAPP_ENABLE_ZARR "Enable native Zarr v2/v3 reading and writing" ON)
+option(ANNDATAPP_ENABLE_PARQUET "Enable private SpatialData Parquet/GeoParquet I/O" OFF)
 if(ANNDATAPP_ENABLE_RECORD_INTEROP_TESTS AND (NOT ANNDATAPP_ENABLE_INTEROP_TESTS OR NOT ANNDATAPP_ENABLE_HDF5))
   message(FATAL_ERROR "Record interoperability tests require ANNDATAPP_ENABLE_INTEROP_TESTS and ANNDATAPP_ENABLE_HDF5.")
+endif()
+if(ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS AND NOT ANNDATAPP_BUILD_TESTS)
+  message(FATAL_ERROR "Format interoperability checks require ANNDATAPP_BUILD_TESTS.")
 endif()
 set(ANNDATAPP_DEPENDENCY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/build/dependencies/usr" CACHE PATH
   "Optional private prefix containing storage development dependencies")
@@ -41,6 +46,10 @@ if(EXISTS "${ANNDATAPP_DEPENDENCY_PREFIX}")
   list(PREPEND CMAKE_PREFIX_PATH "${ANNDATAPP_DEPENDENCY_PREFIX}")
 endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(ANNDATAPP_ARROW_ROOT "" CACHE PATH "Optional private Arrow/Parquet installation or pyarrow wheel prefix")
+if(ANNDATAPP_ENABLE_PARQUET)
+  find_package(ArrowParquet REQUIRED)
+endif()
 
 if(ANNDATAPP_ENABLE_HDF5 OR ANNDATAPP_ENABLE_ZARR)
   find_package(PkgConfig REQUIRED)
@@ -52,6 +61,8 @@ if(ANNDATAPP_ENABLE_ZARR)
   pkg_check_modules(ANNDATAPP_ZLIB REQUIRED IMPORTED_TARGET zlib)
   pkg_check_modules(ANNDATAPP_ZSTD REQUIRED IMPORTED_TARGET libzstd)
   find_package(Blosc REQUIRED)
+endif()
+if(ANNDATAPP_ENABLE_HDF5 OR ANNDATAPP_ENABLE_ZARR)
   find_package(nlohmann_json 3.11 CONFIG REQUIRED)
 endif()
 
@@ -71,14 +82,20 @@ target_link_libraries(anndatapp PUBLIC anndatapp_core)
 target_compile_features(anndatapp PUBLIC cxx_std_20)
 target_compile_definitions(anndatapp PUBLIC
   ANNDATAPP_HAS_HDF5=$<BOOL:${ANNDATAPP_ENABLE_HDF5}>
-  ANNDATAPP_HAS_ZARR=$<BOOL:${ANNDATAPP_ENABLE_ZARR}>)
+  ANNDATAPP_HAS_ZARR=$<BOOL:${ANNDATAPP_ENABLE_ZARR}>
+  ANNDATAPP_HAS_PARQUET=$<BOOL:${ANNDATAPP_ENABLE_PARQUET}>)
 set_target_properties(anndatapp PROPERTIES POSITION_INDEPENDENT_CODE ON EXPORT_NAME anndatapp_binary)
 target_sources(anndatapp
   PUBLIC FILE_SET CXX_MODULES BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES
-    src/anndatapp.cppm src/anndatapp.backed.cppm src/anndatapp.streaming.cppm
+    src/anndatapp.cppm src/anndata.cppm src/anndatapp.backed.cppm src/anndatapp.streaming.cppm
+    src/anndatapp.mudata.cppm src/anndatapp.treedata.cppm
+    src/anndatapp.dataset.cppm src/anndatapp.spatialdata.cppm
   PRIVATE src/backed.cpp src/backed_array.cpp src/backed_codec.cpp src/backed_structure.cpp src/backed_writer.cpp
     src/backed_index.cpp src/backed_copy.cpp src/backed_category.cpp src/backed_colors.cpp
-    src/backed_records.cpp src/backed_geometry.cpp src/streaming.cpp)
+    src/backed_records.cpp src/backed_geometry.cpp src/streaming.cpp
+    src/store.cpp src/mudata.cpp src/treedata.cpp src/treedata_io.cpp src/dataset.cpp
+    src/spatialdata.cpp src/spatialdata_transform.cpp src/spatialdata_io.cpp
+    src/spatialdata_parquet.cpp)
 target_sources(anndatapp PRIVATE FILE_SET backed_internal TYPE CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES src/anndatapp.backed.storage.cppm)
 if(ANNDATAPP_ENABLE_HDF5)
@@ -86,6 +103,14 @@ if(ANNDATAPP_ENABLE_HDF5)
     PUBLIC FILE_SET CXX_MODULES FILES src/anndatapp.h5ad.cppm
     PRIVATE src/h5ad.cpp src/backed_hdf5.cpp)
   target_link_libraries(anndatapp PRIVATE PkgConfig::ANNDATAPP_HDF5)
+endif()
+if(ANNDATAPP_ENABLE_HDF5 OR ANNDATAPP_ENABLE_ZARR)
+  target_link_libraries(anndatapp PRIVATE "$<BUILD_INTERFACE:nlohmann_json::nlohmann_json>")
+endif()
+if(ANNDATAPP_ENABLE_PARQUET)
+  target_link_libraries(anndatapp PRIVATE ArrowParquet::ArrowParquet)
+  # Private shared dependencies also need to resolve from installed libraries.
+  set_property(TARGET anndatapp APPEND PROPERTY INSTALL_RPATH ${ArrowParquet_RUNTIME_LIBRARY_DIRS})
 endif()
 if(ANNDATAPP_ENABLE_ZARR)
   target_sources(anndatapp PUBLIC FILE_SET CXX_MODULES FILES src/anndatapp.zarr.cppm
@@ -122,6 +147,7 @@ write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/anndatappConfigVer
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/anndatappConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/anndatappConfigVersion.cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindBlosc.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindArrowParquet.cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/anndatappModuleProvider.cmake"
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/anndatapp)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/anndatapp)
@@ -129,16 +155,27 @@ install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/anndatapp)
 if(ANNDATAPP_BUILD_EXAMPLES)
   add_executable(anndatapp_example examples/foundation.cpp)
   target_link_libraries(anndatapp_example PRIVATE anndatapp::anndatapp)
+  add_executable(anndatapp_format_family_example examples/format_family.cpp)
+  target_link_libraries(anndatapp_format_family_example PRIVATE anndatapp::anndatapp)
 endif()
 if(ANNDATAPP_BUILD_TESTS)
   enable_testing()
   find_package(Threads REQUIRED)
-  foreach(_suite arrays data strings records copy_into)
+  foreach(_suite arrays data strings records copy_into sequence mudata treedata spatialdata spatialdata_transform)
     add_executable(test_${_suite} tests/test_${_suite}.cpp)
     target_link_libraries(test_${_suite} PRIVATE anndatapp::anndatapp)
     add_test(NAME ${_suite} COMMAND test_${_suite})
   endforeach()
-  foreach(_suite geometry transfer_context streaming)
+  add_executable(test_spatialdata_wkb tests/test_spatialdata_wkb.cpp)
+  target_compile_features(test_spatialdata_wkb PRIVATE cxx_std_20)
+  add_test(NAME spatialdata_wkb COMMAND test_spatialdata_wkb)
+  if(ANNDATAPP_ENABLE_HDF5 OR ANNDATAPP_ENABLE_ZARR)
+    add_executable(test_treedata_json tests/test_treedata_json.cpp)
+    target_compile_features(test_treedata_json PRIVATE cxx_std_20)
+    target_link_libraries(test_treedata_json PRIVATE nlohmann_json::nlohmann_json)
+    add_test(NAME treedata_json COMMAND test_treedata_json)
+  endif()
+  foreach(_suite geometry transfer_context streaming store)
     add_executable(test_${_suite} tests/test_${_suite}.cpp)
     target_link_libraries(test_${_suite} PRIVATE anndatapp::anndatapp Threads::Threads)
     add_test(NAME ${_suite} COMMAND test_${_suite} "${CMAKE_CURRENT_BINARY_DIR}/${_suite}-tests")
@@ -157,6 +194,10 @@ if(ANNDATAPP_BUILD_TESTS)
   endif()
   add_test(NAME backed_categories COMMAND test_backed_categories "${CMAKE_CURRENT_BINARY_DIR}/backed-category-tests")
   if(ANNDATAPP_ENABLE_ZARR)
+    add_executable(test_zarr_unicode tests/test_zarr_unicode.cpp)
+    target_include_directories(test_zarr_unicode PRIVATE src)
+    target_link_libraries(test_zarr_unicode PRIVATE anndatapp::anndatapp nlohmann_json::nlohmann_json PkgConfig::ANNDATAPP_ZLIB)
+    add_test(NAME zarr_unicode COMMAND test_zarr_unicode)
     add_executable(test_gather_transfer tests/test_gather_transfer.cpp)
     target_include_directories(test_gather_transfer PRIVATE src)
     target_link_libraries(test_gather_transfer PRIVATE anndatapp::anndatapp nlohmann_json::nlohmann_json)
@@ -178,6 +219,15 @@ if(ANNDATAPP_BUILD_TESTS)
     add_test(NAME record_zarr_rejection COMMAND test_record_zarr_rejection "${CMAKE_CURRENT_BINARY_DIR}/record-zarr-rejection")
   endif()
   if(ANNDATAPP_ENABLE_HDF5)
+    add_executable(test_bounded_sparse_export tests/test_bounded_sparse_export.cpp)
+    target_link_libraries(test_bounded_sparse_export PRIVATE anndatapp::anndatapp)
+    add_test(NAME bounded_sparse_export COMMAND test_bounded_sparse_export "${CMAKE_CURRENT_BINARY_DIR}/bounded-sparse.h5mu")
+    add_executable(test_dataset tests/test_dataset.cpp)
+    target_link_libraries(test_dataset PRIVATE anndatapp::anndatapp)
+    add_test(NAME dataset COMMAND test_dataset "${CMAKE_CURRENT_BINARY_DIR}/dataset-tests")
+    add_executable(test_store_hdf5 tests/test_store_hdf5.cpp)
+    target_link_libraries(test_store_hdf5 PRIVATE anndatapp::anndatapp PkgConfig::ANNDATAPP_HDF5)
+    add_test(NAME store_hdf5 COMMAND test_store_hdf5 "${CMAKE_CURRENT_BINARY_DIR}/store-hdf5-tests")
     add_executable(test_records_h5ad tests/test_records_h5ad.cpp)
     target_include_directories(test_records_h5ad PRIVATE src)
     target_link_libraries(test_records_h5ad PRIVATE anndatapp::anndatapp PkgConfig::ANNDATAPP_HDF5 ${CMAKE_DL_LIBS})
@@ -201,6 +251,27 @@ if(ANNDATAPP_BUILD_TESTS)
   endif()
   if(ANNDATAPP_BUILD_EXAMPLES)
     add_test(NAME import_only_example COMMAND anndatapp_example)
+    add_test(NAME format_family_example COMMAND anndatapp_format_family_example)
+  endif()
+  if(ANNDATAPP_ENABLE_PARQUET)
+    add_executable(test_spatialdata_parquet tests/test_spatialdata_parquet.cpp tests/test_spatialdata_parquet_main.cpp)
+    target_include_directories(test_spatialdata_parquet PRIVATE src)
+    target_link_libraries(test_spatialdata_parquet PRIVATE anndatapp::anndatapp)
+    add_test(NAME spatialdata_parquet COMMAND test_spatialdata_parquet "${CMAKE_CURRENT_BINARY_DIR}/spatial-parquet-native")
+  endif()
+  foreach(_suite sequence mudata treedata spatialdata spatialdata_transform spatialdata_wkb
+      treedata_json store store_hdf5 dataset zarr_unicode spatialdata_parquet bounded_sparse_export)
+    if(TARGET test_${_suite})
+      target_compile_options(test_${_suite} PRIVATE -UNDEBUG)
+    endif()
+  endforeach()
+  if(ANNDATAPP_ENABLE_SANITIZERS)
+    foreach(_suite spatialdata_wkb treedata_json)
+      if(TARGET test_${_suite})
+        target_compile_options(test_${_suite} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(test_${_suite} PRIVATE -fsanitize=address,undefined)
+      endif()
+    endforeach()
   endif()
   add_test(NAME installed_consumer COMMAND ${CMAKE_COMMAND}
     -DANNDATAPP_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
@@ -209,6 +280,7 @@ if(ANNDATAPP_BUILD_TESTS)
     -DANNDATAPP_CONFIG=$<CONFIG>
     -DANNDATAPP_HDF5_ENABLED=${ANNDATAPP_ENABLE_HDF5}
     -DANNDATAPP_ZARR_ENABLED=${ANNDATAPP_ENABLE_ZARR}
+    -DANNDATAPP_ARROW_ROOT=${ANNDATAPP_ARROW_ROOT}
     -DANNDATAPP_DEPENDENCY_PREFIX=${ANNDATAPP_DEPENDENCY_PREFIX}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-installed-consumer.cmake)
 endif()
@@ -271,6 +343,45 @@ if(ANNDATAPP_ENABLE_INTEROP_TESTS)
           "${CMAKE_CURRENT_BINARY_DIR}/unsupported-dtype-${_format}")
       endforeach()
     endif()
+  endif()
+endif()
+if(ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS)
+  enable_testing()
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  set(ANNDATAPP_TREEDATA_LEGACY_PYTHON "" CACHE FILEPATH "Optional pinned TreeData 0.2.5 reference interpreter")
+  set(ANNDATAPP_SPATIAL_LEGACY02_STORE "" CACHE PATH "Pinned SpatialData storage 0.2 reference fixture")
+  set(ANNDATAPP_SPATIAL_LEGACY03_STORE "" CACHE PATH "Pinned SpatialData storage 0.3 reference fixture")
+  if(ANNDATAPP_ENABLE_HDF5 AND ANNDATAPP_ENABLE_ZARR)
+    add_test(NAME python_mudata COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_mudata.py $<TARGET_FILE:test_mudata>
+      "${CMAKE_CURRENT_BINARY_DIR}/mudata-interop")
+    set_tests_properties(python_mudata PROPERTIES ENVIRONMENT "ANNDATAPP_INTEROP_ZARR_WAKEUP=1")
+    set(_tree_legacy)
+    if(ANNDATAPP_TREEDATA_LEGACY_PYTHON)
+      list(APPEND _tree_legacy --legacy-python "${ANNDATAPP_TREEDATA_LEGACY_PYTHON}")
+    endif()
+    add_test(NAME python_treedata COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_treedata_roundtrip.py $<TARGET_FILE:test_treedata> ${_tree_legacy})
+  endif()
+  if(ANNDATAPP_ENABLE_HDF5)
+    add_test(NAME python_dataset COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_dataset_roundtrip.py $<TARGET_FILE:test_dataset>)
+  endif()
+  if(ANNDATAPP_ENABLE_ZARR AND ANNDATAPP_ENABLE_PARQUET)
+    set(_spatial_legacy)
+    if(ANNDATAPP_SPATIAL_LEGACY02_STORE)
+      list(APPEND _spatial_legacy --legacy02 "${ANNDATAPP_SPATIAL_LEGACY02_STORE}")
+    endif()
+    if(ANNDATAPP_SPATIAL_LEGACY03_STORE)
+      list(APPEND _spatial_legacy --legacy03 "${ANNDATAPP_SPATIAL_LEGACY03_STORE}")
+    endif()
+    add_test(NAME python_spatialdata COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_spatialdata_roundtrip.py $<TARGET_FILE:test_spatialdata>
+      "${CMAKE_CURRENT_BINARY_DIR}/spatialdata-interop" ${_spatial_legacy})
+    set_tests_properties(python_spatialdata PROPERTIES ENVIRONMENT "ANNDATAPP_INTEROP_ZARR_WAKEUP=1")
+    add_test(NAME python_spatialdata_parquet COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/spatialdata_parquet_reference.py $<TARGET_FILE:test_spatialdata_parquet>
+      "${CMAKE_CURRENT_BINARY_DIR}/spatial-parquet-interop")
   endif()
 endif()
 if(ANNDATAPP_BUILD_BENCHMARKS)

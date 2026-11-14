@@ -89,6 +89,7 @@ std::string encoding(const NodeInfo& info, std::string_view path) {
     return code;
 }
 void Session::check_open() const {
+    if (parent) parent->check_open();
     if (!open || !backend) fail(ErrorCode::invalid_argument, "store", "backed store is closed");
 }
 void Session::check_writable() const {
@@ -96,9 +97,36 @@ void Session::check_writable() const {
     if (options.mode != AccessMode::read_write) fail(ErrorCode::invalid_argument, backend->location(), "backed store is read-only");
 }
 void Session::invalidate(std::string_view path) {
+    invalidate_local(path);
+    invalidate_children(path);
+    if (parent) {
+        auto physical = root == "/" ? std::string(path) : path == "/" ? root : root + std::string(path);
+        parent->invalidate_local(physical);
+        parent->invalidate_children(physical, this);
+    }
+}
+void Session::invalidate_local(std::string_view path) {
     for (auto& [key, revision] : revisions)
         if (key == path || (key.size() > path.size() && key.starts_with(path) && (path == "/" || key[path.size()] == '/')))
             { ++revision->value; revision->unique_index.reset(); }
+}
+void Session::invalidate_children(std::string_view path, const Session* origin) {
+    for (auto it = children.begin(); it != children.end();) {
+        auto child = it->lock();
+        if (!child) { it = children.erase(it); continue; }
+        ++it;
+        if (child.get() == origin) continue;
+        const auto& prefix = child->root;
+        const bool below = prefix == "/" || path == prefix ||
+            (path.size() > prefix.size() && path.starts_with(prefix) && path[prefix.size()] == '/');
+        const bool above = path == "/" || prefix == path ||
+            (prefix.size() > path.size() && prefix.starts_with(path) && prefix[path.size()] == '/');
+        if (!below && !above) continue;
+        const auto relative = above ? std::string("/") : prefix == "/" ? std::string(path) : std::string(path.substr(prefix.size()));
+        child->invalidate_local(relative);
+        ++child->dataset_revision;
+        child->invalidate_children(relative);
+    }
 }
 void check_node(const std::shared_ptr<detail::BackedNode>& n) {
     if (!n || !n->session) fail(ErrorCode::invalid_argument, "store", "empty backed handle");
@@ -140,9 +168,9 @@ std::vector<std::size_t> logical_shape(Session& s, std::string_view path) {
     if (code == "array" || code == "string-array" || code == "numeric-scalar" || code == "string" || code == "rec-array") return info.shape;
     return {};
 }
-std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session> s, std::string path, std::vector<Axis> axes) {
+std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session> s, std::string path, std::vector<Axis> axes, bool raw) {
     s->check_open();
-    auto shape = logical_shape(*s, path);
+    auto shape = raw ? s->backend->inspect(path).shape : logical_shape(*s, path);
     // Alignment is a metadata invariant of the stored object, including when
     // only a subset is requested. A subset must not hide oversized slots.
     auto component_count = static_cast<std::size_t>(std::count(path.begin(), path.end(), '/'));
@@ -150,6 +178,7 @@ std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session> s, std::string
         if (shape.empty() || shape[0] != first || (second && (shape.size() < 2 || shape[1] != *second)) || (matrix && shape.size() != 2))
             fail(ErrorCode::shape_mismatch, path, "stored shape does not match its AnnData axes");
     };
+    if (!raw) {
     if (path == "/X" || (component_count == 2 && path.starts_with("/layers/"))) {
         aligned(logical_shape(*s,"/obs")[0],logical_shape(*s,"/var")[0],true);
     } else if (component_count == 2 && (path.starts_with("/obsm/") || path.starts_with("/obsp/"))) {
@@ -161,6 +190,7 @@ std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session> s, std::string
     } else if(component_count == 3 && path.starts_with("/raw/varm/")) {
         aligned(logical_shape(*s,"/raw/var")[0],std::nullopt,false);
     }
+    }
     if (axes.empty()) for (auto n : shape) axes.push_back(Axis{n});
     if (axes.size() != shape.size()) fail(ErrorCode::shape_mismatch, path, "selection rank differs from stored rank");
     auto& revision = s->revisions[path];
@@ -169,6 +199,7 @@ std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session> s, std::string
     result->session = std::move(s); result->path = std::move(path); result->axes = std::move(axes);
     result->revision = revision; result->observed_revision = revision->value;
     result->observed_dataset_revision = result->session->dataset_revision;
+    result->raw_array = raw;
     return result;
 }
 Axis select_axis(const Axis& parent, const Selection& selection, const std::shared_ptr<detail::BackedNode>& index) {
@@ -382,7 +413,11 @@ BackedAnnData::~BackedAnnData()=default;
 BackedAnnData::BackedAnnData(BackedAnnData&&) noexcept=default;
 BackedAnnData& BackedAnnData::operator=(BackedAnnData&&) noexcept=default;
 BackedAnnData::BackedAnnData(std::shared_ptr<detail::BackedDataset> d):impl_(std::move(d)){}
-bool BackedAnnData::is_open() const noexcept { return impl_ && impl_->session && impl_->session->open; }
+bool BackedAnnData::is_open() const noexcept {
+    if (!impl_ || !impl_->session) return false;
+    for (auto session = impl_->session; session; session = session->parent) if (!session->open) return false;
+    return true;
+}
 bool BackedAnnData::writable() const { backed_detail::require_dataset(impl_); return impl_->session->options.mode==AccessMode::read_write; }
 std::string BackedAnnData::location() const { backed_detail::require_dataset(impl_); return impl_->session->backend->location(); }
 BackedAnnDataView BackedAnnData::view() const { backed_detail::require_dataset(impl_); return BackedAnnDataView(std::make_shared<detail::BackedDataset>(*impl_)); }

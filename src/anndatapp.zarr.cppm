@@ -22,6 +22,8 @@ struct ZarrWriteOptions {
     std::size_t scratch_bytes = 64u * 1024u * 1024u;
 };
 [[nodiscard]] BackedAnnData open_zarr(std::string_view path,BackedOptions options = {});
+[[nodiscard]] BackedStore open_zarr_store(std::string_view path,BackedOptions options = {});
+[[nodiscard]] BackedStore create_zarr_store(std::string_view path,ZarrWriteOptions options = {});
 [[nodiscard]] AnnData read_zarr(std::string_view path,ZarrReadOptions options = {});
 void write_zarr(std::string_view path,const AnnDataView& data,ZarrWriteOptions options = {});
 void write_zarr(std::string_view path,const AnnData& data,ZarrWriteOptions options = {});

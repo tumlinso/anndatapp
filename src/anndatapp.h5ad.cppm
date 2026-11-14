@@ -1,4 +1,5 @@
 module;
+#include <cstddef>
 #include <string_view>
 
 export module anndatapp.h5ad;
@@ -27,6 +28,9 @@ struct WriteOptions {
 [[nodiscard]] AnnData read_h5ad(std::string_view path, ReadOptions options = {});
 // Opening retains a file session and reads metadata without numerical payloads.
 [[nodiscard]] BackedAnnData open_h5ad(std::string_view path, BackedOptions options = {});
+[[nodiscard]] BackedStore open_hdf5_store(std::string_view path, BackedOptions options = {});
+[[nodiscard]] BackedStore create_hdf5_store(std::string_view path, WriteOptions options = {}, std::size_t userblock_bytes = 0,
+    std::size_t scratch_bytes = 64u * 1024u * 1024u);
 [[nodiscard]] bool hdf5_library_threadsafe();
 // Truncate writes directly to the destination. A failed write may leave a
 // partial file. Exclusive creation fails if the destination already exists.

@@ -1,6 +1,7 @@
 #include "zarr_engine.hpp"
 #include <algorithm>
 #include <bit>
+#include <charconv>
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -111,7 +112,16 @@ ArrayMetadata parse_array(const Json& j,const std::string& path) {
         m.shape=read_shape(j.at("shape"),path);
         if(m.format==2) {
             if(!j.at("dtype").is_string()) throw Error(Failure::dtype,path,"structured Zarr dtypes are unsupported");
-            m.type=parse_type(j.at("dtype").get<std::string>(),2,m.endian,path);
+            const auto dtype=j.at("dtype").get<std::string>();
+            const auto offset=!dtype.empty() && (dtype[0]=='<' || dtype[0]=='>' || dtype[0]=='=' || dtype[0]=='|') ? 1u : 0u;
+            if(offset<dtype.size() && dtype[offset]=='U') {
+                if(offset && dtype[0]=='|') throw Error(Failure::dtype,path,"fixed Unicode dtype requires a byte order");
+                auto first=dtype.data()+offset+1, last=dtype.data()+dtype.size();
+                std::size_t width=0; const auto parsed=std::from_chars(first,last,width);
+                if(first==last || parsed.ec!=std::errc{} || parsed.ptr!=last || !width || width>std::numeric_limits<std::size_t>::max()/4)
+                    throw Error(Failure::dtype,path,"invalid fixed Unicode dtype width");
+                m.type=Type::string; m.unicode_width=width; m.endian=offset?dtype[0]:'=';
+            } else m.type=parse_type(dtype,2,m.endian,path);
             m.chunks=read_shape(j.at("chunks"),path,true);
             const auto order=j.value("order",std::string("C"));
             if(order!="C" && order!="F") throw Error(Failure::encoding,path,"invalid Zarr order");
@@ -138,7 +148,7 @@ ArrayMetadata parse_array(const Json& j,const std::string& path) {
             if(j.contains("storage_transformers") && !j["storage_transformers"].empty()) throw Error(Failure::encoding,path,"unsupported required Zarr storage transformer");
             m.endian=serializer_endian(m.codecs);
         } else throw Error(Failure::version,path,"unsupported Zarr format version");
-        m.item_size=type_size(m.type);
+        m.item_size=m.unicode_width ? m.unicode_width*4 : type_size(m.type);
         m.fill=j.value("fill_value",Json());
         if(m.chunks.size()!=m.shape.size()) throw Error(Failure::encoding,path,"Zarr chunk and array ranks differ");
         if(m.separator!="/" && m.separator!=".") throw Error(Failure::encoding,path,"unsupported Zarr chunk separator");
@@ -703,6 +713,7 @@ void Store::write_numeric(const std::string& path,const Shape& start,const Shape
 }
 void Store::write_strings(const std::string& path,const Shape& start,const Shape& count,const std::vector<std::string>& input) {
     if(!writable_) throw Error(Failure::argument,path,"Zarr store is read-only");
+    if(inspect(path).array.unicode_width) throw Error(Failure::dtype,path,"writing fixed-width Unicode arrays is unsupported");
     transfer(path,start,count,nullptr,const_cast<std::vector<std::string>*>(&input),true);
 }
 void Store::create_group(const std::string& path,const Json& attributes,int format) {

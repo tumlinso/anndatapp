@@ -15,7 +15,7 @@ StorageGeometry BackedArray::storage_geometry() const {
     backed_detail::check_node(node_);
     auto& s = *node_->session;
     auto info = s.backend->inspect(node_->path);
-    auto encoding = backed_detail::encoding(info, node_->path);
+    auto encoding = node_->raw_array ? std::string("array") : backed_detail::encoding(info, node_->path);
     StorageGeometry g;
     if (encoding == "csr_matrix" || encoding == "csc_matrix") {
         g.layout = encoding == "csr_matrix" ? Layout::csr : Layout::csc;

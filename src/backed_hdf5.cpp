@@ -341,6 +341,157 @@ void write_attributes(const H5Context& c, hid_t object, const Attributes& attrs,
     }
 }
 
+// Native metadata is kept separate from the narrower semantic Attributes used
+// by AnnData codecs, so extension values retain their datatype and shape.
+Array metadata_array(DType type, const std::vector<std::size_t>& shape) {
+    switch (type) {
+    case DType::boolean: return Array::empty<bool>(shape);
+    case DType::int8: return Array::empty<std::int8_t>(shape);
+    case DType::uint8: return Array::empty<std::uint8_t>(shape);
+    case DType::int16: return Array::empty<std::int16_t>(shape);
+    case DType::uint16: return Array::empty<std::uint16_t>(shape);
+    case DType::int32: return Array::empty<std::int32_t>(shape);
+    case DType::uint32: return Array::empty<std::uint32_t>(shape);
+    case DType::int64: return Array::empty<std::int64_t>(shape);
+    case DType::uint64: return Array::empty<std::uint64_t>(shape);
+    case DType::float32: return Array::empty<float>(shape);
+    case DType::float64: return Array::empty<double>(shape);
+    }
+    throw Error(ErrorCode::unsupported_dtype, "metadata", "unsupported datatype");
+}
+
+template<class T> Element scalar_from_buffer(const void* data) {
+    T value{}; std::memcpy(&value, data, sizeof value); return Element::scalar(value);
+}
+Element metadata_scalar(DType type, const void* data) {
+    switch (type) {
+    case DType::boolean: return Element(*static_cast<const unsigned char*>(data) != 0);
+    case DType::int8: return scalar_from_buffer<std::int8_t>(data);
+    case DType::uint8: return scalar_from_buffer<std::uint8_t>(data);
+    case DType::int16: return scalar_from_buffer<std::int16_t>(data);
+    case DType::uint16: return scalar_from_buffer<std::uint16_t>(data);
+    case DType::int32: return scalar_from_buffer<std::int32_t>(data);
+    case DType::uint32: return scalar_from_buffer<std::uint32_t>(data);
+    case DType::int64: return scalar_from_buffer<std::int64_t>(data);
+    case DType::uint64: return scalar_from_buffer<std::uint64_t>(data);
+    case DType::float32: return scalar_from_buffer<float>(data);
+    case DType::float64: return scalar_from_buffer<double>(data);
+    }
+    throw Error(ErrorCode::unsupported_dtype, "metadata", "unsupported datatype");
+}
+
+Element read_native_metadata(const H5Context& c, hid_t object, std::string_view path) {
+    ObjectInfo info{}; c.check(object_info(object, &info), path, "inspect attributes");
+    auto result = Element::mapping();
+    for (hsize_t i = 0; i < info.num_attrs; ++i) {
+        H5Handle attr(c.id(H5Aopen_by_idx(object, ".", H5_INDEX_NAME, H5_ITER_INC, i, H5P_DEFAULT, H5P_DEFAULT), path, "open attribute"), H5Aclose);
+        const auto length = H5Aget_name(attr, 0, nullptr);
+        if (length < 0) c.fail(ErrorCode::io_error, path, "inspect attribute name failed");
+        std::string key(static_cast<std::size_t>(length) + 1, '\0');
+        if (H5Aget_name(attr, key.size(), key.data()) < 0) c.fail(ErrorCode::io_error, path, "read attribute name failed");
+        key.resize(static_cast<std::size_t>(length));
+        const auto attr_path = std::string(path) + "@" + key;
+        H5Handle type(c.id(H5Aget_type(attr), attr_path, "inspect attribute datatype"), H5Tclose);
+        H5Handle space(c.id(H5Aget_space(attr), attr_path, "inspect attribute dataspace"), H5Sclose);
+        if (H5Sget_simple_extent_type(space) == H5S_NULL) c.fail(ErrorCode::unsupported_layout, attr_path, "null attribute dataspace is unsupported");
+        auto shape = shape_of(c, space, attr_path);
+        const auto n = product(c, shape, attr_path);
+        if (H5Tget_class(type) == H5T_STRING) {
+            auto values = read_text(c, type, space, [&](hid_t t, void* p) { return H5Aread(attr, t, p); }, attr_path);
+            if (shape.empty()) result.set(std::move(key), Element(std::move(values.front())));
+            else result.set(std::move(key), Element(StringArray::from_strings(std::move(shape), std::move(values))));
+        } else {
+            const auto dtype = dtype_of_h5(c, type, attr_path);
+            auto values = metadata_array(dtype, shape);
+            auto bytes = values.edit().bytes();
+            if (n) c.check(H5Aread(attr, dtype == DType::boolean ? static_cast<hid_t>(type) : native_type(dtype), bytes.data()), attr_path, "read numeric attribute");
+            if (shape.empty()) result.set(std::move(key), metadata_scalar(dtype, bytes.data()));
+            else result.set(std::move(key), Element(std::move(values)));
+        }
+    }
+    return result;
+}
+
+struct NativeAttribute {
+    std::string key;
+    std::vector<std::size_t> shape;
+    DType dtype = DType::uint8;
+    bool strings = false;
+    std::vector<std::string> text;
+    std::vector<std::byte> bytes;
+};
+template<class T> void append_scalar(NativeAttribute& attr, ElementView value) {
+    T v = value.scalar<T>(); attr.bytes.resize(sizeof v); std::memcpy(attr.bytes.data(), &v, sizeof v);
+}
+void prepare_scalar(NativeAttribute& attr, ElementView value) {
+    attr.dtype = value.dtype();
+    switch (attr.dtype) {
+    case DType::boolean: append_scalar<bool>(attr, value); break;
+    case DType::int8: append_scalar<std::int8_t>(attr, value); break;
+    case DType::uint8: append_scalar<std::uint8_t>(attr, value); break;
+    case DType::int16: append_scalar<std::int16_t>(attr, value); break;
+    case DType::uint16: append_scalar<std::uint16_t>(attr, value); break;
+    case DType::int32: append_scalar<std::int32_t>(attr, value); break;
+    case DType::uint32: append_scalar<std::uint32_t>(attr, value); break;
+    case DType::int64: append_scalar<std::int64_t>(attr, value); break;
+    case DType::uint64: append_scalar<std::uint64_t>(attr, value); break;
+    case DType::float32: append_scalar<float>(attr, value); break;
+    case DType::float64: append_scalar<double>(attr, value); break;
+    }
+}
+void write_native_metadata(const H5Context& c, hid_t object, std::string_view path, ElementView attrs) {
+    if (attrs.kind() != ElementKind::mapping) c.fail(ErrorCode::invalid_argument, path, "metadata must be a mapping");
+    std::vector<NativeAttribute> prepared;
+    for (auto key : attrs.keys()) {
+        const auto attr_path = std::string(path) + "@" + key;
+        if (key.empty() || key.find('\0') != std::string::npos) c.fail(ErrorCode::invalid_argument, attr_path, "invalid attribute name");
+        auto value = attrs.at(key); NativeAttribute attr; attr.key = std::move(key);
+        switch (value.kind()) {
+        case ElementKind::string: attr.strings = true; attr.text.emplace_back(value.string()); break;
+        case ElementKind::string_array: {
+            attr.strings = true; auto v = value.string_array(); attr.shape = v.shape();
+            for (std::size_t i = 0; i < v.size(); ++i) attr.text.emplace_back(v.string(i));
+            break;
+        }
+        case ElementKind::boolean: case ElementKind::signed_integer: case ElementKind::unsigned_integer: case ElementKind::floating:
+            prepare_scalar(attr, value); break;
+        case ElementKind::array: {
+            auto v = value.array();
+            if (v.layout() != Layout::dense) c.fail(ErrorCode::unsupported_layout, attr_path, "attribute arrays must be dense");
+            attr.dtype = v.dtype(); for (std::size_t i = 0; i < v.rank(); ++i) attr.shape.push_back(v.extent(i));
+            auto owned = v.copy(); auto b = owned.view().bytes(); const auto n = product(c, attr.shape, attr_path);
+            if (n > static_cast<std::size_t>(PTRDIFF_MAX) / dtype_size(attr.dtype)) c.fail(ErrorCode::invalid_argument, attr_path, "attribute is too large");
+            const auto size = n * dtype_size(attr.dtype); attr.bytes.resize(size); if (size) std::memcpy(attr.bytes.data(), b.data(), size);
+            break;
+        }
+        default: c.fail(ErrorCode::unsupported_encoding, attr_path, "value cannot be represented as an HDF5 attribute");
+        }
+        if (attr.shape.size() > H5S_MAX_RANK) c.fail(ErrorCode::unsupported_layout, attr_path, "rank exceeds HDF5 maximum");
+        for (const auto& s : attr.text) {
+            if (s.find('\0') != std::string::npos) c.fail(ErrorCode::invalid_argument, attr_path, "embedded NUL in string attribute");
+            if (c.validation == Validation::full && utf8_error(s) != Utf8Error::none) c.fail(ErrorCode::unsupported_dtype, attr_path, "string data is not valid UTF-8");
+        }
+        prepared.push_back(std::move(attr));
+    }
+    for (const auto& attr : prepared) {
+        const auto attr_path = std::string(path) + "@" + attr.key;
+        const auto exists = H5Aexists(object, attr.key.c_str());
+        if (exists < 0) c.fail(ErrorCode::io_error, attr_path, "inspect attribute existence failed");
+        if (exists) c.check(H5Adelete(object, attr.key.c_str()), attr_path, "replace attribute");
+        auto space = space_for(c, attr.shape, attr_path);
+        H5Handle owned_type;
+        hid_t type;
+        if (attr.strings) { owned_type = string_type(c, attr_path); type = owned_type; }
+        else if (attr.dtype == DType::boolean) { owned_type = boolean_type(c, attr_path); type = owned_type; }
+        else type = file_type(attr.dtype, ByteOrder::native);
+        H5Handle out(c.id(H5Acreate2(object, attr.key.c_str(), type, space, H5P_DEFAULT, H5P_DEFAULT), attr_path, "create attribute"), H5Aclose);
+        if (attr.strings) {
+            std::vector<const char*> pointers; for (const auto& s : attr.text) pointers.push_back(s.c_str());
+            if (!pointers.empty()) c.check(H5Awrite(out, type, pointers.data()), attr_path, "write string attribute");
+        } else if (!attr.bytes.empty()) c.check(H5Awrite(out, attr.dtype == DType::boolean ? type : native_type(attr.dtype), attr.bytes.data()), attr_path, "write numeric attribute");
+    }
+}
+
 bool has_vlen(const H5Context& c, hid_t type, std::string_view path) {
     const auto kind = H5Tget_class(type);
     if (kind == H5T_VLEN || H5Tis_variable_str(type) > 0) return true;
@@ -732,7 +883,7 @@ class Hdf5Backend final : public Backend {
 public:
     Hdf5Backend(std::string_view path, BackedOptions options, bool create = false,
                 bool exclusive = false, bool gzip = false, int gzip_level = 4,
-                std::optional<ByteOrder> order_override = std::nullopt)
+                std::optional<ByteOrder> order_override = std::nullopt, std::size_t userblock_bytes = 0)
         : c_{std::string(path), options.validation}, writable_(create || options.mode == AccessMode::read_write),
           gzip_(gzip), gzip_level_(gzip_level), order_override_(order_override), metadata_budget_(options.scratch_bytes) {
         if (path.empty() || path.find('\0') != std::string_view::npos) c_.fail(ErrorCode::invalid_argument, "/", "filename must be nonempty and NUL-free");
@@ -741,9 +892,13 @@ public:
         c_.check(H5Pset_fapl_sec2(access), "/", "select local POSIX file driver");
         const auto cache_bytes = std::min<std::size_t>(options.scratch_bytes, 1024u * 1024u);
         c_.check(H5Pset_cache(access, 0, 521, cache_bytes, 0.75), "/", "bound raw chunk cache");
+        if (userblock_bytes && (userblock_bytes < 512 || (userblock_bytes & (userblock_bytes - 1))))
+            c_.fail(ErrorCode::invalid_argument, "/", "user block must be zero or a power of two of at least 512 bytes");
+        H5Handle creation(c_.id(H5Pcreate(H5P_FILE_CREATE), "/", "create file creation properties"), H5Pclose);
+        if (userblock_bytes) c_.check(H5Pset_userblock(creation, userblock_bytes), "/", "set file user block");
         hid_t file;
         H5E_BEGIN_TRY {
-            file = create ? H5Fcreate(c_.filename.c_str(), exclusive ? H5F_ACC_EXCL : H5F_ACC_TRUNC, H5P_DEFAULT, access)
+            file = create ? H5Fcreate(c_.filename.c_str(), exclusive ? H5F_ACC_EXCL : H5F_ACC_TRUNC, creation, access)
                           : H5Fopen(c_.filename.c_str(), writable_ ? H5F_ACC_RDWR : H5F_ACC_RDONLY, access);
         } H5E_END_TRY;
         file_ = H5Handle(c_.id(file, "/", create ? "create H5AD file" : "open H5AD file"), H5Fclose);
@@ -998,12 +1153,17 @@ public:
         check_filters(c_, dataset, path, true);
         for (const auto& s : values) if (s.find('\0') != std::string::npos) c_.fail(ErrorCode::invalid_argument, path, "embedded NUL in string data");
         if (H5Tis_variable_str(type) > 0) {
+            if (values.size() > metadata_budget_ / sizeof(const char*))
+                c_.fail(ErrorCode::invalid_argument, path, "string pointer staging exceeds the session scratch budget");
             std::vector<const char*> pointers;
+            pointers.reserve(values.size());
             for (const auto& s : values) pointers.push_back(s.c_str());
             c_.check(H5Dwrite(dataset, type, r.memory_space, r.file_space, H5P_DEFAULT, pointers.data()), path, "write variable strings");
         } else {
             const auto width = H5Tget_size(type);
             if (width && values.size() > static_cast<std::size_t>(PTRDIFF_MAX) / width) c_.fail(ErrorCode::invalid_argument, path, "fixed string buffer exceeds addressable range");
+            if (width && values.size() > metadata_budget_ / width)
+                c_.fail(ErrorCode::invalid_argument, path, "fixed string staging exceeds the session scratch budget");
             const bool space_pad = H5Tget_strpad(type) == H5T_STR_SPACEPAD;
             std::vector<char> bytes(values.size() * width, space_pad ? ' ' : '\0');
             for (std::size_t i = 0; i < values.size(); ++i) {
@@ -1149,6 +1309,14 @@ public:
         ensure_writable();
         auto object = open_object(c_, file_, path);
         write_attributes(c_, object, attrs, path);
+    }
+    Element metadata(std::string_view path) override {
+        ensure_open(); auto object = open_object(c_, file_, path);
+        return read_native_metadata(c_, object, path);
+    }
+    void metadata(std::string_view path, ElementView attrs) override {
+        ensure_writable(); auto object = open_object(c_, file_, path);
+        write_native_metadata(c_, object, path, attrs);
     }
     void copy_attributes(std::string_view source, std::string_view target) override {
         ensure_writable();
@@ -1324,6 +1492,18 @@ private:
 } // namespace anndatapp::backed_detail
 
 namespace anndatapp::detail {
+BackedStore open_hdf5_store_impl(std::string_view path, BackedOptions options) {
+    return backed_detail::make_backed_store(std::make_unique<backed_detail::Hdf5Backend>(path, options), options);
+}
+
+BackedStore create_hdf5_store_impl(std::string_view path, bool exclusive, bool gzip, int gzip_level,
+                                  std::optional<ByteOrder> order, Validation validation, std::size_t userblock_bytes, std::size_t scratch_bytes) {
+    BackedOptions options; options.mode = AccessMode::read_write; options.validation = validation;
+    if (scratch_bytes < 64) throw Error(ErrorCode::invalid_argument, std::string(path), "scratch budget must be at least 64 bytes");
+    options.scratch_bytes = scratch_bytes;
+    return backed_detail::make_backed_store(std::make_unique<backed_detail::Hdf5Backend>(path, options, true, exclusive, gzip, gzip_level, order, userblock_bytes), options);
+}
+
 BackedAnnData open_h5ad_backed(std::string_view path, BackedOptions options) {
     return backed_detail::make_store(std::make_unique<backed_detail::Hdf5Backend>(path, options), options);
 }

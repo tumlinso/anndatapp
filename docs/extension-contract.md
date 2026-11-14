@@ -1,10 +1,11 @@
 # Extending the package
 
-The qualified foundation is a native data library: arrays, tables, records,
-nested elements, AnnData alignment, and explicit backed transfers. New formats
-should compose these pieces and retain their ownership and execution contracts.
-The [compatibility matrix](architecture.md) distinguishes supported encodings
-from future containers and biological conventions.
+The foundation is a native data library: arrays, tables, records, nested
+elements, AnnData alignment, rooted backed access, and explicit transfers. The
+current source includes MuData, TreeData, AnnDataSet, and SpatialData modules;
+their APIs, selected wire-version bounds, and limitations are summarized in
+[the format-family guide](format-family.md). Source presence does not substitute
+for independent compatibility evidence.
 
 ## Logical data and memory
 
@@ -18,18 +19,37 @@ views keep their allocation alive; borrowing transfers no lifetime obligation.
 Direct acquisition exposes actual pointers and strides. A gather, compressed
 chunk, or remote object is not contiguous memory merely because it has a shape.
 
+`Element::sequence()` represents heterogeneous ordered values for native
+metadata. It is distinct from mappings, arrays, columns, and tables; absent
+attributes also remain distinct from explicit null. Generic AnnData serializers
+reject sequences when no established encoding exists. TreeData JSON and
+store-attribute conversions encode them explicitly.
+
 `ArrayView::copy_into(ArrayEdit, Validation)` copies dense numerical selections
 into existing storage without allocating a numerical destination or casting
 values. Source and destination must not overlap. Metadata acquisition may
 allocate; subsequent numerical loops perform ordinary loads and stores. Use
 explicit `copy()` where overlap requires independent data.
 
+The `ArrayView::copy(validation, max_bytes)` overload bounds its output
+numerical/index/offset buffers and temporary sparse-selection staging;
+selection and shape metadata are excluded. Selected sparse copies pack the
+requested result and can fail when output plus mapping workspace exceeds the
+limit. They do not stream the selection in pieces.
+
 ## Formats and backends
 
-Keep HDF5, Zarr, JSON and codec headers behind compiled implementation boundaries.
+Keep HDF5, Zarr, JSON, Arrow/Parquet and codec headers behind compiled implementation boundaries.
 Core types do not depend on Python, analysis frameworks, storage libraries, or
 downstream applications. New named format modules may import the core/backed
 API; internal partitions remain implementation components, not public modules.
+
+`BackedStore` owns an existing physical session and exposes generic groups,
+attributes, arrays, strings, and AnnData rooted at a group. Ordinary H5AD and
+Zarr entry points use the store root; composed formats can use nested roots.
+Keep backend types private and preserve descriptor retention, explicit close,
+worker-local transfer contexts, scratch accounting, and physical chunk/shard
+conflict rules.
 
 Use established encoding names and versions. Pin the upstream specification and
 reference implementation before writing a codec, independently generate input,
@@ -38,9 +58,9 @@ possible; do not create a second numerical/table model for each container.
 
 The private backed contract handles native-endian numerical transfers and
 backend capabilities. File byte order remains separate from native access.
-Composed formats will need their own container relationships and dataset-root
-handling; those are format decisions, not reasons to generalize every core type
-in advance. Domain conventions such as Scanpy results normally need typed
+Keep format relationships in their owning models and use rooted datasets for
+nested AnnData; do not generalize every core type or add a storage plugin
+framework. Domain conventions such as Scanpy results normally need typed
 accessors or validation, not another storage engine.
 
 Untouched extension data can remain in its original store. Unsupported encodings
@@ -78,7 +98,9 @@ costs when changing interfaces and prove that private edits leave public BMIs an
 consumer objects untouched. Start performance work with bounded, representative
 geometry and call/byte/allocation counts; report exact source and fixture identity.
 
-Current qualification targets Linux with Clang 18 and matching dependency
-scanning. Additional compilers and unsupported encodings remain explicit future
-coverage. Extension readiness does not imply completion of MuData, TreeData,
-linked collections, SpatialData, ragged records, or every AnnData dtype.
+Current qualification targets and completed checks are recorded in the
+qualification documents. The format-family validation record will list pinned
+fixtures, environment identities, hashes, and outcomes independently of this
+design contract. Unsupported encodings and the exclusions in
+[format-family.md](format-family.md) remain explicit; do not infer coverage from
+API availability.

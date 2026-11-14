@@ -90,6 +90,7 @@ public:
     const range& range_value() const noexcept { return range_; }
     const std::vector<std::uint8_t>& mask_values() const noexcept { return mask_; }
     const std::vector<std::string>& label_values() const noexcept { return labels_; }
+    Axis resolve(std::size_t length, std::string_view path) const;
     Axis resolve(const std::vector<std::string>& names,
                                      std::string_view path) const;
     Axis resolve(const TableView& index,
@@ -122,6 +123,10 @@ public:
     bool nullable() const;
     bool valid(std::size_t row) const;
     ArrayView values() const;
+    // Numeric source storage is unsliced and retained; source_row maps a logical
+    // row into it and checks the logical bound. Neither operation copies values.
+    ArrayView source_values() const;
+    std::size_t source_row(std::size_t row) const;
     std::string_view string(std::size_t row) const;
     [[nodiscard]] StringMissingValue string_missing_value() const;
     bool ordered() const;
@@ -250,7 +255,8 @@ private:
 };
 
 enum class ElementKind { null, boolean, signed_integer, unsigned_integer,
-                         floating, string, array, string_array, column, table, mapping, record_array };
+                         floating, string, array, string_array, column, table, mapping, record_array,
+                         sequence };
 class ElementView;
 
 class Element {
@@ -279,15 +285,18 @@ public:
     explicit Element(Column);
     explicit Element(Table);
     static Element mapping();
+    static Element sequence();
     template<class T> static Element scalar(T value) {
         return scalar_from_bytes(dtype_of<T>(), &value);
     }
     ElementView view() const;
     Element copy() const;
     void set(std::string key, Element value);
+    void append(Element value);
     void set_serialization_byte_order(ByteOrder);
     void erase(std::string_view key);
     ElementView at(std::string_view key) const;
+    ElementView at(std::size_t index) const;
     void validate() const;
 private:
     std::shared_ptr<detail::ElementImpl> impl_;
@@ -324,9 +333,16 @@ public:
     TableView table() const;
     // Allocates a copy of the mapping keys.
     std::vector<std::string> keys() const;
+    std::size_t mapping_size() const;
+    // Borrows key bytes from this mapping; any mapping mutation invalidates the view.
+    std::string_view mapping_key(std::size_t index) const;
     bool contains(std::string_view key) const;
     ElementView at(std::string_view key) const;
+    // size() and at(index) are available for sequence elements only.
+    std::size_t size() const;
+    ElementView at(std::size_t index) const;
     Element copy() const;
+    void validate() const;
 private:
     std::shared_ptr<detail::ElementImpl> impl_;
     explicit ElementView(std::shared_ptr<detail::ElementImpl>);

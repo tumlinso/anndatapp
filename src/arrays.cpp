@@ -689,10 +689,22 @@ void ArrayView::copy_into(const ArrayEdit& destination, Validation validation) c
 }
 
 Array ArrayView::copy(Validation validation) const {
+    return copy(validation, std::numeric_limits<std::size_t>::max());
+}
+
+Array ArrayView::copy(Validation validation, std::size_t max_bytes) const {
     require_state(state_);
+    std::size_t charged = 0;
+    auto charge = [&](std::size_t count, std::size_t width) {
+        const auto bytes = checked_byte_span(count, width);
+        if (bytes > max_bytes - charged)
+            fail(ErrorCode::invalid_argument, "copy exceeds numerical buffer byte budget");
+        charged += bytes;
+    };
     if (state_->format == Layout::dense) {
         std::vector<std::size_t> shape;
         for (std::size_t a = 0; a < rank(); ++a) shape.push_back(extent(a));
+        charge(element_count(shape), dtype_size(state_->type));
         auto result = Array::allocate_dense(state_->type, state_->native, shape, false);
         result.state_->value_byte_order = state_->value_byte_order;
         // Owning dense copy historically trusts the source storage. Reuse the
@@ -703,6 +715,11 @@ Array ArrayView::copy(Validation validation) const {
     }
     const std::size_t major_axis = state_->format == Layout::csr ? 0 : 1, minor_axis = 1 - major_axis;
     if (!has_selection(selection_)) {
+        if (state_->shape[major_axis] == std::numeric_limits<std::size_t>::max())
+            fail(ErrorCode::invalid_argument, "sparse major dimension overflow");
+        charge(state_->nnz, dtype_size(state_->type));
+        charge(state_->nnz, dtype_size(state_->index_type));
+        charge(state_->shape[major_axis] + 1, dtype_size(state_->offset_type));
         auto result = Array::allocate_sparse(state_->format, state_->type, state_->index_type,
                                               state_->offset_type, state_->native, state_->native_index,
                                               state_->native_offset, state_->shape[0], state_->shape[1], state_->nnz);
@@ -727,8 +744,12 @@ Array ArrayView::copy(Validation validation) const {
     if (validation == Validation::full) validate_state(*state_);
     const auto width = dtype_size(state_->type), index_width = dtype_size(state_->index_type);
     const auto minor = selection_->axes[minor_axis];
+    charge(out_major + 1, sizeof(std::size_t));
     std::vector<std::size_t> offsets(out_major + 1, 0);
     auto allocate = [&](std::size_t nnz) {
+        charge(nnz, width);
+        charge(nnz, index_width);
+        charge(out_major + 1, dtype_size(state_->offset_type));
         auto out = Array::allocate_sparse(state_->format, state_->type, state_->index_type, state_->offset_type,
             state_->native, state_->native_index, state_->native_offset, extent(0), extent(1), nnz);
         out.state_->value_byte_order = state_->value_byte_order;
@@ -802,6 +823,8 @@ Array ArrayView::copy(Validation validation) const {
     if (source_minor <= (std::size_t{1} << 20) &&
         out_minor >= source_minor/4 + (source_minor % 4 != 0)) {
         checked_byte_span(out_minor, sizeof(std::size_t));
+        charge(source_minor, sizeof(std::size_t));
+        charge(out_minor, sizeof(std::size_t));
         const auto none = std::numeric_limits<std::size_t>::max();
         std::vector<std::size_t> head(source_minor, none), next(out_minor);
         for (std::size_t j = out_minor; j > 0; --j) {
@@ -812,6 +835,7 @@ Array ArrayView::copy(Validation validation) const {
             for (auto j = head[i]; j != none; j = next[j]) emit(j);
         });
     }
+    charge(out_minor, sizeof(std::pair<std::size_t, std::size_t>));
     std::vector<std::pair<std::size_t, std::size_t>> lookup;
     lookup.reserve(out_minor);
     for (std::size_t j = 0; j < out_minor; ++j) lookup.emplace_back(minor.index(j), j);

@@ -1,0 +1,56 @@
+# Private SpatialData I/O dependency. Prefer upstream packages; a wheel prefix
+# can supply the same C++ headers and shared libraries for local qualification.
+find_package(Arrow CONFIG QUIET)
+find_package(Parquet CONFIG QUIET)
+foreach(_kind shared static)
+  if(TARGET Arrow::arrow_${_kind} AND TARGET Parquet::parquet_${_kind})
+    set(ArrowParquet_FOUND TRUE)
+    if(_kind STREQUAL "shared")
+      set(ArrowParquet_RUNTIME_LIBRARY_DIRS
+        "$<TARGET_FILE_DIR:Parquet::parquet_shared>" "$<TARGET_FILE_DIR:Arrow::arrow_shared>")
+    endif()
+    if(NOT TARGET ArrowParquet::ArrowParquet)
+      add_library(ArrowParquet::ArrowParquet INTERFACE IMPORTED)
+      set_target_properties(ArrowParquet::ArrowParquet PROPERTIES
+        INTERFACE_LINK_LIBRARIES "Parquet::parquet_${_kind};Arrow::arrow_${_kind}")
+    endif()
+    return()
+  endif()
+endforeach()
+
+set(_arrow_hints ${ANNDATAPP_ARROW_ROOT} ${ArrowParquet_ROOT})
+find_path(ArrowParquet_INCLUDE_DIR arrow/api.h HINTS ${_arrow_hints} PATH_SUFFIXES include)
+find_library(ArrowParquet_ARROW_LIBRARY NAMES arrow HINTS ${_arrow_hints} PATH_SUFFIXES lib lib64)
+find_library(ArrowParquet_PARQUET_LIBRARY NAMES parquet HINTS ${_arrow_hints} PATH_SUFFIXES lib lib64)
+foreach(_name ARROW PARQUET)
+  if(NOT ArrowParquet_${_name}_LIBRARY)
+    string(TOLOWER "${_name}" _stem)
+    foreach(_root IN LISTS _arrow_hints)
+      file(GLOB _libraries LIST_DIRECTORIES FALSE
+        "${_root}/lib${_stem}.so.*" "${_root}/lib/lib${_stem}.so.*"
+        "${_root}/lib${_stem}.*.dylib" "${_root}/lib/lib${_stem}.*.dylib")
+      if(_libraries)
+        list(SORT _libraries COMPARE NATURAL ORDER DESCENDING)
+        list(GET _libraries 0 _library)
+        set(ArrowParquet_${_name}_LIBRARY "${_library}" CACHE FILEPATH "${_stem} library" FORCE)
+        break()
+      endif()
+    endforeach()
+  endif()
+endforeach()
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(ArrowParquet REQUIRED_VARS
+  ArrowParquet_INCLUDE_DIR ArrowParquet_ARROW_LIBRARY ArrowParquet_PARQUET_LIBRARY)
+if(ArrowParquet_FOUND)
+  get_filename_component(_arrow_runtime_dir "${ArrowParquet_ARROW_LIBRARY}" DIRECTORY)
+  get_filename_component(_parquet_runtime_dir "${ArrowParquet_PARQUET_LIBRARY}" DIRECTORY)
+  set(ArrowParquet_RUNTIME_LIBRARY_DIRS "${_parquet_runtime_dir}" "${_arrow_runtime_dir}")
+  list(REMOVE_DUPLICATES ArrowParquet_RUNTIME_LIBRARY_DIRS)
+endif()
+if(ArrowParquet_FOUND AND NOT TARGET ArrowParquet::ArrowParquet)
+  add_library(ArrowParquet::ArrowParquet INTERFACE IMPORTED)
+  set_target_properties(ArrowParquet::ArrowParquet PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${ArrowParquet_INCLUDE_DIR}"
+    INTERFACE_LINK_LIBRARIES "${ArrowParquet_PARQUET_LIBRARY};${ArrowParquet_ARROW_LIBRARY}")
+endif()
+mark_as_advanced(ArrowParquet_INCLUDE_DIR ArrowParquet_ARROW_LIBRARY ArrowParquet_PARQUET_LIBRARY)

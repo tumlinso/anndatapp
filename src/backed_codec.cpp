@@ -625,8 +625,9 @@ BackedStringArray BackedStringArray::select(std::vector<Selection> selections) c
     const auto labels = axes.size() == 1 ? node_ : std::shared_ptr<detail::BackedNode>{};
     for (std::size_t i = 0; i < axes.size(); ++i)
         selected.push_back(backed_detail::select_axis(axes[i], selections[i], labels));
-    auto result = backed_detail::node(node_->session, node_->path, std::move(selected));
+    auto result = backed_detail::node(node_->session, node_->path, std::move(selected), node_->raw_array);
     result->writable = node_->writable;
+    result->raw_array = node_->raw_array;
     return BackedStringArray(std::move(result));
 }
 
