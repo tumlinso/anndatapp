@@ -1,5 +1,7 @@
 # Format-family qualification
 
+A subsequent independent review on 15 November 2026 reproduced five unresolved defects, including memory and destination-preservation failures. See the [review handoff](format-family-review-handoff.md). The passing matrix below remains a record of its tested cases; it does not establish full acceptance.
+
 The format-family implementation passed the Linux checks below on 14 November 2026. The [machine-readable record](../benchmarks/results/format-family-qualification.json) contains the source-input hashes, toolchain and configuration identity, observed fixture hashes, and resolved reference versions. The [format guide](format-family.md) defines the supported API and encoding boundaries.
 
 Qualification started from reviewed `origin/main` commit `e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629` in an isolated worktree. The unchanged baseline passed 20 native/installed-consumer checks. No CCell, Cellerator, or downstream dependency pins were changed.
