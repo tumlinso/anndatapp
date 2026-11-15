@@ -488,19 +488,37 @@ public:
         index_=node(t->session,child(t->path,string_attr(info,"_index",t->path)),t->axes);
         if(index_->axes.size()!=1)fail(ErrorCode::shape_mismatch,t->path,"table index must be one-dimensional");
     }
-    const std::string& at(std::size_t i){
-        if(i>=index_->axes[0].size)fail(ErrorCode::out_of_bounds,index_->path,"table row is out of bounds");
-        if(i<first_||i-first_>=values_.size()){
-            const auto& axis=index_->axes[0];auto cap=std::max<std::size_t>(1,std::min<std::size_t>(8192,budget_/(2*sizeof(std::string))));
-            std::size_t requested=1;
-            while(requested<cap && requested<axis.size-i && axis.at(i+requested)==axis.at(i)+requested)++requested;
-            values_.clear();values_.shrink_to_fit();
-            values_=index_->session->backend->read_strings_bounded(index_->path,{axis.at(i)},{requested},budget_);
-            if(values_.empty()||values_.size()>requested)fail(ErrorCode::io_error,index_->path,"index transfer returned an incorrect length");
-            if(index_->session->options.validation==Validation::full)
-                for(const auto& value:values_)validate_utf8_string(value,index_->path);
-            first_=i;
+    const std::vector<std::string>& batch(std::size_t i, std::size_t maximum) {
+        const auto& axis = index_->axes[0];
+        if (i >= axis.size || !maximum) fail(ErrorCode::out_of_bounds,index_->path,"table row is out of bounds");
+        std::vector<std::string>().swap(values_);
+        constexpr auto base = sizeof(std::vector<std::size_t>);
+        auto cap = budget_ > base ? (budget_ - base)/(2*sizeof(std::string) + sizeof(std::size_t)) : 0;
+        if (!cap) fail(ErrorCode::invalid_argument,index_->path,"one index position exceeds scratch budget");
+        const auto n = std::min({std::size_t(8192), cap, axis.size-i, maximum});
+        const auto first = axis.at(i);
+        std::size_t run=1;
+        while (run<n && first<=SIZE_MAX-run && axis.at(i+run)==first+run) ++run;
+        if (run==n) values_=index_->session->backend->read_strings_bounded(index_->path,{first},{n},budget_);
+        else try {
+            std::vector<std::size_t> positions(n);
+            for (std::size_t j=0;j<n;++j) positions[j]=axis.at(i+j);
+            const auto charge=base+positions.capacity()*sizeof(std::size_t);
+            values_=index_->session->backend->read_strings_gather_bounded(index_->path,positions.data(),n,budget_-charge);
+        } catch (const Error& e) {
+            if (e.code()!=ErrorCode::invalid_argument) throw;
+            // Gather coordinates may not fit although one old-style run does.
+            // The failed call and its position buffer are gone before retry.
+            values_=index_->session->backend->read_strings_bounded(index_->path,{first},{run},budget_);
         }
+        if (values_.empty() || values_.size()>n) fail(ErrorCode::io_error,index_->path,"index transfer returned an incorrect length");
+        if (index_->session->options.validation==Validation::full)
+            for (const auto& value:values_) validate_utf8_string(value,index_->path);
+        first_=i;
+        return values_;
+    }
+    const std::string& at(std::size_t i) {
+        if (i<first_ || i-first_>=values_.size()) batch(i,index_->axes[0].size-i);
         return values_[i-first_];
     }
 private:
@@ -509,12 +527,39 @@ private:
     std::vector<std::string> values_;
 };
 }
-void compare_table_indexes(const BackedTable& left,const BackedTable& right){
-    const auto size=left.size();if(size!=right.size())fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
-    const auto& a=detail::BackedAccess::get(left);const auto& b=detail::BackedAccess::get(right);
-    auto budget=std::min(a->session->options.scratch_bytes,b->session->options.scratch_bytes)/2;
-    IndexCursor first(left,budget),second(right,budget);
-    for(std::size_t i=0;i<size;++i)if(first.at(i)!=second.at(i))fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
+void compare_table_indexes(const BackedTable& left,const BackedTable* others,std::size_t count) {
+    if (!count) return;
+    const auto& a=detail::BackedAccess::get(left);check_node(a);
+    const auto size=left.size();
+    auto budget=a->session->options.scratch_bytes;
+    for (std::size_t k=0;k<count;++k) {
+        if (others[k].size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
+        budget=std::min(budget,detail::BackedAccess::get(others[k])->session->options.scratch_bytes);
+    }
+    budget/=2;
+    if (count==1) {
+        IndexCursor first(left,budget),second(others[0],budget);
+        for (std::size_t i=0;i<size;++i)
+            if (first.at(i)!=second.at(i)) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
+        return;
+    }
+    IndexCursor first(left,budget);
+    for (std::size_t i=0;i<size;) {
+        const auto& values=first.batch(i,size-i);
+        for (std::size_t k=0;k<count;++k) {
+            IndexCursor second(others[k],budget);
+            for (std::size_t j=0;j<values.size();) {
+                const auto& batch=second.batch(i+j,values.size()-j);
+                for (std::size_t p=0;p<batch.size();++p)
+                    if (values[j+p]!=batch[p]) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
+                j+=batch.size();
+            }
+        }
+        i+=values.size();
+    }
+}
+void compare_table_indexes(const BackedTable& left,const BackedTable& right) {
+    compare_table_indexes(left,&right,1);
 }
 void compare_table_indexes(const BackedTable& left,const TableView& right){
     if(left.size()!=right.size())fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
@@ -528,4 +573,8 @@ namespace anndatapp::detail {
 void compare_backed_table_indexes(const BackedTable& left, const BackedTable& right) {
     backed_detail::compare_table_indexes(left, right);
 }
+void compare_backed_table_indexes(const BackedTable& left, const BackedTable* others, std::size_t count) {
+    backed_detail::compare_table_indexes(left, others, count);
+}
+
 }

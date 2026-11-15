@@ -288,6 +288,19 @@ void check_read_contract(const std::filesystem::path& path, std::string_view bac
 
     auto x = store.x();
     auto prepared = x.prepare_read();
+    const auto retained_bytes = detail::prepared_read_retained_bytes(prepared);
+    require(retained_bytes > sizeof(PreparedRead), "prepared metadata charge omits retained objects");
+    auto affine_plan = x.select({range{0, 1}, all}).prepare_read();
+    auto gather_plan = x.select({indices(std::vector<std::ptrdiff_t>(256, 0)), all}).prepare_read();
+    require(detail::prepared_read_retained_bytes(gather_plan) >=
+                detail::prepared_read_retained_bytes(affine_plan) + 256*sizeof(std::size_t),
+            "prepared metadata charge omits retained gather capacity");
+    auto same_plan = gather_plan;
+    require(detail::prepared_read_retained_bytes(same_plan) == detail::prepared_read_retained_bytes(gather_plan),
+            "shared prepared metadata must be charged conservatively for each piece");
+    expect_error(ErrorCode::invalid_argument,
+        [&] { (void)detail::prepared_read_retained_bytes(PreparedRead{}); },
+        "empty prepared metadata query must reject");
     const auto required = prepared.requirements();
     require(required.layout == Layout::dense && required.dtype == DType::float32 &&
             required.shape == std::vector<std::size_t>({3, 2}),
@@ -410,6 +423,8 @@ void check_read_contract(const std::filesystem::path& path, std::string_view bac
 
     auto stale_after_close = store.x();
     store.close();
+    require(detail::prepared_read_retained_bytes(prepared) == retained_bytes,
+            "prepared metadata accounting must not access a closed backend");
     expect_error(ErrorCode::invalid_argument, [&] { (void)stale_after_close.read(); },
         "retained array handle must become stale when the session closes");
 }

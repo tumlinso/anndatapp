@@ -81,11 +81,19 @@ std::vector<float> unpack(ArrayView x) {
 }
 void check_selected(const AnnDataSetView& selected, Layout layout) {
     require(selected.n_obs() == 4 && selected.n_vars() == 3, "selected shape differs");
-    auto r = selected.requirements();
+    auto prepared = selected.prepare_x();
+    auto moved = std::move(prepared);
+    expect_error(ErrorCode::invalid_argument, [&] { (void)prepared.requirements(); });
+    auto r = moved.requirements();
+    require(moved.requirements().shape == r.shape, "repeated prepared requirements differ");
     require(r.layout == layout && r.dtype == DType::float32, "requirements differ");
     std::vector<float> dense(12);
     if (layout == Layout::dense) {
-        selected.read_x_into(DenseBuffer::from(dense.data() + 9, {4, 3}, {-12, 4}));
+        auto target = DenseBuffer::from(dense.data() + 9, {4, 3}, {-12, 4});
+        auto bad = target; bad.dtype = DType::float64;
+        expect_error(ErrorCode::dtype_mismatch, [&] { moved.read_into(bad); });
+        require(std::all_of(dense.begin(), dense.end(), [](float x) { return x == 0; }), "failed dense preflight changed output");
+        moved.preflight(target); moved.read_into(target); moved.read_into(target);
         for (std::size_t i = 0; i < 4; ++i)
             for (std::size_t j = 0; j < 3; ++j)
                 require(dense[(3 - i) * 3 + j] == expected[i * 3 + j], "strided dense selection differs");
@@ -93,8 +101,9 @@ void check_selected(const AnnDataSetView& selected, Layout layout) {
         require(r.index_dtype == DType::int64 && r.offset_dtype == DType::int64, "mixed sparse widths were not promoted");
         std::vector<float> values(r.nnz);
         std::vector<std::int64_t> indices(r.nnz), offsets((layout == Layout::csr ? 4 : 3) + 1);
-        selected.read_x_into({values.data(), indices.data(), offsets.data(), r.dtype, r.index_dtype, r.offset_dtype,
-                              values.size(), indices.size(), offsets.size()});
+        SparseBuffer target{values.data(), indices.data(), offsets.data(), r.dtype, r.index_dtype, r.offset_dtype,
+                            values.size(), indices.size(), offsets.size()};
+        moved.preflight(target); moved.read_into(target); moved.read_into(target);
         for (std::size_t major = 0; major + 1 < offsets.size(); ++major) {
             require(offsets[major] <= offsets[major + 1], "sparse offsets are not monotone");
             for (auto i = offsets[major]; i < offsets[major + 1]; ++i) {
@@ -108,7 +117,11 @@ void check_selected(const AnnDataSetView& selected, Layout layout) {
         for (std::size_t i = 0; i < 12; ++i) require(dense[i] == expected[i], "sparse selection differs");
         auto too_small = SparseBuffer{values.data(), indices.data(), offsets.data(), r.dtype, r.index_dtype, r.offset_dtype,
                                       r.nnz ? r.nnz - 1 : 0, indices.size(), offsets.size()};
-        if (r.nnz) expect_error(ErrorCode::shape_mismatch, [&] { selected.read_x_into(too_small); });
+        if (r.nnz) {
+            auto old = values;
+            expect_error(ErrorCode::shape_mismatch, [&] { moved.read_into(too_small); });
+            require(values == old, "failed prepared transfer changed output");
+        }
     }
     auto materialized = selected.materialize();
     require(materialized.n_obs() == 4 && materialized.n_vars() == 3 && materialized.has_x(), "materialized shape differs");
@@ -146,8 +159,13 @@ void check_collection(const fs::path& root, Layout layout) {
     copied.close();
     expect_error(ErrorCode::invalid_argument, [&] { d.set_annotation("/uns/AnnDataSet", Element()); });
     auto survivor = d.view();
+    auto stale = survivor.prepare_x();
+    d.set_annotation("/uns/extra", Element("updated"));
+    expect_error(ErrorCode::invalid_argument, [&] { (void)stale.requirements(); });
+    auto closing = d.view().prepare_x();
     d.close();
     expect_error(ErrorCode::invalid_argument, [&] { (void)survivor.n_obs(); });
+    expect_error(ErrorCode::invalid_argument, [&] { (void)closing.requirements(); });
 
     DatasetOptions bounded;
     bounded.backed.scratch_bytes = 512;
@@ -159,11 +177,11 @@ void check_collection(const fs::path& root, Layout layout) {
         require(std::all_of(untouched.begin(), untouched.end(), [](float x) { return x == -19; }), "capacity failure modified dense output");
     } else {
         expect_error(ErrorCode::invalid_argument, [&] { (void)wide.requirements(); });
-        if (layout == Layout::csr) {
-            auto narrow = limited.slice(indices{3, 0, 2, 3}, indices{2, 0, 2});
-            check_selected(narrow, layout);
-        }
     }
+    // 512 bytes leaves too little selector budget for retained piece descriptors;
+    // this exercises bounded regeneration for all three physical layouts.
+    auto narrow = limited.slice(indices{3, 0, 2, 3}, indices{2, 0, 2});
+    check_selected(narrow, layout);
     limited.close();
     expect_error(ErrorCode::io_error, [&] {
         DatasetOptions missing;

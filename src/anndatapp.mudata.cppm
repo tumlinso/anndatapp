@@ -45,8 +45,10 @@ public:
                       std::vector<std::uint64_t> obs_map,
                       std::vector<std::uint64_t> var_map);
     void erase_modality(std::string_view name);
-    // Captures retained bindings and shares immutable observation/variable maps.
+    // Retains AnnData views and shares immutable maps without scanning or copying map payloads.
     MuDataView view() const;
+    // Visits selected global positions for each modality axis. Allocates a projected
+    // map and compact local-position list per axis, then retains AnnData slice views.
     MuDataView slice(Selection obs = all, Selection var = all) const;
     MuData copy() const;
     void validate() const;
@@ -101,7 +103,8 @@ public:
     // The two map writes are synchronous, not a cross-path transaction.
     void set_maps(std::string_view name, std::vector<std::uint64_t> obs_map,
                   std::vector<std::uint64_t> var_map);
-    // Views and positional slices defer map and matrix payload reads.
+    // Retains store-backed descriptors. Positional slices defer map and matrix
+    // payload reads; label slices read axis names to resolve labels.
     BackedMuDataView view() const;
     BackedMuDataView slice(Selection obs = all, Selection var = all) const;
     MuData read() const;
@@ -115,10 +118,12 @@ private:
 };
 
 
-// Retains the store session and selections. Maps are read on first access per
-// modality and axis, and their pointers remain valid for this view lifetime.
-// Map or modality structural mutation invalidates existing views. Label slices
-// read axis names. read() explicitly materializes the selected view.
+// Retains the open store owner, map descriptors and revisions, and positional
+// selections. Positional slice creation defers map and matrix payload reads. The
+// first map or modality access reads and caches each selected map; a projected
+// slice also allocates a projected map and local-position list. Map pointers remain
+// valid for this view lifetime. Map or modality structural mutation invalidates
+// existing views. Label slices read axis names. read() materializes the selected view.
 class BackedMuDataView {
 public:
     BackedMuDataView();

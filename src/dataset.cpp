@@ -1,5 +1,6 @@
 module;
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -32,6 +33,20 @@ struct AnnDataSetImpl {
     std::size_t n_obs = 0, n_vars = 0;
     bool open = true, has_x = false;
     std::size_t selector_bytes = 0;
+};
+struct DatasetSegment { std::size_t first, count, component; };
+struct PreparedDatasetPiece {
+    DatasetSegment segment;
+    std::size_t column;
+    PreparedRead read;
+};
+struct PreparedAnnDataSetReadImpl {
+    std::shared_ptr<AnnDataSetImpl> owner;
+    BackedAnnDataView annotations;
+    Axis obs, var;
+    ReadRequirements requirements;
+    std::vector<PreparedDatasetPiece> pieces;
+    bool retained = false;
 };
 }
 
@@ -145,7 +160,7 @@ Axis resolve(const Selection& s, std::size_t n, const BackedTable& names, std::s
         return s.resolve(names.names(), path);
     return s.resolve(n, path);
 }
-struct Segment { std::size_t first, count, component; };
+using Segment = detail::DatasetSegment;
 // The selection itself is retained by the view. These budgets cover only
 // temporary positional vectors created while preparing a component transfer.
 constexpr std::size_t selector_width = 4 * sizeof(std::ptrdiff_t);
@@ -221,21 +236,44 @@ void compare_indexes(const BackedTable& left, const BackedTable& right,
     }
 }
 void check_selection_indexes(const Impl& p, const Axis& rows, const Axis& cols) {
-    std::vector<bool> checked_vars(p.files.size(), false);
+    std::vector<bool> touched(p.files.size(), false);
     for_segments(p, rows, cols, [&](const Segment& s) {
         const auto& file = p.files[s.component];
         if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
-        if (!checked_vars[s.component]) {
-            compare_indexes(p.manifest.var().select(axis_selection(cols, p.n_vars)),
-                            file.var().select(axis_selection(cols, p.n_vars)),
-                            "AnnDataSet/var", "component variable names differ");
-            checked_vars[s.component] = true;
-        }
+        touched[s.component] = true;
         auto selected = detail::compose_axis(rows, Axis::stride(s.first, s.count), p.n_obs);
         compare_indexes(p.manifest.obs().select(axis_selection(selected, p.n_obs)),
                         file.obs().select(segment_rows(p, rows, s)),
                         "AnnDataSet/obs", "component observation names differ from manifest");
     });
+    if (std::none_of(touched.begin(), touched.end(), [](bool x) { return x; })) return;
+    const auto selection = selector_cost(p, cols, 0);
+    if (selection > SIZE_MAX - 256) fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "selection staging overflows");
+    const auto cost = 256 + selection;
+    const auto capacity = std::min(p.files.size(), p.selector_bytes / cost);
+    auto vars = p.manifest.var().select(axis_selection(cols, p.n_vars));
+    if (capacity < 2) {
+        for (std::size_t i = 0; i < p.files.size(); ++i) if (touched[i])
+            compare_indexes(vars, p.files[i].var().select(axis_selection(cols, p.n_vars)),
+                            "AnnDataSet/var", "component variable names differ");
+        return;
+    }
+    std::vector<BackedTable> tables; tables.reserve(capacity);
+    auto compare = [&] {
+        if (tables.empty()) return;
+        try { detail::compare_backed_table_indexes(vars, tables.data(), tables.size()); }
+        catch (const Error& e) {
+            if (e.code() == ErrorCode::shape_mismatch)
+                fail(e.code(), "AnnDataSet/var", "component variable names differ");
+            throw;
+        }
+        tables.clear();
+    };
+    for (std::size_t i = 0; i < p.files.size(); ++i) if (touched[i]) {
+        tables.push_back(p.files[i].var().select(axis_selection(cols, p.n_vars)));
+        if (tables.size() == capacity) compare();
+    }
+    compare();
 }
 void checked_shape(const DenseBuffer& dst, std::size_t m, std::size_t n, DType type) {
     if (dst.dtype != type) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "destination dtype differs from X");
@@ -292,22 +330,6 @@ std::uint64_t integer_max(DType t) {
     default: fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "sparse index dtype must be an integer");
     }
 }
-template<class T> std::uint64_t load_integer(const void* data, std::size_t i) {
-    T value;
-    std::memcpy(&value, static_cast<const std::byte*>(data) + i * sizeof(T), sizeof(T));
-    if constexpr (std::is_signed_v<T>) if (value < 0)
-        fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "negative sparse index or offset");
-    return std::uint64_t(value);
-}
-std::uint64_t read_integer(const void* data, DType t, std::size_t i) {
-    switch (t) {
-    case DType::int8: return load_integer<std::int8_t>(data, i); case DType::uint8: return load_integer<std::uint8_t>(data, i);
-    case DType::int16: return load_integer<std::int16_t>(data, i); case DType::uint16: return load_integer<std::uint16_t>(data, i);
-    case DType::int32: return load_integer<std::int32_t>(data, i); case DType::uint32: return load_integer<std::uint32_t>(data, i);
-    case DType::int64: return load_integer<std::int64_t>(data, i); case DType::uint64: return load_integer<std::uint64_t>(data, i);
-    default: fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "sparse index dtype must be an integer");
-    }
-}
 template<class T> void store_integer(void* data, std::size_t i, std::uint64_t value) {
     T v = static_cast<T>(value);
     std::memcpy(static_cast<std::byte*>(data) + i * sizeof(T), &v, sizeof(T));
@@ -320,6 +342,74 @@ void write_integer(void* data, DType t, std::size_t i, std::uint64_t value) {
     case DType::int32: store_integer<std::int32_t>(data, i, value); break; case DType::uint32: store_integer<std::uint32_t>(data, i, value); break;
     case DType::int64: store_integer<std::int64_t>(data, i, value); break; case DType::uint64: store_integer<std::uint64_t>(data, i, value); break;
     default: fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "sparse index dtype must be an integer");
+    }
+}
+using Plan = detail::PreparedAnnDataSetReadImpl;
+void check_plan(const Plan* p) {
+    if (!p) fail(ErrorCode::invalid_argument, "AnnDataSet/X", "prepared read is empty");
+    check(p->owner);
+    (void)p->annotations.n_obs();
+    for (const auto& file : p->owner->files) (void)file.n_obs();
+}
+// Account retained descriptor payload and leave room for selector and offset
+// staging. If descriptors do not fit, rebuild them one piece at a time.
+bool retain_piece(Plan& p, Segment s, std::size_t column, PreparedRead read, std::size_t& charged) {
+    if (!p.retained) return false;
+    const auto& owner = *p.owner;
+    const auto cols = column == SIZE_MAX ? p.var : Axis::stride(p.var.index(column), 1);
+    const auto selection = selector_cost(owner, cols, p.obs.is_gather() ? s.count : 0);
+    const auto staging = plus(selection, column == SIZE_MAX ? 0 : 2 * dtype_size(p.requirements.offset_dtype));
+    const auto bytes = detail::prepared_read_retained_bytes(read);
+    const auto limit = owner.selector_bytes;
+    const auto next = p.pieces.size() == p.pieces.capacity()
+        ? (p.pieces.capacity() ? plus(p.pieces.capacity(), p.pieces.capacity()) : 1) : p.pieces.capacity();
+    if (next > SIZE_MAX / sizeof(detail::PreparedDatasetPiece))
+        fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "prepared piece capacity overflows");
+    const auto vector_bytes = next * sizeof(detail::PreparedDatasetPiece);
+    const auto old_bytes = next != p.pieces.capacity() ? p.pieces.capacity() * sizeof(detail::PreparedDatasetPiece) : 0;
+    auto need = plus(plus(charged, bytes), plus(staging, plus(vector_bytes, old_bytes)));
+    if (need > limit) {
+        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false; return false;
+    }
+    if (next != p.pieces.capacity()) p.pieces.reserve(next);
+    const auto actual = p.pieces.capacity() * sizeof(detail::PreparedDatasetPiece);
+    if (plus(plus(charged, bytes), plus(staging, actual)) > limit) {
+        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false; return false;
+    }
+    charged += bytes;
+    p.pieces.push_back({s, column, std::move(read)});
+    return true;
+}
+void reserve_piece_staging(Plan& p, Segment s, const Axis& cols, bool csc, std::size_t charged) {
+    if (!p.retained) return;
+    const auto staging = plus(selector_cost(*p.owner, cols, p.obs.is_gather() ? s.count : 0),
+                              csc ? 2 * dtype_size(p.requirements.offset_dtype) : 0);
+    const auto vector_bytes = p.pieces.capacity() * sizeof(detail::PreparedDatasetPiece);
+    if (plus(charged, plus(vector_bytes, staging)) > p.owner->selector_bytes) {
+        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false;
+    }
+}
+template<class F> void walk_pieces(const Plan& p, F&& f, const bool* keep = nullptr) {
+    const auto& owner = *p.owner;
+    const bool csc = p.requirements.layout == Layout::csc;
+    const auto offset_width = csc ? dtype_size(p.requirements.offset_dtype) : 0;
+    auto walk = [&](auto&& self, Segment s, const Axis& cols, std::size_t column) -> void {
+        if (keep && !*keep) return;
+        const auto selection = selector_cost(owner, cols, p.obs.is_gather() ? s.count : 0);
+        const auto ob = csc ? plus(offset_width, offset_width) : 0;
+        if (selection > owner.selector_bytes || ob > owner.selector_bytes - selection) {
+            if (s.count <= 1) fail(ErrorCode::invalid_argument, "AnnDataSet/X", "sparse offset and selector staging exceeds budget");
+            auto count = s.count / 2;
+            self(self, {s.first, count, s.component}, cols, column);
+            self(self, {s.first + count, s.count - count, s.component}, cols, column);
+            return;
+        }
+        f(s, cols, column);
+    };
+    if (!csc) for_segments(owner, p.obs, p.var, [&](Segment s) { walk(walk, s, p.var, SIZE_MAX); });
+    else for (std::size_t j = 0; j < p.requirements.shape[1] && (!keep || *keep); ++j) {
+        auto col = Axis::stride(p.var.index(j), 1);
+        for_segments(owner, p.obs, col, [&](Segment s) { walk(walk, s, col, j); });
     }
 }
 } // namespace
@@ -345,16 +435,29 @@ AnnDataSetView AnnDataSetView::slice(Selection obs, Selection var) const {
     return {impl_, annotations_.slice(std::move(obs), std::move(var)),
             detail::compose_axis(obs_, o, impl_->n_obs), detail::compose_axis(var_, v, impl_->n_vars)};
 }
-ReadRequirements AnnDataSetView::requirements() const {
+PreparedAnnDataSetRead::PreparedAnnDataSetRead() = default;
+PreparedAnnDataSetRead::~PreparedAnnDataSetRead() = default;
+PreparedAnnDataSetRead::PreparedAnnDataSetRead(PreparedAnnDataSetRead&&) noexcept = default;
+PreparedAnnDataSetRead& PreparedAnnDataSetRead::operator=(PreparedAnnDataSetRead&&) noexcept = default;
+PreparedAnnDataSetRead::PreparedAnnDataSetRead(std::unique_ptr<Plan> p) : impl_(std::move(p)) {}
+
+PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
     check(impl_);
+    (void)annotations_.n_obs();
     if (!impl_->has_x) fail(ErrorCode::invalid_argument, "AnnDataSet/X", "X is absent");
     check_selection_indexes(*impl_, obs_, var_);
+    auto p = std::make_unique<Plan>();
+    p->owner = impl_; p->annotations = annotations_; p->obs = obs_; p->var = var_;
     auto first = impl_->files.front().x();
-    ReadRequirements out;
+    auto& out = p->requirements;
     out.layout = first.layout(); out.dtype = first.dtype(); out.shape = {n_obs(), n_vars()};
     if (out.layout != Layout::dense) { out.index_dtype = first.index_dtype(); out.offset_dtype = first.offset_dtype(); }
+    p->retained = true;
+    std::size_t charged = 0;
     for_segments(*impl_, obs_, var_, [&](const Segment& s) {
-        auto r = selected_x(*impl_, obs_, var_, s).prepare_read().requirements();
+        reserve_piece_staging(*p, s, var_, false, charged);
+        auto read = selected_x(*impl_, obs_, var_, s).prepare_read();
+        auto r = read.requirements();
         if (r.layout != out.layout) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "component matrix layouts differ");
         if (r.dtype != out.dtype) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "component matrix dtypes differ");
         if (r.layout != Layout::dense) {
@@ -362,34 +465,34 @@ ReadRequirements AnnDataSetView::requirements() const {
             if (r.offset_dtype != out.offset_dtype) out.offset_dtype = DType::int64;
             out.nnz = plus(out.nnz, r.nnz);
         }
+        if (out.layout != Layout::csc) retain_piece(*p, s, SIZE_MAX, std::move(read), charged);
     });
     if (out.layout != Layout::dense) {
         auto inner = out.layout == Layout::csr ? n_vars() : n_obs();
         if (inner && inner - 1 > integer_max(out.index_dtype)) out.index_dtype = DType::int64;
         if (out.nnz > integer_max(out.offset_dtype)) out.offset_dtype = DType::int64;
+        if ((inner && inner - 1 > integer_max(out.index_dtype)) || out.nnz > integer_max(out.offset_dtype))
+            fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "sparse output exceeds supported integer widths");
     }
-    return out;
+    if (out.layout == Layout::csc && p->retained) {
+        std::size_t nnz = 0;
+        walk_pieces(*p, [&](Segment s, const Axis& cols, std::size_t column) {
+            if (!p->retained) return;
+            reserve_piece_staging(*p, s, cols, true, charged);
+            if (!p->retained) return;
+            auto read = selected_x(*impl_, obs_, cols, s).prepare_read();
+            nnz = plus(nnz, read.requirements().nnz);
+            retain_piece(*p, s, column, std::move(read), charged);
+        }, &p->retained);
+        if (p->retained && nnz != out.nnz)
+            fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component values changed during preparation");
+    }
+    return PreparedAnnDataSetRead(std::move(p));
 }
-void AnnDataSetView::read_x_into(const DenseBuffer& dst) const {
-    auto r = requirements();
-    if (r.layout != Layout::dense) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "X is not dense");
-    checked_shape(dst, n_obs(), n_vars(), r.dtype);
-    const auto stride = row_stride(dst, n_vars());
-    if (n_obs()) (void)displacement(n_obs() - 1, stride);
-    auto target_for = [&](const Segment& s) {
-        auto target = dst;
-        target.shape = {s.count, n_vars()};
-        if (!target.strides.empty()) target.strides = dst.strides;
-        if (target.data) target.data = static_cast<std::byte*>(target.data) + displacement(s.first, stride);
-        return target;
-    };
-    for_segments(*impl_, obs_, var_, [&](const Segment& s) {
-        selected_x(*impl_, obs_, var_, s).prepare_read().preflight(target_for(s));
-    });
-    for_segments(*impl_, obs_, var_, [&](const Segment& s) {
-        selected_x(*impl_, obs_, var_, s).read_into(target_for(s));
-    });
-}
+ReadRequirements PreparedAnnDataSetRead::requirements() const { check_plan(impl_.get()); return impl_->requirements; }
+ReadRequirements AnnDataSetView::requirements() const { return prepare_x().requirements(); }
+void AnnDataSetView::read_x_into(const DenseBuffer& dst) const { prepare_x().read_into(dst); }
+void AnnDataSetView::read_x_into(const SparseBuffer& dst) const { prepare_x().read_into(dst); }
 
 AnnDataSet::AnnDataSet() = default;
 AnnDataSet::AnnDataSet(std::shared_ptr<Impl> p) : impl_(std::move(p)) {}
@@ -443,101 +546,116 @@ void AnnDataSet::close() {
     if (error) std::rethrow_exception(error);
 }
 
-void AnnDataSetView::read_x_into(const SparseBuffer& dst) const {
-    auto r = requirements();
+namespace {
+template<class F> void each_prepared(const Plan& p, F&& f) {
+    if (p.retained) {
+        for (const auto& piece : p.pieces) f(piece.segment, piece.column, piece.read);
+    } else {
+        walk_pieces(p, [&](Segment s, const Axis& cols, std::size_t column) {
+            auto read = selected_x(*p.owner, p.obs, cols, s).prepare_read();
+            f(s, column, read);
+        });
+    }
+}
+template<class T> void add_to_integers(void* data, std::size_t n, std::size_t value) {
+    auto* bytes = static_cast<std::byte*>(data);
+    for (std::size_t i = 0; i < n; ++i) {
+        T x; std::memcpy(&x, bytes + i * sizeof(T), sizeof(T));
+        x = T(std::uint64_t(x) + value);
+        std::memcpy(bytes + i * sizeof(T), &x, sizeof(T));
+    }
+}
+void add_to_integers(void* data, DType type, std::size_t n, std::size_t value) {
+    switch (type) {
+    case DType::int8: return add_to_integers<std::int8_t>(data,n,value);
+    case DType::uint8: return add_to_integers<std::uint8_t>(data,n,value);
+    case DType::int16: return add_to_integers<std::int16_t>(data,n,value);
+    case DType::uint16: return add_to_integers<std::uint16_t>(data,n,value);
+    case DType::int32: return add_to_integers<std::int32_t>(data,n,value);
+    case DType::uint32: return add_to_integers<std::uint32_t>(data,n,value);
+    case DType::int64: return add_to_integers<std::int64_t>(data,n,value);
+    case DType::uint64: return add_to_integers<std::uint64_t>(data,n,value);
+    default: fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "sparse index dtype must be an integer");
+    }
+}
+void dense_plan(const Plan& p, const DenseBuffer& dst, bool transfer) {
+    const auto& r = p.requirements;
+    if (r.layout != Layout::dense) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "X is not dense");
+    checked_shape(dst, r.shape[0], r.shape[1], r.dtype);
+    const auto stride = row_stride(dst, r.shape[1]);
+    if (r.shape[0]) (void)displacement(r.shape[0] - 1, stride);
+    each_prepared(p, [&](Segment s, std::size_t, const PreparedRead& read) {
+        auto target = dst; target.shape = {s.count, r.shape[1]};
+        if (target.data) target.data = static_cast<std::byte*>(target.data) + displacement(s.first, stride);
+        if (transfer) read.read_into(target); else read.preflight(target);
+    });
+}
+void sparse_plan(const Plan& p, const SparseBuffer& dst, bool transfer) {
+    const auto& r = p.requirements;
     if (r.layout == Layout::dense) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "X is not sparse");
     if (dst.dtype != r.dtype || dst.index_dtype != r.index_dtype || dst.offset_dtype != r.offset_dtype)
         fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "destination dtypes differ from requirements");
-    const auto major = r.layout == Layout::csr ? n_obs() : n_vars();
+    const auto major = r.layout == Layout::csr ? r.shape[0] : r.shape[1];
     if (dst.values_capacity < r.nnz || dst.indices_capacity < r.nnz || dst.offsets_capacity < plus(major, 1))
         fail(ErrorCode::shape_mismatch, "AnnDataSet/X", "sparse destination capacity is too small");
     if ((r.nnz && (!dst.values || !dst.indices)) || !dst.offsets)
         fail(ErrorCode::invalid_argument, "AnnDataSet/X", "sparse destination buffer is null");
-    const auto value_width = dtype_size(r.dtype), index_width = dtype_size(r.index_dtype), offset_width = dtype_size(r.offset_dtype);
-    if (r.nnz && (value_width > SIZE_MAX / r.nnz || index_width > SIZE_MAX / r.nnz))
+    const auto vw = dtype_size(r.dtype), iw = dtype_size(r.index_dtype), ow = dtype_size(r.offset_dtype);
+    if (r.nnz && (vw > SIZE_MAX / r.nnz || iw > SIZE_MAX / r.nnz))
         fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "sparse destination byte extent overflows");
-    if (major && offset_width > SIZE_MAX / plus(major, 1))
+    if (major && ow > SIZE_MAX / plus(major, 1))
         fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "offset destination byte extent overflows");
-    std::size_t written = 0;
-    bool preflight = true;
-
-    // Transfer into the caller's promoted widths. CSC needs two temporary
-    // offsets per component segment; oversized selections split by rows.
-    auto read_piece = [&](auto&& self, Segment s, const Axis& cols, bool by_column) -> void {
-        auto prepared = selected_x(*impl_, obs_, cols, s).prepare_read();
-        auto part = prepared.requirements();
-        if (part.layout != r.layout || part.dtype != r.dtype)
-            fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component layout or dtype changed after requirements were computed");
-        if (written > r.nnz || part.nnz > r.nnz - written)
-            fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component values grew after requirements were computed");
-        const auto part_major = by_column ? std::size_t{1} : s.count;
-        if (offset_width > SIZE_MAX / plus(part_major, 1))
-            fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "sparse staging extent overflows");
-        const auto ob = by_column ? (part_major + 1) * offset_width : 0;
-        const auto selection = selector_cost(*impl_, cols, obs_.is_gather() ? s.count : 0);
-        if (selection > impl_->selector_bytes || ob > impl_->selector_bytes - selection) {
-            if (s.count <= 1)
-                fail(ErrorCode::invalid_argument, "AnnDataSet/X", "sparse offset staging needs " +
-                     std::to_string(plus(selection, ob)) + " bytes; budget is " + std::to_string(impl_->selector_bytes));
-            auto count = s.count / 2;
-            self(self, {s.first, count, s.component}, cols, by_column);
-            self(self, {s.first + count, s.count - count, s.component}, cols, by_column);
-            return;
+    const auto limit = std::size_t(PTRDIFF_MAX);
+    if (r.nnz * vw > limit || r.nnz * iw > limit || plus(major, 1) * ow > limit)
+        fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "sparse destination byte span exceeds signed range");
+    const bool csc = r.layout == Layout::csc;
+    std::size_t written = 0, previous_column = 0;
+    std::array<std::byte, 16> offsets{};
+    if (transfer) write_integer(dst.offsets, r.offset_dtype, 0, 0);
+    each_prepared(p, [&](Segment s, std::size_t column, const PreparedRead& read) {
+        auto part = read.requirements();
+        if (part.layout != r.layout || part.dtype != r.dtype || written > r.nnz || part.nnz > r.nnz - written)
+            fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component changed after preparation");
+        if (transfer && csc) while (previous_column < column)
+            write_integer(dst.offsets, r.offset_dtype, ++previous_column, written);
+        auto* values = dst.values ? static_cast<std::byte*>(dst.values) + written * vw : nullptr;
+        auto* indices = dst.indices ? static_cast<std::byte*>(dst.indices) + written * iw : nullptr;
+        auto* out = csc ? offsets.data() : static_cast<std::byte*>(dst.offsets) + s.first * ow;
+        SparseBuffer b{values, indices, out, part.dtype, dst.index_dtype, dst.offset_dtype,
+                       part.nnz, part.nnz, (csc ? 1 : s.count) + 1};
+        if (!transfer) read.preflight(b);
+        else {
+            read.read_into(b);
+            if (csc) add_to_integers(indices, r.index_dtype, part.nnz, s.first);
+            else add_to_integers(out, r.offset_dtype, s.count + 1, written);
         }
-        auto* value_out = dst.values ? static_cast<std::byte*>(dst.values) + written * value_width : nullptr;
-        auto* index_out = dst.indices ? static_cast<std::byte*>(dst.indices) + written * index_width : nullptr;
-        auto* offset_out = by_column ? nullptr : static_cast<std::byte*>(dst.offsets) + s.first * offset_width;
-        std::byte placeholder{};
-        std::vector<std::byte> offsets(preflight ? 0 : ob);
-        void* offset_in = by_column ? (preflight ? static_cast<void*>(&placeholder) : static_cast<void*>(offsets.data())) : offset_out;
-        // BackedArray accepts destination integer widths independently of the
-        // on-disk widths. Use the promoted output widths during the transfer:
-        // duplicate selections can exceed a component's physical widths.
-        SparseBuffer b{value_out, index_out, offset_in, part.dtype, dst.index_dtype, dst.offset_dtype,
-                       part.nnz, part.nnz, part_major + 1};
-        if (preflight) { prepared.preflight(b); written = plus(written, part.nnz); return; }
-        prepared.read_into(b);
-        if (by_column) for (std::size_t i = 0; i < part.nnz; ++i)
-            write_integer(index_out, dst.index_dtype, i,
-                          plus(std::size_t(read_integer(index_out, dst.index_dtype, i)), s.first));
-        if (!by_column) for (std::size_t i = 0; i <= part_major; ++i)
-            write_integer(dst.offsets, dst.offset_dtype, s.first + i,
-                          plus(written, std::size_t(read_integer(offset_in, dst.offset_dtype, i))));
         written = plus(written, part.nnz);
-    };
-    auto run = [&] {
-        if (r.layout == Layout::csr) {
-            for_segments(*impl_, obs_, var_, [&](Segment s) { read_piece(read_piece, s, var_, false); });
-        } else {
-            for (std::size_t j = 0; j < n_vars(); ++j) {
-                auto selected = Axis::stride(var_.index(j), 1);
-                for_segments(*impl_, obs_, selected, [&](Segment s) { read_piece(read_piece, s, selected, true); });
-                if (!preflight) write_integer(dst.offsets, dst.offset_dtype, j + 1, written);
-            }
-        }
-        if (written != r.nnz)
-            fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component values changed after requirements were computed");
-    };
-    run(); // Check all staging capacities before touching caller buffers.
-    written = 0; preflight = false;
-    write_integer(dst.offsets, r.offset_dtype, 0, 0);
-    run();
+    });
+    if (written != r.nnz) fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component values changed after preparation");
+    if (transfer && csc) while (previous_column < major)
+        write_integer(dst.offsets, r.offset_dtype, ++previous_column, written);
 }
+}
+void PreparedAnnDataSetRead::preflight(const DenseBuffer& dst) const { check_plan(impl_.get()); dense_plan(*impl_, dst, false); }
+void PreparedAnnDataSetRead::preflight(const SparseBuffer& dst) const { check_plan(impl_.get()); sparse_plan(*impl_, dst, false); }
+void PreparedAnnDataSetRead::read_into(const DenseBuffer& dst) const { preflight(dst); dense_plan(*impl_, dst, true); }
+void PreparedAnnDataSetRead::read_into(const SparseBuffer& dst) const { preflight(dst); sparse_plan(*impl_, dst, true); }
 
 AnnData AnnDataSetView::materialize() const {
     check(impl_);
     auto data = annotations_.read();
     if (!impl_->has_x) return data;
-    auto r = requirements();
+    auto prepared = prepare_x();
+    auto r = prepared.requirements();
     if (r.layout == Layout::dense) {
         auto out = allocate(r.dtype, r.shape);
-        read_x_into({out.edit().bytes().data(), r.dtype, r.shape, {}});
+        prepared.read_into({out.edit().bytes().data(), r.dtype, r.shape, {}});
         data.set_x(std::move(out));
     } else {
         auto values = allocate(r.dtype, {r.nnz});
         auto indices = allocate(r.index_dtype, {r.nnz});
         auto offsets = allocate(r.offset_dtype, {plus(r.layout == Layout::csr ? n_obs() : n_vars(), 1)});
-        read_x_into({values.edit().bytes().data(), indices.edit().bytes().data(), offsets.edit().bytes().data(),
+        prepared.read_into({values.edit().bytes().data(), indices.edit().bytes().data(), offsets.edit().bytes().data(),
                      r.dtype, r.index_dtype, r.offset_dtype, r.nnz, r.nnz, offsets.extent(0)});
         data.set_x(Array::from_sparse_buffers(r.layout, std::move(values), std::move(indices), std::move(offsets),
                                              n_obs(), n_vars()));

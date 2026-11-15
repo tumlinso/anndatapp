@@ -933,6 +933,40 @@ struct PreparedReadImpl {
     NodePtr node;
     ReadRequirements requirements;
 };
+std::size_t prepared_read_retained_bytes(const PreparedRead& read) {
+    const auto& p = BackedAccess::get(read);
+    if (!p) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
+    const auto& n = p->node;
+    if (!n || n->code_recode || n->color_override)
+        fail(ErrorCode::unsupported_layout, n, "retained accounting requires an ordinary numeric selection");
+    std::size_t bytes = sizeof(PreparedReadImpl) + sizeof(BackedNode);
+    const auto charge = [&](std::size_t count, std::size_t width) {
+        const auto extra = multiply(count, width, n);
+        if (extra > std::numeric_limits<std::size_t>::max() - bytes)
+            fail(ErrorCode::invalid_argument, n, "retained plan metadata size overflows size_t");
+        bytes += extra;
+    };
+    const auto axis = [&](const backed_detail::Axis& a) {
+        if (a.category_positions)
+            fail(ErrorCode::unsupported_layout, n, "retained accounting excludes categorical selections");
+        if (a.positions) {
+            charge(1, sizeof(*a.positions));
+            charge(a.positions->capacity(), sizeof(std::size_t));
+        }
+    };
+    charge(n->path.capacity(), sizeof(char)); charge(1, sizeof(char));
+    charge(n->axes.capacity(), sizeof(backed_detail::Axis));
+    for (const auto& a : n->axes) axis(a);
+    if (n->slice_history) {
+        charge(1, sizeof(*n->slice_history));
+        charge(n->slice_history->capacity(), sizeof(backed_detail::SliceStage));
+        for (const auto& s : *n->slice_history) {
+            axis(s.obs_before); axis(s.var_before); axis(s.obs_after); axis(s.var_after);
+        }
+    }
+    charge(p->requirements.shape.capacity(), sizeof(std::size_t));
+    return bytes;
+}
 }
 namespace {
 Array read_prepared(const NodePtr& n, const ReadRequirements& r, const Descriptor& d) {

@@ -90,6 +90,9 @@ public:
     void write_numeric(std::string_view p, const std::vector<std::size_t>& start, const std::vector<std::size_t>& count, const void* in) override { base().write_numeric(path(p), start, count, in); }
     std::vector<std::string> read_strings(std::string_view p, const std::vector<std::size_t>& start, const std::vector<std::size_t>& count) override { return base().read_strings(path(p), start, count); }
     std::vector<std::string> read_strings_bounded(std::string_view p, const std::vector<std::size_t>& start, const std::vector<std::size_t>& count, std::size_t budget) override { return base().read_strings_bounded(path(p), start, count, budget); }
+    std::vector<std::string> read_strings_gather_bounded(std::string_view p, const std::size_t* positions, std::size_t count, std::size_t budget) override {
+        return base().read_strings_gather_bounded(path(p), positions, count, budget);
+    }
     void write_strings(std::string_view p, const std::vector<std::size_t>& start, const std::vector<std::size_t>& count, const std::vector<std::string>& values) override { base().write_strings(path(p), start, count, values); }
     void create_group(std::string_view p, const Attributes& attrs) override { base().create_group(path(p), attrs); }
     void create_numeric(std::string_view p, DType type, const std::vector<std::size_t>& shape, const Attributes& attrs, ByteOrder order) override { base().create_numeric(path(p), type, shape, attrs, order); }

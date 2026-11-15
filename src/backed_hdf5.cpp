@@ -1110,6 +1110,42 @@ public:
         }
     }
 
+    std::vector<std::string> read_strings_gather_bounded(std::string_view path,
+            const std::size_t* positions, std::size_t count, std::size_t byte_budget) override {
+        ensure_open();
+        if (!count) return {};
+        if (!positions) c_.fail(ErrorCode::invalid_argument, path, "null string positions");
+        auto dataset = string_dataset(path);
+        H5Handle type(c_.id(H5Dget_type(dataset), path, "inspect string datatype"), H5Tclose);
+        H5Handle space(c_.id(H5Dget_space(dataset), path, "inspect string dataspace"), H5Sclose);
+        const auto shape = shape_of(c_, space, path);
+        if (shape.size() != 1) c_.fail(ErrorCode::shape_mismatch, path, "gathered strings require one dimension");
+        check_filters(c_, dataset, path);
+        const auto budget = std::min(byte_budget, metadata_budget_);
+        constexpr auto base = sizeof(std::vector<hsize_t>);
+        auto n = budget > base ? std::min(count, (budget - base) / sizeof(hsize_t)) : 0;
+        while (n) {
+            // HDF5 point selections preserve insertion order and repetitions.
+            // Keeping that sequence avoids sorting/scatter buffers and copies.
+            std::vector<hsize_t> points(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                if (positions[i] >= shape[0]) c_.fail(ErrorCode::out_of_bounds, path, "string position exceeds dataset");
+                points[i] = positions[i];
+            }
+            const auto charge = base + points.capacity() * sizeof(hsize_t);
+            Rectangle r{H5Handle(c_.id(H5Dget_space(dataset), path, "inspect string dataspace"), H5Sclose),
+                        space_for(c_, {n}, path), n};
+            c_.check(H5Sselect_elements(r.file_space, H5S_SELECT_SET, n, points.data()), path, "select string points");
+            if (charge <= budget) if (const auto plan = string_plan(type, r, budget - charge)) {
+                try { return read_planned_strings(c_, dataset, type, type, r, *plan, path); }
+                catch (const StringBudgetExceeded&) { /* reclaim before retrying a prefix */ }
+            }
+            if (n == 1) break;
+            n = (n + 1) / 2;
+        }
+        c_.fail(ErrorCode::invalid_argument, path, "one string exceeds the decoded staging budget");
+    }
+
     std::vector<std::string> read_record_strings_bounded(std::string_view path,
             std::string_view field, const std::vector<std::size_t>& start,
             const std::vector<std::size_t>& count, std::size_t byte_budget) override {

@@ -120,6 +120,15 @@ public:
         }
         return result;
     }
+    // Ordered one-dimensional positions; return a nonempty logical prefix.
+    // The default preserves bounded contiguous-run behavior for other adapters.
+    virtual std::vector<std::string> read_strings_gather_bounded(std::string_view path,
+        const std::size_t* positions, std::size_t count, std::size_t byte_budget) {
+        if (!count) return {};
+        std::size_t run = 1;
+        while (run < count && positions[0] <= SIZE_MAX - run && positions[run] == positions[0] + run) ++run;
+        return read_strings_bounded(path, {positions[0]}, {run}, byte_budget);
+    }
     virtual void write_strings(std::string_view path, const std::vector<std::size_t>& start,
         const std::vector<std::size_t>& count, const std::vector<std::string>& values) = 0;
     virtual void create_group(std::string_view path, const Attributes& attrs) = 0;
@@ -279,6 +288,7 @@ struct BackedNode {
     std::shared_ptr<backed_detail::ColorOverride> color_override;
 };
 struct BackedAccess {
+    static const std::shared_ptr<PreparedReadImpl>& get(const PreparedRead& v) { return v.impl_; }
     static BackedAnnData owner(std::shared_ptr<BackedDataset> value) { return BackedAnnData(std::move(value)); }
     static BackedElement element(std::shared_ptr<BackedNode> value) { return BackedElement(std::move(value)); }
     static BackedArray array(std::shared_ptr<BackedNode> value) { return BackedArray(std::move(value)); }

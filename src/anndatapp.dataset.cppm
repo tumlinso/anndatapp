@@ -20,14 +20,38 @@ struct DatasetOptions {
     // The collection reserves one quarter of this budget for temporary
     // positional/index conversion and gives the remainder to component I/O.
     // For budgets below 128 bytes, component I/O receives the full budget.
-    // Explicitly acquired selection descriptors are retained metadata.
+    // Explicitly acquired selection descriptors are retained metadata. The
+    // budget counts retained plan payload and variable selector staging; it
+    // excludes allocator bookkeeping and one fixed candidate-handle acquisition.
     BackedOptions backed{};
     // Overrides are applied in memory and do not rewrite the manifest.
     std::vector<DatasetComponent> relocate;
 };
 
-namespace detail { struct AnnDataSetImpl; }
+namespace detail { struct AnnDataSetImpl; struct PreparedAnnDataSetReadImpl; }
 class AnnDataSet;
+
+// Preparation checks selected axis names and records exact transfer requirements.
+// The collection must remain open and its linked component files unchanged.
+// Structural edits to the manifest invalidate the prepared read.
+class PreparedAnnDataSetRead {
+public:
+    PreparedAnnDataSetRead();
+    ~PreparedAnnDataSetRead();
+    PreparedAnnDataSetRead(PreparedAnnDataSetRead&&) noexcept;
+    PreparedAnnDataSetRead& operator=(PreparedAnnDataSetRead&&) noexcept;
+    PreparedAnnDataSetRead(const PreparedAnnDataSetRead&) = delete;
+    PreparedAnnDataSetRead& operator=(const PreparedAnnDataSetRead&) = delete;
+    ReadRequirements requirements() const;
+    void preflight(const DenseBuffer&) const;
+    void preflight(const SparseBuffer&) const;
+    void read_into(const DenseBuffer&) const;
+    void read_into(const SparseBuffer&) const;
+private:
+    std::unique_ptr<detail::PreparedAnnDataSetReadImpl> impl_;
+    explicit PreparedAnnDataSetRead(std::unique_ptr<detail::PreparedAnnDataSetReadImpl>);
+    friend class AnnDataSetView;
+};
 
 // The view retains its collection and its selection. Closing the owner closes
 // the shared sessions and invalidates the view and component descriptors.
@@ -47,6 +71,7 @@ public:
     // Selection metadata may allocate; numerical payload is read only by the
     // explicit transfers. requirements() checks the selected axis names and
     // reports the stacked output layout. Label selections read axis names.
+    PreparedAnnDataSetRead prepare_x() const;
     ReadRequirements requirements() const;
     void read_x_into(const DenseBuffer& destination) const;
     void read_x_into(const SparseBuffer& destination) const;

@@ -113,11 +113,36 @@ detail::SpatialStoredElement inspect_raster(BackedStore& store,std::string name,
     else if(version!="0.4"&&version!="0.4-dev-spatialdata")fail(path,"unsupported legacy raster NGFF version",ErrorCode::unsupported_version);
     detail::SpatialStoredElement out;out.name=std::move(name);out.path=std::move(path);out.kind=kind;out.axes=parse_axes(scale.at("axes"),true);out.transforms=parse_transforms(scale.at("coordinateTransformations"),out.axes);
     auto datasets=scale.at("datasets");
-    for(std::size_t i=0;i<sequence_size(datasets,out.path);++i){auto entry=datasets.at(i);auto p=text(entry.at("path"),out.path);if(!spatial_detail::valid_element_name(p))fail(out.path,"raster level must be a child array");auto raw=store.array(child(out.path,p));if(raw.rank()!=out.axes.size())fail(out.path,"raster array rank differs from axes");
-        auto ts=entry.at("coordinateTransformations");if(!sequence_size(ts,out.path)||text(ts.at(0).at("type"),out.path)!="scale")fail(out.path,"raster level must start with scale metadata");auto factors=ts.at(0).at("scale");if(sequence_size(factors,out.path)!=out.axes.size())fail(out.path,"pyramid scale rank differs");
-        double matrix[20]{};const auto rank=out.axes.size();for(std::size_t j=0;j<rank;++j){const auto factor=number(factors.at(j),out.path);if(!(factor>0))fail(out.path,"pyramid scales must be positive");matrix[j*(rank+1)+j]=factor;}
-        for(std::size_t k=1;k<ts.size();++k){auto part=ts.at(k);if(text(part.at("type"),out.path)!="translation")fail(out.path,"unsupported per-level coordinate transformation");auto shift=part.at("translation");if(sequence_size(shift,out.path)!=rank)fail(out.path,"pyramid translation rank differs");for(std::size_t j=0;j<rank;++j)matrix[j*(rank+1)+rank]+=number(shift.at(j),out.path);}
-        out.level_transforms.push_back(SpatialTransform::affine(out.axes.data(),rank,out.axes.data(),rank,matrix,rank+1));out.levels.push_back(std::move(p));}
+    for(std::size_t i=0;i<sequence_size(datasets,out.path);++i){
+        auto entry=datasets.at(i);
+        auto p=text(entry.at("path"),out.path);
+        if(!spatial_detail::valid_element_name(p))fail(out.path,"raster level must be a child array");
+
+        auto raw=store.array(child(out.path,p));
+        if(raw.rank()!=out.axes.size())fail(out.path,"raster array rank differs from axes");
+        auto ts=entry.at("coordinateTransformations");
+        if(!sequence_size(ts,out.path)||text(ts.at(0).at("type"),out.path)!="scale")fail(out.path,"raster level must start with scale metadata");
+        auto factors=ts.at(0).at("scale");
+        if(sequence_size(factors,out.path)!=out.axes.size())fail(out.path,"pyramid scale rank differs");
+
+        double matrix[20]{};
+        const auto rank=out.axes.size();
+        for(std::size_t j=0;j<rank;++j){
+            const auto factor=number(factors.at(j),out.path);
+            if(!(factor>0))fail(out.path,"pyramid scales must be positive");
+            matrix[j*(rank+1)+j]=factor;
+        }
+        for(std::size_t k=1;k<ts.size();++k){
+            auto part=ts.at(k);
+            if(text(part.at("type"),out.path)!="translation")fail(out.path,"unsupported per-level coordinate transformation");
+            auto shift=part.at("translation");
+            if(sequence_size(shift,out.path)!=rank)fail(out.path,"pyramid translation rank differs");
+            for(std::size_t j=0;j<rank;++j)
+                matrix[j*(rank+1)+rank]+=number(shift.at(j),out.path);
+        }
+        out.level_transforms.push_back(SpatialTransform::affine(out.axes.data(),rank,out.axes.data(),rank,matrix,rank+1));
+        out.levels.push_back(std::move(p));
+    }
     if(out.levels.empty())fail(out.path,"raster has no resolution levels");
     if(kind==SpatialElementKind::image){auto omero=ome.contains("omero")?ome.at("omero"):attrs.contains("omero")?attrs.at("omero"):ElementView{};
         if(omero.kind()==ElementKind::mapping&&omero.contains("channels")){out.channels=Element::sequence();auto cs=omero.at("channels");for(std::size_t i=0;i<sequence_size(cs,out.path);++i)out.channels.append(cs.at(i).at("label").copy());}
@@ -154,13 +179,34 @@ SpatialData BackedSpatialData::read()const{
     if(!impl_||!impl_->store.is_open())fail("spatial","spatial store is closed",ErrorCode::invalid_argument);
     if(!spatial_parquet_available())for(const auto& x:impl_->elements)if(x.kind==SpatialElementKind::points||x.kind==SpatialElementKind::shapes)fail(x.path,"SpatialData vector payloads require Arrow/Parquet",ErrorCode::unavailable_filter);
     SpatialData out;out.set_metadata(impl_->metadata.copy());
-    for(const auto& x:impl_->elements){switch(x.kind){
-        case SpatialElementKind::image:case SpatialElementKind::labels:{SpatialRaster r(x.kind,x.axes);for(std::size_t i=0;i<x.levels.size();++i){const auto& p=x.levels[i];r.add_level(impl_->store.array(child(x.path,p)).read(),p);r.set_level_transform(i,x.level_transforms[i]);}if(x.channels.view().kind()!=ElementKind::null)r.set_channel_labels(x.channels.copy());r.set_transforms(x.transforms);out.set_raster(x.name,std::move(r));break;}
-        case SpatialElementKind::points:out.set_points(x.name,read_points(x.name,0,std::numeric_limits<std::size_t>::max()));break;
-        case SpatialElementKind::shapes:out.set_shapes(x.name,read_shapes(x.name));break;
-        case SpatialElementKind::table:out.set_table(x.name,impl_->store.anndata(x.path).read(),x.annotation);break;
-    }}
-    if(impl_->options.validation==Validation::full)out.validate(impl_->options.scratch_bytes);return out;
+    for(const auto& x:impl_->elements){
+        switch(x.kind){
+        case SpatialElementKind::image:
+        case SpatialElementKind::labels:{
+            SpatialRaster r(x.kind,x.axes);
+            for(std::size_t i=0;i<x.levels.size();++i){
+                const auto& p=x.levels[i];
+                r.add_level(impl_->store.array(child(x.path,p)).read(),p);
+                r.set_level_transform(i,x.level_transforms[i]);
+            }
+            if(x.channels.view().kind()!=ElementKind::null)r.set_channel_labels(x.channels.copy());
+            r.set_transforms(x.transforms);
+            out.set_raster(x.name,std::move(r));
+            break;
+        }
+        case SpatialElementKind::points:
+            out.set_points(x.name,read_points(x.name,0,std::numeric_limits<std::size_t>::max()));
+            break;
+        case SpatialElementKind::shapes:
+            out.set_shapes(x.name,read_shapes(x.name));
+            break;
+        case SpatialElementKind::table:
+            out.set_table(x.name,impl_->store.anndata(x.path).read(),x.annotation);
+            break;
+        }
+    }
+    if(impl_->options.validation==Validation::full)out.validate(impl_->options.scratch_bytes);
+    return out;
 }
 void BackedSpatialData::close(){if(impl_)impl_->store.close();}
 BackedSpatialData open_spatialdata(std::string_view path,BackedOptions options){
@@ -200,48 +246,178 @@ SpatialData read_spatialdata(std::string_view path,SpatialReadOptions options){B
 
 namespace {
 Element raster_attrs(const SpatialRasterView& r){
-    auto attrs=Element::mapping();attrs.set("spatialdata_attrs",version_attrs("0.3"));auto ome=Element::mapping();ome.set("version",Element("0.5-dev-spatialdata"));auto multiscales=Element::sequence();auto ms=Element::mapping();ms.set("name",Element("image"));ms.set("axes",axes_metadata(r.axes().data(),r.axes().size(),true));auto datasets=Element::sequence();
-    for(std::size_t i=0;i<r.n_levels();++i){auto ds=Element::mapping();ds.set("path",Element(std::string(r.level_path(i))));auto ts=Element::sequence();auto scale=Element::mapping();scale.set("type",Element("scale"));auto factors=Element::sequence();const auto level=r.level_transform(i);for(std::size_t j=0;j<r.axes().size();++j)factors.append(Element(level.m[5*j+j]));scale.set("scale",std::move(factors));ts.append(std::move(scale));auto translation=Element::mapping();translation.set("type",Element("translation"));auto offsets=Element::sequence();for(std::size_t j=0;j<r.axes().size();++j)offsets.append(Element(level.m[5*j+level.input_rank]));translation.set("translation",std::move(offsets));ts.append(std::move(translation));ds.set("coordinateTransformations",std::move(ts));datasets.append(std::move(ds));}
-    ms.set("datasets",std::move(datasets));ms.set("coordinateTransformations",transforms_metadata(r.transforms()));multiscales.append(std::move(ms));ome.set("multiscales",std::move(multiscales));
-    if(r.kind()==SpatialElementKind::labels){auto label=Element::mapping();label.set("version",Element("0.5"));ome.set("image-label",std::move(label));}
-    else{auto omero=Element::mapping();auto cs=Element::sequence();auto labels=r.channel_labels();const auto count=labels.kind()==ElementKind::null?r.level(0).extent(0):labels.size();for(std::size_t i=0;i<count;++i){auto c=Element::mapping();c.set("label",labels.kind()==ElementKind::null?Element(std::uint64_t(i)):labels.at(i).copy());cs.append(std::move(c));}omero.set("channels",std::move(cs));ome.set("omero",std::move(omero));}
-    attrs.set("ome",std::move(ome));return attrs;
+    auto attrs=Element::mapping();
+    attrs.set("spatialdata_attrs",version_attrs("0.3"));
+    auto ome=Element::mapping();
+    ome.set("version",Element("0.5-dev-spatialdata"));
+    auto multiscales=Element::sequence();
+    auto ms=Element::mapping();
+    ms.set("name",Element("image"));
+    ms.set("axes",axes_metadata(r.axes().data(),r.axes().size(),true));
+    auto datasets=Element::sequence();
+    for(std::size_t i=0;i<r.n_levels();++i){
+        auto ds=Element::mapping();
+        ds.set("path",Element(std::string(r.level_path(i))));
+        auto ts=Element::sequence();
+        auto scale=Element::mapping();
+        scale.set("type",Element("scale"));
+        auto factors=Element::sequence();
+        const auto level=r.level_transform(i);
+        for(std::size_t j=0;j<r.axes().size();++j)factors.append(Element(level.m[5*j+j]));
+        scale.set("scale",std::move(factors));
+        ts.append(std::move(scale));
+
+        auto translation=Element::mapping();
+        translation.set("type",Element("translation"));
+        auto offsets=Element::sequence();
+        for(std::size_t j=0;j<r.axes().size();++j)
+            offsets.append(Element(level.m[5*j+level.input_rank]));
+        translation.set("translation",std::move(offsets));
+        ts.append(std::move(translation));
+        ds.set("coordinateTransformations",std::move(ts));
+        datasets.append(std::move(ds));
+    }
+    ms.set("datasets",std::move(datasets));
+    ms.set("coordinateTransformations",transforms_metadata(r.transforms()));
+    multiscales.append(std::move(ms));
+    ome.set("multiscales",std::move(multiscales));
+
+    if(r.kind()==SpatialElementKind::labels){
+        auto label=Element::mapping();
+        label.set("version",Element("0.5"));
+        ome.set("image-label",std::move(label));
+    }else{
+        auto omero=Element::mapping();
+        auto cs=Element::sequence();
+        auto labels=r.channel_labels();
+        const auto count=labels.kind()==ElementKind::null?r.level(0).extent(0):labels.size();
+        for(std::size_t i=0;i<count;++i){
+            auto c=Element::mapping();
+            c.set("label",labels.kind()==ElementKind::null?Element(std::uint64_t(i)):labels.at(i).copy());
+            cs.append(std::move(c));
+        }
+        omero.set("channels",std::move(cs));
+        ome.set("omero",std::move(omero));
+    }
+    attrs.set("ome",std::move(ome));
+    return attrs;
 }
 Element vector_attrs(const char* marker,const char* version,const std::vector<SpatialAxis>& axes,const std::vector<SpatialNamedTransform>& ts,std::string_view feature={},std::string_view instance={}){
     auto attrs=Element::mapping();attrs.set("encoding-type",Element(marker));attrs.set("axes",axes_metadata(axes.data(),axes.size(),false));attrs.set("coordinateTransformations",transforms_metadata(ts));auto spatial=version_attrs(version);if(!feature.empty())spatial.set("feature_key",Element(std::string(feature)));if(!instance.empty())spatial.set("instance_key",Element(std::string(instance)));attrs.set("spatialdata_attrs",std::move(spatial));return attrs;
+}
+Element table_attrs(const SpatialAnnotation& annotation){
+    auto attrs=Element::mapping();
+    attrs.set("spatialdata-encoding-type",Element("ngff:regions_table"));
+    attrs.set("version",Element("0.2"));
+    attrs.set("region",annotation.regions.empty()?Element(nullptr):string_list(annotation.regions));
+    attrs.set("region_key",annotation.region_key.empty()?Element(nullptr):Element(annotation.region_key));
+    attrs.set("instance_key",annotation.instance_key.empty()?Element(nullptr):Element(annotation.instance_key));
+    return attrs;
 }
 }
 void write_spatialdata(std::string_view path,const SpatialData& data,SpatialWriteOptions options){write_spatialdata(path,data.view(),options);}
 void write_spatialdata(std::string_view path,const SpatialDataView& data,SpatialWriteOptions options){
 #if ANNDATAPP_HAS_ZARR
     // Validation examines retained descriptors without copying numerical data.
-    // Capability preflight happens before
-    // exclusive/truncate creation, so Arrow-off cannot partially erase a store.
+    // Capability preflight precedes exclusive/truncate creation, so Arrow-off
+    // cannot partially erase a store.
     if(options.validation==Validation::full)data.validate(options.scratch_bytes);
-    const auto names=data.names();if(!spatial_parquet_available())for(const auto& n:names)if(data.kind(n)==SpatialElementKind::points||data.kind(n)==SpatialElementKind::shapes)fail(n,"SpatialData vector payloads require Arrow/Parquet",ErrorCode::unavailable_filter);
+    const auto names=data.names();
+    if(!spatial_parquet_available())for(const auto& n:names)
+        if(data.kind(n)==SpatialElementKind::points||data.kind(n)==SpatialElementKind::shapes)
+            fail(n,"SpatialData vector payloads require Arrow/Parquet",ErrorCode::unavailable_filter);
     if(!options.parquet_row_group_rows)fail(path,"Parquet row-group size must be nonzero",ErrorCode::invalid_argument);
     auto budgets=detail::write_budgets(detail::WriteBackend::zarr,options.scratch_bytes);
     for(const auto& n:names){
         auto kind=data.kind(n);
-        if(kind==SpatialElementKind::image||kind==SpatialElementKind::labels){auto r=data.raster(n);auto attrs=raster_attrs(r);detail::preflight_zarr_attributes(attrs.view());for(std::size_t i=0;i<r.n_levels();++i)detail::preflight_array_write(r.level(i),options.validation,budgets,n);}
-        else if(kind==SpatialElementKind::points){auto p=data.points(n);auto attrs=vector_attrs("ngff:points","0.2",p.axes(),p.transforms(),p.feature_key(),p.instance_key());detail::preflight_zarr_attributes(attrs.view());spatial_detail::preflight_parquet_points(n,p,options.parquet_row_group_rows,options.scratch_bytes);}
-        else if(kind==SpatialElementKind::shapes){auto p=data.shapes(n);auto attrs=vector_attrs("ngff:shapes","0.3",{SpatialAxis::x,SpatialAxis::y},p.transforms());detail::preflight_zarr_attributes(attrs.view());spatial_detail::preflight_parquet_shapes(n,p,options.parquet_row_group_rows,options.scratch_bytes);}
-        else {detail::preflight_anndata_write(data.table(n),options.validation,budgets);auto annotation=data.annotation(n);auto attrs=Element::mapping();attrs.set("spatialdata-encoding-type",Element("ngff:regions_table"));attrs.set("version",Element("0.2"));attrs.set("region",annotation.regions.empty()?Element(nullptr):string_list(annotation.regions));attrs.set("region_key",annotation.region_key.empty()?Element(nullptr):Element(annotation.region_key));attrs.set("instance_key",annotation.instance_key.empty()?Element(nullptr):Element(annotation.instance_key));detail::preflight_zarr_attributes(attrs.view());}
-    }
-    ZarrWriteOptions z;z.format=ZarrFormat::v3;z.mode=options.exclusive?ZarrWriteMode::exclusive:ZarrWriteMode::truncate;z.validation=options.validation;z.scratch_bytes=options.scratch_bytes;
-    auto root=data.metadata().copy();auto spatial=root.view().contains("spatialdata_attrs")?root.at("spatialdata_attrs").copy():Element::mapping();if(spatial.view().kind()!=ElementKind::mapping)fail(path,"spatialdata_attrs must be a mapping");spatial.set("version",Element("0.2"));root.set("spatialdata_attrs",std::move(spatial));detail::preflight_zarr_attributes(root.view());auto store=create_zarr_store(path,z);store.set_attributes("/",root.view());
-    std::vector<std::string> labels;
-    for(const auto& n:names){const auto kind=data.kind(n);std::string group=kind==SpatialElementKind::image?"/images":kind==SpatialElementKind::labels?"/labels":kind==SpatialElementKind::points?"/points":kind==SpatialElementKind::shapes?"/shapes":"/tables";if(!store.exists(group))store.create_group(group);const auto p=child(group,n);
-        if(kind==SpatialElementKind::image||kind==SpatialElementKind::labels){auto r=data.raster(n);auto attrs=raster_attrs(r);store.create_group(p,attrs.view());for(std::size_t i=0;i<r.n_levels();++i)store.write_array(child(p,r.level_path(i)),r.level(i));if(kind==SpatialElementKind::labels)labels.push_back(n);}
-        else if(kind==SpatialElementKind::points){auto v=data.points(n);auto attrs=vector_attrs("ngff:points","0.2",v.axes(),v.transforms(),v.feature_key(),v.instance_key());store.create_group(p,attrs.view());spatial_detail::write_parquet_points(sidecar(store,p,"points.parquet"),v,options.parquet_row_group_rows,options.scratch_bytes);}
-        else if(kind==SpatialElementKind::shapes){auto v=data.shapes(n);auto attrs=vector_attrs("ngff:shapes","0.3",{SpatialAxis::x,SpatialAxis::y},v.transforms());store.create_group(p,attrs.view());spatial_detail::write_parquet_shapes(sidecar(store,p,"shapes.parquet"),v,options.parquet_row_group_rows,options.scratch_bytes);}
-        else{auto table=data.table(n);auto annotation=data.annotation(n);store.write_anndata(p,table,options.validation);auto attrs=Element::mapping();attrs.set("spatialdata-encoding-type",Element("ngff:regions_table"));attrs.set("version",Element("0.2"));attrs.set("region",annotation.regions.empty()?Element(nullptr):string_list(annotation.regions));attrs.set("region_key",annotation.region_key.empty()?Element(nullptr):Element(annotation.region_key));attrs.set("instance_key",annotation.instance_key.empty()?Element(nullptr):Element(annotation.instance_key));store.set_attributes(p,attrs.view());
-            const auto annotation_path=child(child(p,"uns"),"spatialdata_attrs");
-            if(annotation.region_key.empty()){if(store.exists(annotation_path))store.erase(annotation_path);}
-            else{auto m=Element::mapping();m.set("region",Element(StringArray::from_strings({annotation.regions.size()},annotation.regions)));m.set("region_key",Element(annotation.region_key));m.set("instance_key",Element(annotation.instance_key));store.write_element(annotation_path,m.view());}
+        if(kind==SpatialElementKind::image||kind==SpatialElementKind::labels){
+            auto r=data.raster(n);
+            auto attrs=raster_attrs(r);
+            detail::preflight_zarr_attributes(attrs.view());
+            for(std::size_t i=0;i<r.n_levels();++i)
+                detail::preflight_array_write(r.level(i),options.validation,budgets,n);
+        }else if(kind==SpatialElementKind::points){
+            auto p=data.points(n);
+            auto attrs=vector_attrs("ngff:points","0.2",p.axes(),p.transforms(),p.feature_key(),p.instance_key());
+            detail::preflight_zarr_attributes(attrs.view());
+            spatial_detail::preflight_parquet_points(n,p,options.parquet_row_group_rows,options.scratch_bytes);
+        }else if(kind==SpatialElementKind::shapes){
+            auto p=data.shapes(n);
+            auto attrs=vector_attrs("ngff:shapes","0.3",{SpatialAxis::x,SpatialAxis::y},p.transforms());
+            detail::preflight_zarr_attributes(attrs.view());
+            spatial_detail::preflight_parquet_shapes(n,p,options.parquet_row_group_rows,options.scratch_bytes);
+        }else{
+            detail::preflight_anndata_write(data.table(n),options.validation,budgets);
+            auto annotation=data.annotation(n);
+            auto attrs=table_attrs(annotation);
+            detail::preflight_zarr_attributes(attrs.view());
         }
     }
-    if(!labels.empty()){auto attrs=Element::mapping();auto ome=Element::mapping();ome.set("labels",string_list(labels));attrs.set("ome",std::move(ome));store.set_attributes("/labels",attrs.view());}
+    ZarrWriteOptions z;
+    z.format=ZarrFormat::v3;
+    z.mode=options.exclusive?ZarrWriteMode::exclusive:ZarrWriteMode::truncate;
+    z.validation=options.validation;
+    z.scratch_bytes=options.scratch_bytes;
+
+    auto root=data.metadata().copy();
+    auto spatial=root.view().contains("spatialdata_attrs")?root.at("spatialdata_attrs").copy():Element::mapping();
+    if(spatial.view().kind()!=ElementKind::mapping)fail(path,"spatialdata_attrs must be a mapping");
+    spatial.set("version",Element("0.2"));
+    root.set("spatialdata_attrs",std::move(spatial));
+    detail::preflight_zarr_attributes(root.view());
+    auto store=create_zarr_store(path,z);
+    store.set_attributes("/",root.view());
+
+    std::vector<std::string> labels;
+    for(const auto& n:names){
+        const auto kind=data.kind(n);
+        const std::string group=kind==SpatialElementKind::image?"/images":kind==SpatialElementKind::labels?"/labels":kind==SpatialElementKind::points?"/points":kind==SpatialElementKind::shapes?"/shapes":"/tables";
+        if(!store.exists(group))store.create_group(group);
+        const auto p=child(group,n);
+
+        if(kind==SpatialElementKind::image||kind==SpatialElementKind::labels){
+            auto r=data.raster(n);
+            auto attrs=raster_attrs(r);
+            store.create_group(p,attrs.view());
+            for(std::size_t i=0;i<r.n_levels();++i)
+                store.write_array(child(p,r.level_path(i)),r.level(i));
+            if(kind==SpatialElementKind::labels)labels.push_back(n);
+        }else if(kind==SpatialElementKind::points){
+            auto v=data.points(n);
+            auto attrs=vector_attrs("ngff:points","0.2",v.axes(),v.transforms(),v.feature_key(),v.instance_key());
+            store.create_group(p,attrs.view());
+            spatial_detail::write_parquet_points(sidecar(store,p,"points.parquet"),v,options.parquet_row_group_rows,options.scratch_bytes);
+        }else if(kind==SpatialElementKind::shapes){
+            auto v=data.shapes(n);
+            auto attrs=vector_attrs("ngff:shapes","0.3",{SpatialAxis::x,SpatialAxis::y},v.transforms());
+            store.create_group(p,attrs.view());
+            spatial_detail::write_parquet_shapes(sidecar(store,p,"shapes.parquet"),v,options.parquet_row_group_rows,options.scratch_bytes);
+        }else{
+            auto table=data.table(n);
+            auto annotation=data.annotation(n);
+            store.write_anndata(p,table,options.validation);
+            auto attrs=table_attrs(annotation);
+            store.set_attributes(p,attrs.view());
+
+            const auto annotation_path=child(child(p,"uns"),"spatialdata_attrs");
+            if(annotation.region_key.empty()){
+                if(store.exists(annotation_path))store.erase(annotation_path);
+            }else{
+                auto m=Element::mapping();
+                m.set("region",Element(StringArray::from_strings({annotation.regions.size()},annotation.regions)));
+                m.set("region_key",Element(annotation.region_key));
+                m.set("instance_key",Element(annotation.instance_key));
+                store.write_element(annotation_path,m.view());
+            }
+        }
+    }
+    if(!labels.empty()){
+        auto attrs=Element::mapping();
+        auto ome=Element::mapping();
+        ome.set("labels",string_list(labels));
+        attrs.set("ome",std::move(ome));
+        store.set_attributes("/labels",attrs.view());
+    }
     store.flush();store.close();
 #else
     (void)data;(void)options;fail(path,"SpatialData storage requires the Zarr backend",ErrorCode::unavailable_filter);

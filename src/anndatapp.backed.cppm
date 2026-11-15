@@ -151,6 +151,7 @@ private:
     std::shared_ptr<detail::PreparedReadImpl> impl_;
     explicit PreparedRead(std::shared_ptr<detail::PreparedReadImpl>);
     friend class BackedArray;
+    friend struct detail::BackedAccess;
 };
 class BackedArray {
 public:
@@ -427,10 +428,16 @@ private:
 };
 namespace detail {
 // Internal cross-module bridges, excluded from the public API contract.
+// Retained numeric-plan object/path/vector capacities, counting shared gathers
+// conservatively per piece. Excludes source sessions, allocator/control-block
+// overhead and RSS; no backend access or numerical payload allocation.
+std::size_t prepared_read_retained_bytes(const PreparedRead&);
+
 enum class WriteBackend { hdf5, zarr };
 struct WriteBudgets { std::size_t scratch_bytes, packing_bytes; };
 WriteBudgets write_budgets(WriteBackend, std::size_t scratch_bytes);
 void compare_backed_table_indexes(const BackedTable&, const BackedTable&);
+void compare_backed_table_indexes(const BackedTable&, const BackedTable*, std::size_t count);
 void preflight_anndata_write(AnnDataView, Validation, WriteBudgets);
 void preflight_zarr_attributes(ElementView);
 void preflight_array_write(ArrayView, Validation, WriteBudgets, std::string_view path);
