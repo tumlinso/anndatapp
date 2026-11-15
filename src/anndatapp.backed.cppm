@@ -438,6 +438,8 @@ struct WriteBudgets { std::size_t scratch_bytes, packing_bytes; };
 WriteBudgets write_budgets(WriteBackend, std::size_t scratch_bytes);
 void compare_backed_table_indexes(const BackedTable&, const BackedTable&);
 void compare_backed_table_indexes(const BackedTable&, const BackedTable*, std::size_t count);
+void compare_backed_component_indexes(const BackedTable&, const BackedAnnData*, std::size_t file_count,
+                                      const std::size_t* ids, std::size_t count, const ::anndatapp::Selection& columns);
 void preflight_anndata_write(AnnDataView, Validation, WriteBudgets);
 void preflight_zarr_attributes(ElementView);
 void preflight_array_write(ArrayView, Validation, WriteBudgets, std::string_view path);

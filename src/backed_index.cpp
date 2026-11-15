@@ -527,6 +527,28 @@ private:
     std::vector<std::string> values_;
 };
 }
+namespace {
+template<class Peer> void compare_index_batches(const BackedTable& left,std::size_t count,std::size_t budget,Peer peer) {
+    const auto& a=detail::BackedAccess::get(left);
+    const auto size=left.size();
+    IndexCursor first(left,budget);
+    for (std::size_t i=0;i<size;) {
+        const auto& values=first.batch(i,size-i);
+        for (std::size_t k=0;k<count;++k) {
+            auto table=peer(k);
+            if (table.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
+            IndexCursor second(table,budget);
+            for (std::size_t j=0;j<values.size();) {
+                const auto& batch=second.batch(i+j,values.size()-j);
+                for (std::size_t p=0;p<batch.size();++p)
+                    if (values[j+p]!=batch[p]) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
+                j+=batch.size();
+            }
+        }
+        i+=values.size();
+    }
+}
+}
 void compare_table_indexes(const BackedTable& left,const BackedTable* others,std::size_t count) {
     if (!count) return;
     const auto& a=detail::BackedAccess::get(left);check_node(a);
@@ -543,23 +565,24 @@ void compare_table_indexes(const BackedTable& left,const BackedTable* others,std
             if (first.at(i)!=second.at(i)) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
         return;
     }
-    IndexCursor first(left,budget);
-    for (std::size_t i=0;i<size;) {
-        const auto& values=first.batch(i,size-i);
-        for (std::size_t k=0;k<count;++k) {
-            IndexCursor second(others[k],budget);
-            for (std::size_t j=0;j<values.size();) {
-                const auto& batch=second.batch(i+j,values.size()-j);
-                for (std::size_t p=0;p<batch.size();++p)
-                    if (values[j+p]!=batch[p]) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
-                j+=batch.size();
-            }
-        }
-        i+=values.size();
-    }
+    compare_index_batches(left,count,budget,[&](std::size_t k) { return others[k]; });
 }
 void compare_table_indexes(const BackedTable& left,const BackedTable& right) {
     compare_table_indexes(left,&right,1);
+}
+void compare_component_indexes(const BackedTable& left,const BackedAnnData* files,std::size_t file_count,
+                               const std::size_t* ids,std::size_t count,const ::anndatapp::Selection& columns) {
+    if (!count) return;
+    const auto& a=detail::BackedAccess::get(left);check_node(a);
+    if (!files || !ids) fail(ErrorCode::invalid_argument,a->path,"null component index batch");
+    auto budget=a->session->options.scratch_bytes;
+    for (std::size_t k=0;k<count;++k) {
+        if (ids[k]>=file_count) fail(ErrorCode::out_of_bounds,a->path,"component index is out of bounds");
+        auto table=files[ids[k]].var().select(columns);
+        if (table.size()!=left.size()) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
+        budget=std::min(budget,detail::BackedAccess::get(table)->session->options.scratch_bytes);
+    }
+    compare_index_batches(left,count,budget/2,[&](std::size_t k) { return files[ids[k]].var().select(columns); });
 }
 void compare_table_indexes(const BackedTable& left,const TableView& right){
     if(left.size()!=right.size())fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
@@ -575,6 +598,11 @@ void compare_backed_table_indexes(const BackedTable& left, const BackedTable& ri
 }
 void compare_backed_table_indexes(const BackedTable& left, const BackedTable* others, std::size_t count) {
     backed_detail::compare_table_indexes(left, others, count);
+}
+
+void compare_backed_component_indexes(const BackedTable& left,const BackedAnnData* files,std::size_t file_count,
+                                    const std::size_t* ids,std::size_t count,const ::anndatapp::Selection& columns) {
+    backed_detail::compare_component_indexes(left,files,file_count,ids,count,columns);
 }
 
 }

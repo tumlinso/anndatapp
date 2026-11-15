@@ -68,6 +68,22 @@ int main(int argc,char** argv) {
         detail::compare_backed_table_indexes(l,r);
         BackedTable targets[]{r,r};
         detail::compare_backed_table_indexes(l,targets,2);
+        // The collection bridge owns IDs, not an array of selected table nodes.
+        const auto component_left=(std::filesystem::path(argv[1])/"component-left.h5ad").string();
+        const auto component_right=(std::filesystem::path(argv[1])/"component-right.h5ad").string();
+        auto component=AnnData::empty(0,names.size());component.set_var(Table::with_index(names));
+        write_h5ad(component_left,component);write_h5ad(component_right,component);
+        BackedAnnData files[]{open_h5ad(component_left,options),open_h5ad(component_right,options)};
+        const std::size_t ids[]{1,0,1};
+        const Selection columns=indices{127,0,93,0,1,93,126,64,63,64};
+        detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,columns);
+        detail::compare_backed_component_indexes(oracle.obs(),nullptr,0,nullptr,0,columns);
+        detail::compare_backed_component_indexes(oracle.obs().select(range{0,0}),files,2,ids,3,range{0,0});
+        const std::size_t bad_id[]{2};
+        rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,bad_id,1,columns); });
+        rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,indices{127,0,93,0,2,93,126,64,63,64}); });
+        files[1].close();
+        rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,columns); });
         auto wrong=g.obs().select(indices{127,0,93,0,2,93,126,64,63,64});
         rejects([&] { detail::compare_backed_table_indexes(l,wrong); });
         auto reverse=f.obs().select(range{{},{},-3});

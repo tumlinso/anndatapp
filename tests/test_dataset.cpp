@@ -297,6 +297,29 @@ void check_many_components(const fs::path& root) {
     const float expected[]{2, 1, 2, 1, 2, 1};
     require(std::equal(values, values + 6, expected), "tiny many-component selection differs");
 }
+void check_batched_then_gathered(const fs::path& root) {
+    auto tail = AnnData::empty(2048, 3);
+    tail.set_var(Table::with_index({"peak-z", "peak-a", "gene-m"}));
+    tail.set_x(Array::zeros<float>({2048, 3}));
+    write_h5ad((root / "tail.h5ad").string(), tail);
+    std::vector<DatasetComponent> components;
+    for (std::size_t i = 0; i < 248; ++i)
+        components.push_back({"head-" + std::to_string(i), "dense/first.h5ad"});
+    components.push_back({"tail", "tail.h5ad"});
+    DatasetOptions options; options.backed.scratch_bytes = 4 * 65536;
+    auto data = create_h5ads((root / "mixed.h5ads").string(), std::move(components), "sample", options);
+    std::vector<std::ptrdiff_t> rows;
+    for (std::ptrdiff_t i = 0; i < 248; ++i) rows.push_back(i * 2);
+    for (std::ptrdiff_t i = 0; i < 2048; ++i) rows.push_back(496 + i);
+    auto prepared = data.slice(indices(std::move(rows)), all).prepare_x();
+    require(prepared.requirements().shape == std::vector<std::size_t>({2296, 3}), "mixed batch/gather shape differs");
+    std::vector<float> values(2296 * 3, -1);
+    prepared.read_into(DenseBuffer::from(values.data(), {2296, 3}));
+    for (std::size_t i = 0; i < 248; ++i)
+        require(values[3*i] == 1 && values[3*i + 1] == 0 && values[3*i + 2] == 2, "mixed component values differ");
+    require(std::all_of(values.begin() + 248*3, values.end(), [](float x) { return x == 0; }),
+            "mixed gathered values differ");
+}
 void check_reference(const fs::path& input, const fs::path& output) {
     auto d = open_h5ads(input.string());
     require(d.n_obs() == 4 && d.n_vars() == 3, "reference shape differs");
@@ -335,6 +358,7 @@ int main(int argc, char** argv) {
             check_collection(root, Layout::csr);
             check_collection(root, Layout::csc);
             check_many_components(root);
+            check_batched_then_gathered(root);
             check_narrow_widths(root, Layout::csr);
             check_narrow_widths(root, Layout::csc);
             check_deferred_validation(root, Layout::dense);
