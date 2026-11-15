@@ -1,6 +1,6 @@
 # AnnData format-family review handoff
 
-Review the implementation at `93c1fa8f6f62a51acfe3f1a1a962701ff6f020e2` against baseline `e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629`. The feature commit is `7999fa67a1b62fec7ce2533e135a4bd28f20d1d2`; the following commit records qualification. Later handoff/documentation commits do not change the reviewed code. The user authorized pushing local main to origin/main. Release publication and downstream migrations remain outside this request.
+Review the implementation at `93c1fa8f6f62a51acfe3f1a1a962701ff6f020e2` against baseline `e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629`. The feature commit is `7999fa67a1b62fec7ce2533e135a4bd28f20d1d2`; the following commit records qualification. This is the historical handoff for that fixed artifact. The 2026-11-15 repairs were implemented in a separate working tree; their implementation and final matrix are summarized below and in [format-family-repair-validation.md](format-family-repair-validation.md). The user authorized pushing local main to origin/main. Release publication and downstream migrations remain outside this request.
 
 The purpose is to decide whether the implementation meets the original acceptance contract. Inspect the requirements and diff independently, then use the candidate regressions below to check the findings. Passing test totals do not establish complete coverage. Preserve unrelated work, and do not modify tracked implementation files during a review unless the user separately authorizes repairs.
 
@@ -56,9 +56,9 @@ These checks missed the cases below. The current implementation therefore has un
 
 The [validation report](format-family-validation.md) and [machine-readable record](../benchmarks/results/format-family-qualification.json) contain the measured scope and hashes. The accepted implementation/test input digest is `180223eca95339848eb144bfa3bd312e8fe4f2196d4c6fdb44f1848e2f68dff8`.
 
-## Initial independent findings, still unresolved
+## Initial independent findings on the reviewed artifact
 
-A fresh reviewer, using separate verifier contexts, reported and reproduced the following cases on the fixed artifact. The implementing agent inspected the preserved source and logs and consolidated them here. The reviewer's final narrative response was interrupted by a platform screening error, so this is a handoff of recorded findings, not an exhaustive completed audit. No implementation repair is included in this handoff.
+A fresh reviewer, using separate verifier contexts, reported and reproduced the following cases on the fixed artifact. The implementing agent inspected the preserved source and logs and consolidated them here. The reviewer's final narrative response was interrupted by a platform screening error, so this is a handoff of recorded findings, not an exhaustive completed audit. At the time of this report, no implementation repair was included; the dated update below records later work without changing these original observations.
 
 1. **Polygon construction reads beyond a malformed geometry-offset buffer.** With one instance identifier, a one-entry geometry-offset array and omitted geometry types, `SpatialShapes::polygons` reads the next offset while inferring the type, before length validation. ASan reports a heap-buffer-overflow at `src/spatialdata.cpp:410`. Review checked-construction expectations and reject invalid lengths before inference. Evidence: `geometry/repro.cpp`, `geometry/repro-asan.log`, `geometry/README.md`.
 2. **TreeData can replace an existing destination before a known sparse-packing budget failure.** A valid 1x1 CSR with 1,000 entries, selected with duplicate rows, fails at a 1,024-byte HDF5 write budget after replacing the marker file. Zarr reproduces at 2,048 bytes and removes the existing sentinel. The logs report `copy exceeds numerical buffer byte budget` and `original=0`. Tree-only preflight at `src/treedata_io.cpp:730` precedes store creation, but the AnnData packing check runs later in `src/backed_writer.cpp`. Check the documented known-scratch preflight promise separately from later I/O rollback exclusions. Evidence: `tree-budget.cpp`, `tree-budget.log`, `tree-budget-zarr.cpp`, `tree-budget-zarr.log`.
@@ -69,6 +69,12 @@ A fresh reviewer, using separate verifier contexts, reported and reproduced the 
 The first three and fifth findings warrant particular attention to memory or data preservation. The categorical case is an advertised capability gap. Establish final priorities from reproduction and the API contract rather than relying on these labels.
 
 The reviewer also noted that nested SpatialData I/O and validation control flow is frequently compressed onto long single lines, which makes invariants difficult to inspect. Keep that maintainability concern separate from confirmed behavior defects and measured performance.
+
+## Repair branch update (2026-11-15)
+
+The current `codex/format-family-repairs` source diff addresses the five findings above and the related access-path gaps. The changes add early polygon-offset validation; TreeData rejects unknown grouped children and preflights known AnnData copy failures before store creation; Arrow output normalizes native categorical codes to int64; SpatialData owner and view validation share nested AnnData checks and write preflight; MuData views defer map reads and cache each accessed map per view; AnnDataSet open defers full axis-name comparison while preserving component-presence/shape/X diagnostics; and scalar-JSON tree name/key access avoids constructing unrelated trees. Backed content revisions let retained MuData views detect map mutation. See the [selective I/O audit update](format-family-access-review.md#repair-branch-update-2026-11-15) for access details.
+
+The repaired source is checkpointed at `bad691a8fe4a83452fbe882720feee8583d79733`. The [repair validation record](format-family-repair-validation.md) records the passing nine-configuration matrix, focused independent review, mmap retention checks and bounded sparse screen. The original findings above remain historical evidence. The screen flags collection subset-read overhead for a proposed focused follow-up; no deeper performance campaign has run.
 
 ## Performance evidence and assessment questions
 

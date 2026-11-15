@@ -1,0 +1,728 @@
+{
+  "schema": "anndatapp-format-family-repair/1",
+  "date": "2026-11-15",
+  "base": "3a35c6f051cbd9125a75277d4b32c0a8616b5940",
+  "implementation_commit": "bad691a8fe4a83452fbe882720feee8583d79733",
+  "source_inputs_sha256": "f1dd364cf820886bdb49e91cf32b310abd2318d6afca684d8c14991658bfac2d",
+  "source_input_count": 172,
+  "toolchain": {
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+    "cmake": "cmake version 3.28.3",
+    "ninja": "1.11.1"
+  },
+  "reference_versions": {
+    "anndata": "0.13.4",
+    "mudata": "0.4.1",
+    "treedata": "0.4.0",
+    "snapatac2": "2.10.0",
+    "spatialdata": "0.9.0",
+    "pyarrow": "21.0.0",
+    "zarr": "3.4.2",
+    "h5py": "3.16.0",
+    "numpy": "2.2.6"
+  },
+  "matrix": [
+    {
+      "configuration": "debug",
+      "tests": 37,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 30.0,
+      "test_xml": "build/format-family-repair/debug-final-tests.xml",
+      "xml_sha256": "a838145657509f075035622d0a3f4eac82e63872bd7bfaaeb3145a782d8ae23e",
+      "log_sha256": "b02a392a43f9eaaf2eba587c4ce6bc484b3afd8e98531135bfd56055d5739d37",
+      "build_log_sha256": "7486763174ce6c5033099f45708653c24890951d37c3d5aed0af5dc8114c8759",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "175893ce894c0fb6b53888ff0f06b17143118a47c5a5644f3a74729b999526a7"
+    },
+    {
+      "configuration": "release",
+      "tests": 38,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 44.0,
+      "test_xml": "build/format-family-repair/release-final-tests.xml",
+      "xml_sha256": "c8066d142082b6aaa1e018eacd0f6b03a04ac8bb648583263285d6504f825304",
+      "log_sha256": "897adfd49caf9cec366fda81dae3cb0b8db46384cd7e71ef80afd4aa106dd500",
+      "build_log_sha256": "a6068923e97aa92d1fa768d951f969401faa53f85dbb0b58cdcf741f52f788ed",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "d4e67ac9091745e7c74428bdb3e8f634ae09d063f000fa2aaa036214ad97bf4f"
+    },
+    {
+      "configuration": "sanitizers",
+      "tests": 38,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 46.0,
+      "test_xml": "build/format-family-repair/sanitizers-final-tests.xml",
+      "xml_sha256": "730ffde5a93f9f66e6258fae33171ec3ecd96c6566688f2fb0e770d823a7a574",
+      "log_sha256": "45bc00bf39dd17287a4ce232f6feb6ab5c784541d5b04a184366a5cd7c84ccf2",
+      "build_log_sha256": "f31fd65fe89129bfbe82735b7679b0127c1dc6bc0e0df0923d2c1bee13faee62",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "a8f6c03427a23c4dcd1150982bf9d4a44bc15b01bfe3f6bd1b13f0e158aac1d8"
+    },
+    {
+      "configuration": "core-only",
+      "tests": 22,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 44.0,
+      "test_xml": "build/format-family-repair/core-only-final-tests.xml",
+      "xml_sha256": "9bb6024302929f1fe4bee0390b49d2bcc62ba36ef676b28509368aafce19141a",
+      "log_sha256": "5a0a51ae5b4f27157d3ff94d5c18744e707e807d6be62bcb5de753874d88805a",
+      "build_log_sha256": "f72448dde745297acb02bf624e02bf95ba3e640788df598d0e1bc7256579af33",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "OFF",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "6794c22829c0d3d848faa5563868e8eb7315eb52042727745098bbc054dae8f5"
+    },
+    {
+      "configuration": "hdf5-only",
+      "tests": 31,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 44.0,
+      "test_xml": "build/format-family-repair/hdf5-only-final-tests.xml",
+      "xml_sha256": "b671244c15a556a0bd984ccf289b7e560ef80c349c967c343cc132e4bbab30b6",
+      "log_sha256": "13fa1ee87bb0b6f5c953de2a418a71afecbff7912363086696ff5c19305645dc",
+      "build_log_sha256": "27b0a87cbc36684bfac4cffc5f2b692ed33d1362162fbeccdf1d8b52b426148f",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "OFF",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "725f68fea4a0261f4e612e2fc990206c630db9793ca0fe29be50426d5d718c74"
+    },
+    {
+      "configuration": "zarr-only",
+      "tests": 29,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 45.0,
+      "test_xml": "build/format-family-repair/zarr-only-final-tests.xml",
+      "xml_sha256": "d77713627d0043d7076267437c9ca14168bdbe5c81c471389e1299b9a2124b67",
+      "log_sha256": "fd8a43fd9988ce8010454f42b6a246a61dba05ac821bf3b7055c013f1f2b3ac9",
+      "build_log_sha256": "8c4fd2de73c4593e7663eeacfd8bb250f15bab0b0de8c6b6c589e0810b799696",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "33f0d4ede9601b1e33523bdc62d202a7ea94819c1ec7b30f37744627739d2753"
+    },
+    {
+      "configuration": "shared",
+      "tests": 38,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 45.0,
+      "test_xml": "build/format-family-repair/shared-final-tests.xml",
+      "xml_sha256": "86ff6ddeb15c988d348f8c345bc631abf2f3268b4fd3c7f7d5f92965f7c77076",
+      "log_sha256": "7e776025c5a32e61060bf9bd3e59b5573ec245f2db2c4772c1cafabb491f9bc5",
+      "build_log_sha256": "74d31bac37f662b6d1d6c168e3277e3ef38acac210d1b2072101d777f1595ad4",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "0f16f83e41e8d879c8a1d220e55c5fd508e6cb60ca29ff4ce11cecec9377f8fe"
+    },
+    {
+      "configuration": "parquet",
+      "tests": 53,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 156.0,
+      "test_xml": "build/format-family-repair/parquet-retry-tests.xml",
+      "xml_sha256": "09e39cc5e7d9522b6d8cc74d450d3225c5e7dcfd81ea3b0158611d1bd9b59a18",
+      "log_sha256": "159cc2d5d7f21e8a73ad6fd64f2ae9ac8aa9068fca3141af676fc10266ae73fc",
+      "build_log_sha256": "5b393326f8d610207e870387924a9c752ac7e1fe25d125cec2211f7abf095bc1",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "Python3_EXECUTABLE": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/full/bin/python3",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "CMAKE_SHARED_LINKER_FLAGS": ""
+      },
+      "cmake_cache_sha256": "bdb7415ef0c0d513b4d7a679e2cc3c7b4cde2aae821a2fcca91ee31e20942697"
+    },
+    {
+      "configuration": "thread-sanitizers",
+      "tests": 4,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 21.0,
+      "test_xml": "build/format-family-repair/thread-sanitizers-retry-tests.xml",
+      "xml_sha256": "8cd7d46869cda1f3f7c175981a25cae3d85a4b4f989571af84c4eebddb38b907",
+      "log_sha256": "c402b10e0179de9e34e73aaad18f159ec4b02cc3c1a3cacc640b3517591b72cd",
+      "build_log_sha256": "ed3f00da63c2242a51775c1b4d2191292e4a136cce7b7e6d6dbfca302e9ac60b",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "Python3_EXECUTABLE": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/full/bin/python3",
+        "CMAKE_CXX_FLAGS": "-fsanitize=thread -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=thread"
+      },
+      "cmake_cache_sha256": "c2c392fa6606899813b1a0072aa748ca525572e5de0ac2892227ace8b123bb53"
+    }
+  ],
+  "sanitizer_limits": "ASan detect_leaks=0; UBSan halt_on_error=1. TSan four targeted transfer/streaming checks; no arbitrary shared-session thread-safety claim.",
+  "runner_note": "Initial Parquet and threaded Python runs lacked restricted-runner Zarr wakeup; intentionally terminated. Accepted retry runs use ANNDATAPP_INTEROP_ZARR_WAKEUP=1. Old logs retained, not accepted.",
+  "mapping": {
+    "source": "build/selective-io-fast-path-audit/runtime/mmap_audit.cpp",
+    "source_sha256": "67cc66c2307de971b08889ddd5b885025df70888f4cc43cb9b1312a68da86abe",
+    "log": "build/format-family-repair/mmap-run.log",
+    "log_sha256": "0dc37112989fe8b4238f2851c7e53bb7e42d00d47e0a26022f4cd0b7885f1809",
+    "result": "pass: rooted H5MU dense pointer retention, read-only file-backed mapping, unchanged input metadata, physical CSR buffers, explicit selected/logical-sparse rejections"
+  },
+  "private_rebuild": {
+    "source_sha256": "fb3d4ca6e149eb9c9cb109cb30544d86c00c5a9ad9ea869b69d21cbdb0a06483",
+    "public_bmis_unchanged": 15,
+    "consumer_objects_unchanged": 2,
+    "restored_binary_hashes_match": true
+  },
+  "screen": {
+    "metadata": {
+      "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "screen_source_sha256": {
+        "CMakeLists.txt": "792ef99867584af2617bda6c0d65e7e514f1397d52d18e1cde8029ff333ec93a",
+        "README.md": "42530a9520a49d24ebd0a0506b638c05ef39166aaeef8b65b409c199f1088b7a",
+        "generate.py": "ac8552103d2bc415dec1699c8534befc81cbb55a5e336d96b1cfb17210c9fa14",
+        "run.py": "c648dbdf28c3c751158579f0a8de060f061c56da23c019340326fa24fb0a2bf8",
+        "screen.cpp": "1e31bf45a7ded86eca04a00ccc3f79feda800c3fc502d99a43f4d1d7c19d61ff"
+      },
+      "baseline_library_sha256": "af07a42748b69ebf151775ee52ea8f1f76aa88ec0d2f81efbed9b6907822d6ec",
+      "candidate_library_sha256": "7ebb8b982e1a13cd9b796b3614b726b77ec83b0a8d84743362400b712d345822",
+      "baseline_binary": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/baseline-check/format-family-screen",
+      "baseline_sha256": "836b5428001679728de75a3953b0cee0af6ca872149574238fcbcc8e7c862e4e",
+      "candidate_binary": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/candidate/format-family-screen",
+      "candidate_sha256": "6534b776a7bf6c7ef2683649aa50a4ac059b451c10e14a9c4c39807685486b1d",
+      "fixture_inventory_sha256": "68d8ce9410706bf2e6db15955f18a95da79d90807d69c293d6b91b4afa6d7ed6",
+      "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+      "cache": "normal OS/HDF5 caches, no eviction",
+      "max_window_seconds": 30,
+      "case_timeout_seconds": 3.0,
+      "samples_requested": 1,
+      "order": "paired serial; alternating first version",
+      "measurement_limits": "no interposer; physical I/O, allocations and retained scratch unmeasured"
+    },
+    "elapsed_seconds": 25.296938254999986,
+    "fixture_bytes": 213446160,
+    "raw_sha256": "902d548a782d995bc097b7715cafcacf140fe96fdd9f0b4f800b089f20fbc336",
+    "completed_processes": 20,
+    "baseline_timeouts": 8,
+    "completed_pairs": 6,
+    "samples": [
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 100000,
+        "case": "open",
+        "version": "baseline",
+        "process_seconds": 3.005877090003196
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "open",
+        "version": "candidate",
+        "process_seconds": 0.036581271000613924,
+        "operation_ns": 14877500.0
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "mono-open",
+        "version": "candidate",
+        "process_seconds": 0.01667959499900462,
+        "operation_ns": 2170680.0
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "mono-open",
+        "version": "baseline",
+        "process_seconds": 0.0154139229998691,
+        "operation_ns": 1682350.0
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "map",
+        "version": "baseline",
+        "process_seconds": 0.0186969649985258,
+        "nnz": 1250000,
+        "arrays": [
+          {
+            "name": "data",
+            "bytes": 5000000,
+            "map_ns": 125458,
+            "first_touch_ns": 308110,
+            "warm_touch_ns": 4955,
+            "sampled_checksum": 5037963059165710794
+          },
+          {
+            "name": "indices",
+            "bytes": 5000000,
+            "map_ns": 181297,
+            "first_touch_ns": 257446,
+            "warm_touch_ns": 4470,
+            "sampled_checksum": 11099922463155748557
+          },
+          {
+            "name": "indptr",
+            "bytes": 100008,
+            "map_ns": 105569,
+            "first_touch_ns": 8643,
+            "warm_touch_ns": 114,
+            "sampled_checksum": 1727373572155443917
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "map",
+        "version": "candidate",
+        "process_seconds": 0.02003929700003937,
+        "nnz": 1250000,
+        "arrays": [
+          {
+            "name": "data",
+            "bytes": 5000000,
+            "map_ns": 141283,
+            "first_touch_ns": 227225,
+            "warm_touch_ns": 5016,
+            "sampled_checksum": 5037963059165710794
+          },
+          {
+            "name": "indices",
+            "bytes": 5000000,
+            "map_ns": 117324,
+            "first_touch_ns": 193452,
+            "warm_touch_ns": 4924,
+            "sampled_checksum": 11099922463155748557
+          },
+          {
+            "name": "indptr",
+            "bytes": 100008,
+            "map_ns": 159501,
+            "first_touch_ns": 7846,
+            "warm_touch_ns": 129,
+            "sampled_checksum": 1727373572155443917
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "read",
+        "version": "candidate",
+        "process_seconds": 0.3837168569989444,
+        "operation_ns": 180508000.0,
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 26,
+        "checksum_fnv1a64": 17343130530937438535
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 100000,
+        "case": "read",
+        "version": "baseline",
+        "process_seconds": 3.0059320789987396
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "mono-read",
+        "version": "baseline",
+        "process_seconds": 0.03629883800022071,
+        "operation_ns": 9009590.0,
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 26,
+        "checksum_fnv1a64": 17343130530937438535
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "mono-read",
+        "version": "candidate",
+        "process_seconds": 0.03208977300164406,
+        "operation_ns": 8852300.0,
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 26,
+        "checksum_fnv1a64": 17343130530937438535
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "inspect",
+        "version": "candidate",
+        "process_seconds": 0.03193358699718374,
+        "operation_ns": 1235890.0
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 100000,
+        "case": "inspect",
+        "version": "baseline",
+        "process_seconds": 3.006177713999932
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 100000,
+        "case": "view",
+        "version": "baseline",
+        "process_seconds": 3.0062728650009376
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 100000,
+        "case": "view",
+        "version": "candidate",
+        "process_seconds": 0.03424536099919351,
+        "operation_ns": 387956,
+        "shape": [
+          50000,
+          6667
+        ]
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 10000,
+        "case": "open",
+        "version": "baseline",
+        "process_seconds": 3.0058129190001637
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "open",
+        "version": "candidate",
+        "process_seconds": 0.032770642999821575,
+        "operation_ns": 14623300.0
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "mono-open",
+        "version": "candidate",
+        "process_seconds": 0.016864059998624725,
+        "operation_ns": 1853880.0
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "mono-open",
+        "version": "baseline",
+        "process_seconds": 0.015457172001333674,
+        "operation_ns": 1715640.0
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "map",
+        "version": "baseline",
+        "process_seconds": 0.017723957000271184,
+        "nnz": 125000,
+        "arrays": [
+          {
+            "name": "data",
+            "bytes": 500000,
+            "map_ns": 167776,
+            "first_touch_ns": 38666,
+            "warm_touch_ns": 469,
+            "sampled_checksum": 1500633739145532130
+          },
+          {
+            "name": "indices",
+            "bytes": 500000,
+            "map_ns": 117534,
+            "first_touch_ns": 41219,
+            "warm_touch_ns": 476,
+            "sampled_checksum": 9790593553522161155
+          },
+          {
+            "name": "indptr",
+            "bytes": 10008,
+            "map_ns": 105219,
+            "first_touch_ns": 3169,
+            "warm_touch_ns": 59,
+            "sampled_checksum": 5558979605539197941
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "map",
+        "version": "candidate",
+        "process_seconds": 0.016985371003102046,
+        "nnz": 125000,
+        "arrays": [
+          {
+            "name": "data",
+            "bytes": 500000,
+            "map_ns": 122861,
+            "first_touch_ns": 21734,
+            "warm_touch_ns": 434,
+            "sampled_checksum": 1500633739145532130
+          },
+          {
+            "name": "indices",
+            "bytes": 500000,
+            "map_ns": 137039,
+            "first_touch_ns": 24312,
+            "warm_touch_ns": 462,
+            "sampled_checksum": 9790593553522161155
+          },
+          {
+            "name": "indptr",
+            "bytes": 10008,
+            "map_ns": 108356,
+            "first_touch_ns": 2981,
+            "warm_touch_ns": 57,
+            "sampled_checksum": 5558979605539197941
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "read",
+        "version": "candidate",
+        "process_seconds": 0.37782236999919405,
+        "operation_ns": 181546000.0,
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 17,
+        "checksum_fnv1a64": 6054875612304893327
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 10000,
+        "case": "read",
+        "version": "baseline",
+        "process_seconds": 3.0065821200005303
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "mono-read",
+        "version": "baseline",
+        "process_seconds": 0.03665798200017889,
+        "operation_ns": 9406440.0,
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 17,
+        "checksum_fnv1a64": 6054875612304893327
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "mono-read",
+        "version": "candidate",
+        "process_seconds": 0.031381647000671364,
+        "operation_ns": 8837350.0,
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 17,
+        "checksum_fnv1a64": 6054875612304893327
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "inspect",
+        "version": "candidate",
+        "process_seconds": 0.031445544002053794,
+        "operation_ns": 980615
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 10000,
+        "case": "inspect",
+        "version": "baseline",
+        "process_seconds": 3.0057037830010813
+      },
+      {
+        "status": "timeout",
+        "sample": 1,
+        "size": 10000,
+        "case": "view",
+        "version": "baseline",
+        "process_seconds": 3.006220213999768
+      },
+      {
+        "status": "completed",
+        "returncode": 0,
+        "sample": 1,
+        "size": 10000,
+        "case": "view",
+        "version": "candidate",
+        "process_seconds": 0.03669382899897755,
+        "operation_ns": 361748,
+        "shape": [
+          5000,
+          6667
+        ]
+      }
+    ],
+    "limits": "One sample/case, normal caches. Read timing excludes requirements and output allocation. No physical I/O bytes, allocations or retained scratch instrumentation. Timeouts cover whole process and cannot supply baseline operation latency or a speedup ratio.",
+    "follow_up": "Propose one bounded call-count/profile of collection selected-axis validation and transfer preflight vs monolithic; discuss time/I/O budget with user before deeper measurement."
+  },
+  "local_evidence_root": "/home/tumlinson/anndatapp/build/format-family-repair-qualification-2026-11-15",
+  "source_evidence_root": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair",
+  "fixture_summary_hashes": {
+    "build/reference/legacy-spatial-02/fixture-summary.json": "3f5c94f1ee4142c0e5952796d394b9b223429d8bd7ca5f28271e71eaf7b1ff8d",
+    "build/reference/legacy-spatial-02-linked/fixture-summary.json": "b6713d94ea5bc0e4481e8820f8df9a134d2d24950fdb3e3bdee9d8ee858ea8c4",
+    "build/reference/legacy-spatial-03/fixture-summary.json": "dde1705ff7c7357dddc96b69e7c146a7c2cc1cf24fd65e2857b712b3b7366776",
+    "build/reference/legacy-spatial-03-linked/fixture-summary.json": "b1f8d0bfca32697c71d287064bd820afb68c83d0d4acf859d0c2b8948bc663e5",
+    "build/reference/spatial-current/fixture-summary.json": "db4d3cd6f1a58f07a209c127ae3e2720d4d6697754b4dc73f1daac8b5f4b718c",
+    "build/reference/spatial-current-geoarrow/fixture-summary.json": "87d64d4307caf30892d18b0d9e9fdb06e413432a7796861a709021ce12175f32",
+    "build/reference/spatial-current-wkb/fixture-summary.json": "b0635075df061a9c3c68a1b89ed5c8dd40d64fda2e0432e8ad105dd0e7068864"
+  },
+  "preexisting_reference_record": "benchmarks/results/format-family-qualification.json",
+  "qualification_limits": "Linux Clang18 only. Repair-specific independent code review plus regression/interoperability gates, not proof of universal format or performance coverage. General late I/O/codec failures remain nontransactional.",
+  "mudata_legacy_recheck": {
+    "legacy": "MuData 0.3.10; generate missing-axis HDF5/Zarr, native repair --io, current MuData0.4.1 reopen",
+    "result": "pass",
+    "log_sha256": "bff303309d1a9b3d006bdd171f47965402687105ec62ddbdd72284b4b928ed4b",
+    "fixture_count": 219,
+    "fixture_manifest_sha256": "fc157bad2b20ef8b67e6b38fbfb1c526f71207fc51582bcd5775ed3749c3c74e"
+  }
+}
