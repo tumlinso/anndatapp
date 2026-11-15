@@ -48,11 +48,11 @@ for family, names in cases.items():
         commands=[]
         for label,argv in [('bbe',[str(a.bbe.resolve()),case,path]),
                            ('candidate',[str(a.candidate.resolve()),case,path]),
-                           ('python',[str(a.python.resolve()),str(Path('tools/format-family-screen/python_family.py').resolve()),'case',case,str(a.fixtures.resolve())])]:
+                           ('python',[str(a.python.absolute()),str(Path('tools/format-family-screen/python_family.py').resolve()),'case',case,str(a.fixtures.resolve())])]:
             cmd_env=dict(env)
             if label == 'python': cmd_env['ANNDATAPP_INTEROP_ZARR_WAKEUP']='0'
             commands.append({'version':label,'argv':argv+extra,'env':cmd_env})
         entries.append({'name':case,'commands':commands})
     plan={'description':f'{family}: compare equivalent requested outputs and end-to-end only; eager work may differ by API.',
-          'identity_files':[str(f.resolve()) for f in files]+[str(Path('build/format-family-io/prefixes-ready.json').resolve())], 'cases':entries}
+          'identity_files':[str(f.absolute()) for f in files]+[str(Path('build/format-family-io/prefixes-ready.json').resolve())], 'cases':entries}
     with output.open('x') as f: json.dump(plan,f,indent=2);f.write('\n')

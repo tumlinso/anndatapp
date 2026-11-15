@@ -190,9 +190,12 @@ int main(int argc,char** argv) {
             auto x=view.values().column("x").values().dense<double>();
             auto y=view.values().column("y").values().dense<double>();
             auto id=view.identifiers().values().dense<std::int64_t>();
+            auto instance=view.values().column("spot_id").values().dense<std::int64_t>();
+            require(view.instance_key()=="spot_id","incorrect point instance key");
             for(std::size_t i=0;i<8;++i) {
                 require(x.data()[i]==double(16+i)+.25 && y.data()[i]==2.0*(16+i)+.5,"incorrect point coordinate");
-                require(id.data()[i]==static_cast<std::int64_t>(1016+i),"incorrect point identifier");
+                require(id.data()[i]==static_cast<std::int64_t>(16+i),"incorrect point row index");
+                require(instance.data()[i]==static_cast<std::int64_t>(1016+i),"incorrect point instance value");
             }
             std::cout << "{\"case\":\"spatialdata-points\",\"golden\":\"pass\",\"output\":\"eager_bounded_points_batch\",\"first\":16,\"count\":8,\"open_ns\":" << ns(start,opened)
                 << ",\"operation_ns\":" << ns(opened,finished) << ",\"end_to_end_ns\":" << ns(start,finished);

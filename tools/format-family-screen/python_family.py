@@ -926,13 +926,14 @@ def _case_spatial_points(root: Path, modules: dict[str, object], diagnostic: boo
         [selected["x"].to_numpy(dtype="<f8"), selected["y"].to_numpy(dtype="<f8")]
     )
     ids = selected["spot_id"].to_numpy(dtype="<i8")
+    row_index = selected.index.to_numpy(dtype="<i8")
     finished = time.perf_counter_ns()
     diag = observer.end()
     rows = np.arange(16, 24, dtype=np.int64)
     want_coords = np.column_stack((rows.astype(np.float64) + 0.25, 2.0 * rows + 0.5)).astype("<f8")
     want_ids = (1000 + rows).astype("<i8")
-    if not np.array_equal(coords, want_coords) or not np.array_equal(ids, want_ids):
-        raise RuntimeError("SpatialData selected point batch differs from independent formula")
+    if not np.array_equal(coords, want_coords) or not np.array_equal(ids, want_ids) or not np.array_equal(row_index, rows):
+        raise RuntimeError("SpatialData selected point batch or row index differs from independent formula")
     actual_sha = digest(coords.tobytes(order="C") + ids.tobytes(order="C"))
     expected_sha = digest(want_coords.tobytes(order="C") + want_ids.tobytes(order="C"))
     if actual_sha != expected_sha:
@@ -944,6 +945,7 @@ def _case_spatial_points(root: Path, modules: dict[str, object], diagnostic: boo
         "columns": ["x", "y", "spot_id"],
         "coordinates": coords.tolist(),
         "spot_id": ids.tolist(),
+        "row_index": row_index.tolist(),
         "sha256": actual_sha,
         "golden": "pass",
         "open_ns": opened - start,
