@@ -284,6 +284,19 @@ void check_deferred_validation(const fs::path& root, Layout layout) {
         }
     }
 }
+void check_many_components(const fs::path& root) {
+    std::vector<DatasetComponent> components;
+    for (std::size_t i = 0; i < 256; ++i)
+        components.push_back({"sample-" + std::to_string(i), "dense/first.h5ad"});
+    auto data = create_h5ads((root / "many.h5ads").string(), std::move(components));
+    auto empty = data.slice(range{0, 0, 1}, all).prepare_x();
+    require(empty.requirements().shape == std::vector<std::size_t>({0, 3}), "empty many-component selection differs");
+    auto tiny = data.slice(indices{510, 0, 510}, indices{2, 0}).prepare_x();
+    float values[6]{};
+    tiny.read_into(DenseBuffer::from(values, {3, 2}));
+    const float expected[]{2, 1, 2, 1, 2, 1};
+    require(std::equal(values, values + 6, expected), "tiny many-component selection differs");
+}
 void check_reference(const fs::path& input, const fs::path& output) {
     auto d = open_h5ads(input.string());
     require(d.n_obs() == 4 && d.n_vars() == 3, "reference shape differs");
@@ -321,6 +334,7 @@ int main(int argc, char** argv) {
             check_collection(root, Layout::dense);
             check_collection(root, Layout::csr);
             check_collection(root, Layout::csc);
+            check_many_components(root);
             check_narrow_widths(root, Layout::csr);
             check_narrow_widths(root, Layout::csc);
             check_deferred_validation(root, Layout::dense);

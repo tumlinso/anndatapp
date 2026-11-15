@@ -13,12 +13,12 @@ template<class F> void rejects(F&& f) {
     try { f(); } catch (const Error&) { return; }
     throw std::runtime_error("expected index rejection");
 }
-void replace_index(const std::string& path,const std::vector<std::string>& names,bool fixed) {
+void replace_index(const std::string& path,const std::vector<std::string>& names,bool fixed,std::size_t width=48) {
     auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
     require(file>=0,"open raw string fixture");
     require(H5Ldelete(file,"/obs/_index",H5P_DEFAULT)>=0,"replace raw string fixture");
     auto type=H5Tcopy(H5T_C_S1);
-    require(H5Tset_size(type,fixed?48:H5T_VARIABLE)>=0,"set string width");
+    require(H5Tset_size(type,fixed?width:H5T_VARIABLE)>=0,"set string width");
     require(H5Tset_cset(type,H5T_CSET_UTF8)>=0,"set string encoding");
     hsize_t n=names.size();auto space=H5Screate_simple(1,&n,nullptr);
     auto data=H5Dcreate2(file,"/obs/_index",type,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
@@ -34,8 +34,8 @@ void replace_index(const std::string& path,const std::vector<std::string>& names
     }
     H5Sclose(scalar);
     if (fixed) {
-        std::vector<char> bytes(names.size()*48,0);
-        for (std::size_t i=0;i<names.size();++i) names[i].copy(bytes.data()+i*48,48);
+        std::vector<char> bytes(names.size()*width,0);
+        for (std::size_t i=0;i<names.size();++i) names[i].copy(bytes.data()+i*width,width);
         require(H5Dwrite(data,type,H5S_ALL,H5S_ALL,H5P_DEFAULT,bytes.data())>=0,"write fixed strings");
     } else {
         std::vector<const char*> values;
@@ -90,6 +90,18 @@ int main(int argc,char** argv) {
         invalid.close();names[93]=std::string(8192,'x');replace_index(path,names,false);
         options.scratch_bytes=4096;auto large=open_h5ad(path,options);
         rejects([&] { detail::compare_backed_table_indexes(large.obs().select(indices{93}),large.obs().select(indices{93})); });
+        // Preserve the old fixed-string path when coordinate staging cannot fit:
+        // each cursor has 90 bytes, enough for one width-one string but no gather.
+        auto tiny=AnnData::empty(1,0);tiny.set_obs(Table::with_index({"a"}));
+        const auto tiny_left=(std::filesystem::path(argv[1])/"tiny-left.h5ad").string();
+        const auto tiny_right=(std::filesystem::path(argv[1])/"tiny-right.h5ad").string();
+        write_h5ad(tiny_left,tiny);write_h5ad(tiny_right,tiny);
+        replace_index(tiny_left,{"a"},true,1);replace_index(tiny_right,{"a"},true,1);
+        options.scratch_bytes=180;
+        auto tl=open_h5ad(tiny_left,options),tr=open_h5ad(tiny_right,options);
+        detail::compare_backed_table_indexes(tl.obs(),tr.obs());
+        BackedTable tiny_targets[]{tr.obs(),tr.obs()};
+        detail::compare_backed_table_indexes(tl.obs(),tiny_targets,2);
         std::cout<<"Bounded gathered index comparison passed\n";
     } catch (const std::exception& e) { std::cerr<<e.what()<<'\n';return 1; }
 }

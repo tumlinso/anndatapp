@@ -236,43 +236,48 @@ void compare_indexes(const BackedTable& left, const BackedTable& right,
     }
 }
 void check_selection_indexes(const Impl& p, const Axis& rows, const Axis& cols) {
-    std::vector<bool> touched(p.files.size(), false);
-    for_segments(p, rows, cols, [&](const Segment& s) {
-        const auto& file = p.files[s.component];
-        if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
-        touched[s.component] = true;
-        auto selected = detail::compose_axis(rows, Axis::stride(s.first, s.count), p.n_obs);
-        compare_indexes(p.manifest.obs().select(axis_selection(selected, p.n_obs)),
-                        file.obs().select(segment_rows(p, rows, s)),
-                        "AnnDataSet/obs", "component observation names differ from manifest");
-    });
-    if (std::none_of(touched.begin(), touched.end(), [](bool x) { return x; })) return;
+    const auto count = rows.extent(p.n_obs);
+    if (!count) return;
     const auto selection = selector_cost(p, cols, 0);
-    if (selection > SIZE_MAX - 256) fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "selection staging overflows");
-    const auto cost = 256 + selection;
-    const auto capacity = std::min(p.files.size(), p.selector_bytes / cost);
-    auto vars = p.manifest.var().select(axis_selection(cols, p.n_vars));
-    if (capacity < 2) {
-        for (std::size_t i = 0; i < p.files.size(); ++i) if (touched[i])
-            compare_indexes(vars, p.files[i].var().select(axis_selection(cols, p.n_vars)),
-                            "AnnDataSet/var", "component variable names differ");
-        return;
-    }
-    std::vector<BackedTable> tables; tables.reserve(capacity);
+    if (selection > SIZE_MAX - 256 - sizeof(std::size_t))
+        fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "selection staging overflows");
+    const auto cost = 256 + sizeof(std::size_t) + selection;
+    const auto capacity = std::min({count, p.files.size(), p.selector_bytes / cost});
+    std::vector<std::size_t> components;
+    std::vector<BackedTable> tables;
+    if (capacity > 1) { components.reserve(capacity); tables.reserve(capacity); }
+    std::optional<BackedTable> vars;
     auto compare = [&] {
-        if (tables.empty()) return;
-        try { detail::compare_backed_table_indexes(vars, tables.data(), tables.size()); }
+        if (components.empty()) return;
+        if (!vars) vars.emplace(p.manifest.var().select(axis_selection(cols, p.n_vars)));
+        std::sort(components.begin(), components.end());
+        components.erase(std::unique(components.begin(), components.end()), components.end());
+        tables.clear();
+        for (auto i : components) tables.push_back(p.files[i].var().select(axis_selection(cols, p.n_vars)));
+        try { detail::compare_backed_table_indexes(*vars, tables.data(), tables.size()); }
         catch (const Error& e) {
             if (e.code() == ErrorCode::shape_mismatch)
                 fail(e.code(), "AnnDataSet/var", "component variable names differ");
             throw;
         }
-        tables.clear();
+        components.clear();
     };
-    for (std::size_t i = 0; i < p.files.size(); ++i) if (touched[i]) {
-        tables.push_back(p.files[i].var().select(axis_selection(cols, p.n_vars)));
-        if (tables.size() == capacity) compare();
-    }
+    for_segments(p, rows, cols, [&](const Segment& s) {
+        const auto& file = p.files[s.component];
+        if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
+        auto selected = detail::compose_axis(rows, Axis::stride(s.first, s.count), p.n_obs);
+        compare_indexes(p.manifest.obs().select(axis_selection(selected, p.n_obs)),
+                        file.obs().select(segment_rows(p, rows, s)),
+                        "AnnDataSet/obs", "component observation names differ from manifest");
+        if (capacity < 2) {
+            if (!vars) vars.emplace(p.manifest.var().select(axis_selection(cols, p.n_vars)));
+            compare_indexes(*vars, file.var().select(axis_selection(cols, p.n_vars)),
+                            "AnnDataSet/var", "component variable names differ");
+        } else {
+            components.push_back(s.component);
+            if (components.size() == capacity) compare();
+        }
+    });
     compare();
 }
 void checked_shape(const DenseBuffer& dst, std::size_t m, std::size_t n, DType type) {

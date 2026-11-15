@@ -493,8 +493,8 @@ public:
         if (i >= axis.size || !maximum) fail(ErrorCode::out_of_bounds,index_->path,"table row is out of bounds");
         std::vector<std::string>().swap(values_);
         constexpr auto base = sizeof(std::vector<std::size_t>);
-        auto cap = budget_ > base ? (budget_ - base)/(2*sizeof(std::string) + sizeof(std::size_t)) : 0;
-        if (!cap) fail(ErrorCode::invalid_argument,index_->path,"one index position exceeds scratch budget");
+        // A coordinate list may not fit although the original one-string run does.
+        const auto cap=std::max<std::size_t>(1,budget_>base ? (budget_-base)/(2*sizeof(std::string)+sizeof(std::size_t)) : 0);
         const auto n = std::min({std::size_t(8192), cap, axis.size-i, maximum});
         const auto first = axis.at(i);
         std::size_t run=1;
