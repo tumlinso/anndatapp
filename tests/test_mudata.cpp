@@ -154,6 +154,42 @@ void budget_io(const std::string& path) {
     check(sparse_view.nnz() == 4 && sparse_view.values()[0] == 8 && sparse_view.values()[3] == 2,
           "selected sparse write succeeds when packing fits budget");
 }
+void lazy_io(const std::string& path) {
+    auto m = MuData::empty(3, 2);
+    m.set_modality("rna", matrix({"a", "b"}, {"g"}, {1, 2}), {1, 0, 2}, {1, 0});
+    m.set_modality("protein", matrix({"b"}, {"p"}, {3}), {0, 1, 0}, {0, 1});
+    MuWriteOptions w; w.overwrite = true;
+    write_h5mu(path, m, w);
+    BackedOptions o; o.mode = AccessMode::read_write;
+    auto b = open_h5mu(path, o);
+    auto raw = b.view();
+    check(map(raw.obs_map("rna")) == std::vector<std::uint64_t>({1, 0, 2}), "unsliced maps retain raw positions");
+    auto selected = b.slice(indices({2, 0, 2}), all);
+    auto selected_map = selected.obs_map("rna");
+    auto pointer = selected_map.data;
+    check(map(selected_map) == std::vector<std::uint64_t>({1, 2, 3}), "selected maps renumber duplicate positions");
+    (void)selected.var_map("protein");
+    check(selected.obs_map("rna").data == pointer, "map pointers remain stable after unrelated cache fills");
+    auto nested = selected.slice(indices({2, 1}), all);
+    check(map(nested.obs_map("rna")) == std::vector<std::uint64_t>({1, 2}) &&
+          nested.modality("rna").n_obs() == 2, "nested selection composes lazily");
+    auto a = b.obs_map("rna");
+    auto invalid = a.read();
+    auto values = invalid.edit().dense<std::uint64_t>();
+    values.data()[0] = 9;
+    a.write(invalid.view());
+    bool stale = false;
+    try { (void)selected.n_obs(); } catch (const Error&) { stale = true; }
+    check(stale && map(selected_map) == std::vector<std::uint64_t>({1, 2, 3}),
+          "map writes invalidate views without invalidating acquired pointers");
+    auto lazy = b.slice(indices({0, 2}), all);
+    check(lazy.n_obs() == 2 && map(lazy.obs_map("protein")) == std::vector<std::uint64_t>({0, 0}),
+          "view and positional slice leave unrelated bad map unread");
+    bool rejected = false;
+    try { (void)lazy.obs_map("rna"); } catch (const Error&) { rejected = true; }
+    check(rejected, "selected map bounds checked on access");
+    b.close();
+}
 void fixture_io(const std::string& input, const std::string& output, bool zarr) {
     auto b = zarr ? open_mudata_zarr(input) : open_h5mu(input);
     check(b.is_open() && b.n_obs() == 3 && b.n_vars() == 4, "backed global dimensions");
@@ -212,9 +248,12 @@ void fixture_io(const std::string& input, const std::string& output, bool zarr) 
     BackedOptions options; options.mode = AccessMode::read_write;
     auto writable = zarr ? open_mudata_zarr(output, options) : open_h5mu(output, options);
     auto before = writable.view();
+    auto retained_map = before.obs_map("rna");
     writable.set_maps("rna", {2, 1, 0}, {1, 2, 0, 0});
-    check(map(before.obs_map("rna")) == std::vector<std::uint64_t>({1, 2, 0}),
-          "backed map update retains prior snapshot");
+    bool stale = false;
+    try { (void)before.obs_map("rna"); } catch (const Error&) { stale = true; }
+    check(stale && map(retained_map) == std::vector<std::uint64_t>({1, 2, 0}),
+          "map replacement invalidates views while retained pointers remain valid");
     auto after = writable.view();
     auto changed = map(after.obs_map("rna"));
     if (changed != std::vector<std::uint64_t>({2, 1, 0})) {
@@ -222,6 +261,23 @@ void fixture_io(const std::string& input, const std::string& output, bool zarr) 
     }
     check(changed == std::vector<std::uint64_t>({2, 1, 0}), "backed map update persists explicitly");
     writable.set_maps("rna", {1, 2, 0}, {1, 2, 0, 0});
+    auto direct = writable.obs_map("rna");
+    auto changed_map = direct.read();
+    auto values = changed_map.edit().dense<std::uint64_t>();
+    values.data()[0] = 9;
+    auto stale_view = writable.view();
+    direct.write(changed_map.view());
+    stale = false;
+    try { (void)stale_view.n_obs(); } catch (const Error&) { stale = true; }
+    check(stale, "in-place map write invalidates existing view");
+    auto lazy = writable.slice(indices({1, 0, 1}), all);
+    check(lazy.n_obs() == 3 && map(lazy.var_map("protein")).size() == 4,
+          "view and positional slice defer unrelated invalid map payload");
+    bool invalid_map = false;
+    try { (void)lazy.obs_map("rna"); } catch (const Error&) { invalid_map = true; }
+    check(invalid_map, "invalid selected map is diagnosed when requested");
+    values.data()[0] = 1;
+    direct.write(changed_map.view());
     bool rejected = false;
     try { writable.set_maps("rna", {3, 2, 0}, {1, 2, 0, 0}); }
     catch (const Error& e) { rejected = e.code() == ErrorCode::out_of_bounds; }
@@ -262,6 +318,7 @@ void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
 int main(int argc, char** argv) {
     try {
         if (argc == 3 && std::string(argv[1]) == "--budget") budget_io(argv[2]);
+        else if (argc == 3 && std::string(argv[1]) == "--lazy") lazy_io(argv[2]);
         else if (argc == 5 && std::string(argv[1]) == "--io") fixture_io(argv[3], argv[4], std::string(argv[2]) == "zarr");
         else if (argc == 5 && std::string(argv[1]) == "--reject")
             rejection(argv[3], std::string(argv[2]) == "zarr", argv[4]);

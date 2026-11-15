@@ -140,6 +140,8 @@ private:
 };
 class PreparedRead {
 public:
+    void preflight(const DenseBuffer&) const;
+    void preflight(const SparseBuffer&) const;
     PreparedRead();
     ReadRequirements requirements() const;
     Array read() const;
@@ -152,6 +154,7 @@ private:
 };
 class BackedArray {
 public:
+    std::uint64_t content_revision() const;
     BackedArray();
     Layout layout() const;
     DType dtype() const;
@@ -424,6 +427,14 @@ private:
 };
 namespace detail {
 // Internal cross-module bridges, excluded from the public API contract.
+enum class WriteBackend { hdf5, zarr };
+struct WriteBudgets { std::size_t scratch_bytes, packing_bytes; };
+WriteBudgets write_budgets(WriteBackend, std::size_t scratch_bytes);
+void compare_backed_table_indexes(const BackedTable&, const BackedTable&);
+void preflight_anndata_write(AnnDataView, Validation, WriteBudgets);
+void preflight_zarr_attributes(ElementView);
+void preflight_array_write(ArrayView, Validation, WriteBudgets, std::string_view path);
+
 BackedAnnData open_h5ad_backed(std::string_view path, BackedOptions options);
 BackedAnnData open_zarr_backed(std::string_view path, BackedOptions options);
 void write_zarr_backed(std::string_view, const BackedAnnDataView&, int format, bool exclusive, std::size_t scratch_bytes, std::string_view compression, int compression_level, Validation validation);

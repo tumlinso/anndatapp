@@ -18,7 +18,10 @@ export import :records;
 
 export namespace anndatapp {
 
+class ColumnView;
 namespace detail {
+// Internal structural check before a codec applies its own text rules.
+void validate_column_storage(const ColumnView&);
 struct ColumnImpl;
 struct ColumnViewImpl;
 struct TableImpl;
@@ -136,12 +139,14 @@ public:
     // materialize a recoded buffer, otherwise it retains the original values.
     ArrayView codes() const;
     Column copy() const;
+    void validate() const;
     ColumnView select(const Axis& rows,
                       bool prune_categories = true) const;
     ColumnView select_all(bool prune_categories = true) const;
 private:
     std::shared_ptr<detail::ColumnViewImpl> impl_;
     explicit ColumnView(std::shared_ptr<detail::ColumnViewImpl>);
+    friend void detail::validate_column_storage(const ColumnView&);
     friend class Column;
     friend class TableView;
 };
@@ -218,6 +223,7 @@ public:
                      bool prune_categories = true) const;
     TableView select_all(bool prune_categories = true) const;
     Table copy() const;
+    void validate() const;
 private:
     std::shared_ptr<detail::TableViewImpl> impl_;
     explicit TableView(std::shared_ptr<detail::TableViewImpl>);
@@ -461,6 +467,7 @@ public:
     std::vector<std::string> raw_varm_names() const;
     AnnDataView slice(Selection obs = all, Selection var = all) const;
     AnnData copy() const;
+    void validate() const;
 private:
     std::shared_ptr<detail::AnnDataViewImpl> impl_;
     explicit AnnDataView(std::shared_ptr<detail::AnnDataViewImpl>);

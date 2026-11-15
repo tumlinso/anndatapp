@@ -406,6 +406,12 @@ template<class V> void require_zarr_metadata(const V& value,const std::string& p
 }
 } // namespace
 namespace detail {
+void preflight_zarr_attributes(ElementView attrs) {
+    zarr_call([&] {
+        if(attrs.kind()!=ElementKind::mapping) throw Error(ErrorCode::invalid_argument,"attributes","Zarr attributes must be a mapping");
+        (void)element_json(attrs).dump();
+    });
+}
 BackedStore open_zarr_store_impl(std::string_view path,BackedOptions options) {
     return zarr_call([&] {
         auto backend=std::make_unique<ZarrBackend>(std::string(path),options.mode==AccessMode::read_write,options.scratch_bytes);

@@ -1,6 +1,7 @@
 module;
 #include <cstddef>
 #include <cstdint>
+#include <atomic>
 #include <map>
 #include <memory>
 #include <optional>
@@ -215,7 +216,7 @@ struct ColorOverride {
     Axis axis;
 };
 
-struct Revision { std::size_t value = 0; std::optional<bool> unique_index; };
+struct Revision { std::size_t value = 0; std::atomic<std::uint64_t> content{0}; std::optional<bool> unique_index; };
 struct Session {
     std::unique_ptr<Backend> backend;
     BackedOptions options;

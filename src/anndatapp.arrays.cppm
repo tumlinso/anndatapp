@@ -372,6 +372,9 @@ public:
     // Limits numerical and index buffers, including temporary sparse staging.
     // Selection and shape metadata are not included in this byte budget.
     [[nodiscard]] Array copy(Validation validation, std::size_t max_bytes) const;
+    // Counts copy payload and peak sparse-index staging without copying values.
+    // Temporary index buffers obey max_bytes and are released before return.
+    [[nodiscard]] std::size_t copy_buffer_bytes(Validation validation, std::size_t max_bytes) const;
     // Dense numerical copy into existing storage; dtype and shape must match.
     // Buffers must not overlap. No numerical allocation or implicit conversion.
     void copy_into(const ArrayEdit& destination, Validation validation = Validation::full) const;

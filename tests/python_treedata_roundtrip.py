@@ -50,6 +50,25 @@ def overflow_h5(source: Path, target: Path) -> Path:
     return target
 
 
+def scalar_query_fixture(source: Path, target: Path, *, hdf5: bool) -> Path:
+    """Keep valid JSON but make an unrelated tree's attributes invalid."""
+    if hdf5:
+        import h5py
+        copy_h5(source, target)
+        with h5py.File(target, "r+") as store:
+            payload = json.loads(store["obst"].asstr()[()])
+            payload["beta"]["nodes"]["beta-root"] = 42
+            store["obst"][()] = json.dumps(payload)
+    else:
+        import zarr
+        shutil.copytree(source, target)
+        store = zarr.open_group(str(target), mode="a")
+        payload = json.loads(str(store["obst"][()]))
+        payload["beta"]["nodes"]["beta-root"] = 42
+        store["obst"][()] = json.dumps(payload)
+    return target
+
+
 def mutate_zarr(source: Path, target: Path, updates: list[tuple[str, int, str]]) -> Path:
     import zarr
     shutil.copytree(source, target)
@@ -167,12 +186,21 @@ def reject_tiny_budget(
         raise AssertionError("H5TD destination changed after tiny-scratch preflight rejection")
     if after_zarr != before_zarr:
         raise AssertionError("Zarr destination changed after tiny-scratch preflight rejection")
+    # AnnData sparse packing and validation also precede destructive creation.
+    for reason in ("budget", "invalid"):
+        run(binary, f"--reject-embedded-{reason}-h5", str(h5_destination))
+        run(binary, f"--reject-embedded-{reason}-zarr", str(zarr_destination))
+        if reference.hash_path(h5_destination) != before_h5:
+            raise AssertionError(f"H5TD destination changed after embedded-{reason} rejection")
+        if reference.hash_path(zarr_destination) != before_zarr:
+            raise AssertionError(f"Zarr destination changed after embedded-{reason} rejection")
     return {
         "scratch_bytes": 1,
         "h5td_destination_unchanged": True,
         "h5td_sha256": after_h5,
         "zarr_destination_unchanged": True,
         "zarr_sha256": after_zarr,
+        "embedded_sparse_capacity_and_validation": "passed; both destinations unchanged",
     }
 
 
@@ -304,6 +332,19 @@ def main(argv: list[str] | None = None) -> int:
         )
         large_element_rejections = reject_large_elements(reference, out, binary)
 
+        scalar_h5 = scalar_query_fixture(
+            out / "hdf5" / "treedata-leaves.h5td",
+            out / "errors" / "unrelated-tree.h5td", hdf5=True,
+        )
+        run(binary, "--scalar-query-h5", str(scalar_h5))
+
+        # Current columnar trees may only contain the pinned supported children.
+        import zarr
+        unknown = out / "zarr" / "unknown-child.zarr"
+        shutil.copytree(out / "zarr" / "treedata-leaves.zarr", unknown)
+        zarr.open_group(str(unknown), mode="a")["obst"]["alpha"].create_group("unknown")
+        run(binary, "--expect-unknown-zarr", str(unknown))
+
         # Disconnected selections from nodes alignment transition to subset
         # while retaining complete tree topology and node/edge attributes.
         nodes_h5 = out / "hdf5" / "treedata-nodes.h5td"
@@ -384,6 +425,10 @@ def main(argv: list[str] | None = None) -> int:
             reference.write_legacy(legacy_input, args.legacy_python)
             expected = reference.make_treedata("leaves")
             reference.assert_legacy(legacy_input, expected)
+            scalar_legacy = scalar_query_fixture(
+                legacy_input, out / "zarr" / "legacy-unrelated-tree.zarr", hdf5=False,
+            )
+            run(binary, "--scalar-query-zarr", str(scalar_legacy))
             legacy_output = out / "native" / "treedata-legacy-current.zarr"
             run(binary, "--legacy-zarr", str(legacy_input), str(legacy_output))
             results.append({
@@ -408,6 +453,8 @@ def main(argv: list[str] | None = None) -> int:
         "tiny_budget_preflight": tiny_budget,
         "large_element_rejections": large_element_rejections,
         "bounded_read": bounded_read,
+        "scalar_name_and_key_queries": "H5TD passed; legacy Zarr follows legacy status",
+        "unknown_columnar_child": "full, selected and key reads rejected",
         "error_fixtures": error_fixtures,
         "legacy": legacy_status,
         "results": results,

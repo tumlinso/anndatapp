@@ -212,6 +212,31 @@ Selection segment_rows(const Impl& p, const Axis& rows, const Segment& s) {
 BackedArray selected_x(const Impl& p, const Axis& rows, const Axis& cols, const Segment& s) {
     return p.files[s.component].x().select({segment_rows(p, rows, s), axis_selection(cols, p.n_vars)});
 }
+void compare_indexes(const BackedTable& left, const BackedTable& right,
+                     std::string_view path, const char* message) {
+    try { detail::compare_backed_table_indexes(left, right); }
+    catch (const Error& e) {
+        if (e.code() == ErrorCode::shape_mismatch) fail(e.code(), path, message);
+        throw;
+    }
+}
+void check_selection_indexes(const Impl& p, const Axis& rows, const Axis& cols) {
+    std::vector<bool> checked_vars(p.files.size(), false);
+    for_segments(p, rows, cols, [&](const Segment& s) {
+        const auto& file = p.files[s.component];
+        if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
+        if (!checked_vars[s.component]) {
+            compare_indexes(p.manifest.var().select(axis_selection(cols, p.n_vars)),
+                            file.var().select(axis_selection(cols, p.n_vars)),
+                            "AnnDataSet/var", "component variable names differ");
+            checked_vars[s.component] = true;
+        }
+        auto selected = detail::compose_axis(rows, Axis::stride(s.first, s.count), p.n_obs);
+        compare_indexes(p.manifest.obs().select(axis_selection(selected, p.n_obs)),
+                        file.obs().select(segment_rows(p, rows, s)),
+                        "AnnDataSet/obs", "component observation names differ from manifest");
+    });
+}
 void checked_shape(const DenseBuffer& dst, std::size_t m, std::size_t n, DType type) {
     if (dst.dtype != type) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "destination dtype differs from X");
     if (dst.shape.size() != 2 || dst.shape[0] != m || dst.shape[1] != n)
@@ -323,6 +348,7 @@ AnnDataSetView AnnDataSetView::slice(Selection obs, Selection var) const {
 ReadRequirements AnnDataSetView::requirements() const {
     check(impl_);
     if (!impl_->has_x) fail(ErrorCode::invalid_argument, "AnnDataSet/X", "X is absent");
+    check_selection_indexes(*impl_, obs_, var_);
     auto first = impl_->files.front().x();
     ReadRequirements out;
     out.layout = first.layout(); out.dtype = first.dtype(); out.shape = {n_obs(), n_vars()};
@@ -350,12 +376,18 @@ void AnnDataSetView::read_x_into(const DenseBuffer& dst) const {
     checked_shape(dst, n_obs(), n_vars(), r.dtype);
     const auto stride = row_stride(dst, n_vars());
     if (n_obs()) (void)displacement(n_obs() - 1, stride);
-    for_segments(*impl_, obs_, var_, [&](const Segment& s) {
+    auto target_for = [&](const Segment& s) {
         auto target = dst;
         target.shape = {s.count, n_vars()};
         if (!target.strides.empty()) target.strides = dst.strides;
         if (target.data) target.data = static_cast<std::byte*>(target.data) + displacement(s.first, stride);
-        selected_x(*impl_, obs_, var_, s).read_into(target);
+        return target;
+    };
+    for_segments(*impl_, obs_, var_, [&](const Segment& s) {
+        selected_x(*impl_, obs_, var_, s).prepare_read().preflight(target_for(s));
+    });
+    for_segments(*impl_, obs_, var_, [&](const Segment& s) {
+        selected_x(*impl_, obs_, var_, s).read_into(target_for(s));
     });
 }
 
@@ -383,19 +415,20 @@ void AnnDataSet::set_annotation(std::string path, Element value) {
 }
 void AnnDataSet::validate() const {
     check(impl_);
-    auto names = impl_->manifest.var().names();
-    if (names.size() != impl_->n_vars || impl_->manifest.n_obs() != impl_->n_obs)
+    auto vars = impl_->manifest.var();
+    if (vars.size() != impl_->n_vars || impl_->manifest.n_obs() != impl_->n_obs)
         fail(ErrorCode::shape_mismatch, "AnnDataSet", "manifest axes differ from component axes");
     std::size_t rows = 0;
     auto obs = impl_->manifest.obs();
     for (const auto& file : impl_->files) {
         if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
-        if (file.var().names() != names) fail(ErrorCode::shape_mismatch, "AnnDataSet/var", "component variable names differ");
+        compare_indexes(vars, file.var(), "AnnDataSet/var", "component variable names differ");
         if (file.has_x() != impl_->has_x) fail(ErrorCode::shape_mismatch, "AnnDataSet/X", "components disagree on X presence");
         auto source = file.obs();
-        for (std::size_t i = 0; i < source.size(); ++i)
-            if (source.name(i) != obs.name(rows + i))
-                fail(ErrorCode::shape_mismatch, "AnnDataSet/obs", "component observation names differ from manifest");
+        if (rows > impl_->n_obs || source.size() > impl_->n_obs - rows)
+            fail(ErrorCode::shape_mismatch, "AnnDataSet/obs", "component row counts differ from manifest");
+        compare_indexes(obs.select(axis_selection(Axis::stride(rows, source.size()), impl_->n_obs)), source,
+                        "AnnDataSet/obs", "component observation names differ from manifest");
         rows = plus(rows, file.n_obs());
     }
     if (rows != impl_->n_obs) fail(ErrorCode::shape_mismatch, "AnnDataSet/obs", "component row counts differ from manifest");
@@ -451,17 +484,18 @@ void AnnDataSetView::read_x_into(const SparseBuffer& dst) const {
             self(self, {s.first + count, s.count - count, s.component}, cols, by_column);
             return;
         }
-        if (preflight) { written = plus(written, part.nnz); return; }
-        std::vector<std::byte> offsets(ob);
         auto* value_out = dst.values ? static_cast<std::byte*>(dst.values) + written * value_width : nullptr;
         auto* index_out = dst.indices ? static_cast<std::byte*>(dst.indices) + written * index_width : nullptr;
         auto* offset_out = by_column ? nullptr : static_cast<std::byte*>(dst.offsets) + s.first * offset_width;
-        void* offset_in = by_column ? static_cast<void*>(offsets.data()) : offset_out;
+        std::byte placeholder{};
+        std::vector<std::byte> offsets(preflight ? 0 : ob);
+        void* offset_in = by_column ? (preflight ? static_cast<void*>(&placeholder) : static_cast<void*>(offsets.data())) : offset_out;
         // BackedArray accepts destination integer widths independently of the
         // on-disk widths. Use the promoted output widths during the transfer:
         // duplicate selections can exceed a component's physical widths.
         SparseBuffer b{value_out, index_out, offset_in, part.dtype, dst.index_dtype, dst.offset_dtype,
                        part.nnz, part.nnz, part_major + 1};
+        if (preflight) { prepared.preflight(b); written = plus(written, part.nnz); return; }
         prepared.read_into(b);
         if (by_column) for (std::size_t i = 0; i < part.nnz; ++i)
             write_integer(index_out, dst.index_dtype, i,
@@ -544,9 +578,15 @@ AnnDataSet open_h5ads(std::string_view path, DatasetOptions options) {
     }
     if (!overrides.empty()) fail(ErrorCode::invalid_argument, "AnnDataSet/relocate", "override refers to an unknown component key");
     p->has_x = p->files.front().has_x();
-    AnnDataSet result(std::move(p));
-    result.validate();
-    return result;
+    if (p->offsets.back() != p->n_obs)
+        fail(ErrorCode::shape_mismatch, "AnnDataSet/obs", "component row counts differ from manifest");
+    for (const auto& file : p->files) {
+        if (file.n_vars() != p->n_vars)
+            fail(ErrorCode::shape_mismatch, "AnnDataSet/var", "component variable counts differ from manifest");
+        if (file.has_x() != p->has_x)
+            fail(ErrorCode::shape_mismatch, "AnnDataSet/X", "components disagree on X presence");
+    }
+    return AnnDataSet(std::move(p));
 #else
     (void)options;
     fail(ErrorCode::unsupported_encoding, path, "HDF5 support is disabled");

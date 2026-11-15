@@ -98,11 +98,19 @@ Tree tree_from_json(const Json& g) {
     for (i=0; i<attrs.size(); ++i) out.set_edge_attributes(i, from_json(attrs[i]));
     return out;
 }
-std::vector<std::pair<std::string,Tree>> read_json_trees(std::string_view text, std::string_view path) {
-    auto j=parse_tree_value(text, path);
-    if (!j.is_object()) fail("tree", "tree collection must be a JSON object");
+std::vector<detail::TreeJsonMember> tree_members(std::string_view text,std::string_view path) {
+    try { return detail::scan_tree_json_members(text); }
+    catch (const std::out_of_range& e) { throw Error(ErrorCode::unsupported_dtype,std::string(path),e.what()); }
+    catch (const Json::out_of_range& e) { throw Error(ErrorCode::unsupported_dtype,std::string(path),e.what()); }
+    catch (const Json::parse_error& e) { throw Error(ErrorCode::unsupported_encoding,std::string(path),e.what()); }
+}
+std::vector<std::pair<std::string,Tree>> read_json_trees(std::string_view text,std::string_view path,
+                                                      std::optional<std::string_view> only) {
+    auto members=tree_members(text,path);
     std::vector<std::pair<std::string,Tree>> out;
-    for (auto it=j.begin(); it!=j.end(); ++it) out.emplace_back(it.key(), tree_from_json(it.value()));
+    for (const auto& m:members)
+        if (!only || m.name==*only)
+            out.emplace_back(m.name,tree_from_json(parse_tree_value(text.substr(m.begin,m.end-m.begin),path)));
     return out;
 }
 void read_columns(BackedStore& s, const std::string& path, std::vector<Element>& attrs) {
@@ -133,13 +141,16 @@ bool scalar_trees(BackedStore& s, const std::string& path) {
            a.at("encoding-type").string()=="string";
 }
 std::vector<std::pair<std::string,Tree>> read_trees(BackedStore& s, const std::string& path,
-                                                    std::string_view only = {}, bool topology_only = false) {
+                                                    std::optional<std::string_view> only = {}, bool topology_only = false) {
     if (!s.exists(path)) return {};
-    if (scalar_trees(s,path)) return read_json_trees(s.read_string(path),path);
+    if (scalar_trees(s,path)) return read_json_trees(s.read_string(path),path,only);
     std::vector<std::pair<std::string,Tree>> out;
     for (auto& name:s.children(path)) {
-        if (!only.empty() && name!=only) continue;
+        if (only && name!=*only) continue;
         auto p=path+"/"+name;
+        for (const auto& child:s.children(p))
+            if (child!="nodes" && child!="edges" && child!="node_attrs" && child!="edge_attrs")
+                throw Error(ErrorCode::unsupported_encoding,p+"/"+child,"unsupported TreeData tree child");
         auto n=s.strings(p+"/nodes").read();
         auto es=s.strings(p+"/edges").read();
         auto nv=n.view(), ev=es.view();
@@ -643,14 +654,15 @@ bool BackedTreeData::allow_overlap() const { if(!is_open()) fail("/","store is c
 bool BackedTreeData::has_label() const { if(!is_open()) fail("/","store is closed"); return impl_->label.has_value(); }
 std::string_view BackedTreeData::label() const { if(!is_open()) fail("/","store is closed"); return impl_->label ? std::string_view(*impl_->label) : std::string_view(); }
 #if ANNDATAPP_HAS_HDF5 || ANNDATAPP_HAS_ZARR
-// Zarr tree groups are loaded individually on demand. A scalar JSON collection
-// (HDF5 and legacy Zarr) must be decoded as a unit on each access; no tree cache is retained.
+// Scalar collections are scanned without constructing attribute values. Only
+// the requested member is decoded, and no scalar payload or tree cache is retained.
 std::vector<std::string> tree_names(detail::BackedTreeDataImpl& p, bool obs) {
     auto path=obs?"/obst":"/vart";
     if(!p.store.exists(path)) return {};
     if(!scalar_trees(p.store,path)) return p.store.children(path);
-    auto trees=read_trees(p.store,path); std::vector<std::string> names;
-    for(auto& [k,t]:trees) names.push_back(k); return names;
+    auto text=p.store.read_string(path); auto members=tree_members(text,path);
+    std::vector<std::string> names; names.reserve(members.size());
+    for(auto& m:members) names.push_back(std::move(m.name)); return names;
 }
 TreeView find_tree(detail::BackedTreeDataImpl& p,bool obs,std::string_view key) {
     auto path=obs?"/obst":"/vart";
@@ -732,6 +744,8 @@ if (d.has_label() && d.label().size()>options.scratch_bytes/4)
     throw Error(ErrorCode::invalid_argument,"label","label exceeds scratch budget");
 preflight_hdf5_trees(d,true,options.scratch_bytes);
 preflight_hdf5_trees(d,false,options.scratch_bytes);
+detail::preflight_anndata_write(d.data(),Validation::full,
+    detail::write_budgets(detail::WriteBackend::hdf5,options.scratch_bytes/2));
 write(detail::create_hdf5_store_impl(p,false,false,4,std::nullopt,Validation::full,0,options.scratch_bytes/2),d,false,options.scratch_bytes);
 #else
 (void)d; (void)options;
@@ -754,6 +768,8 @@ if (options.scratch_bytes<2048) throw Error(ErrorCode::invalid_argument,std::str
 if (d.has_label() && d.label().size()>options.scratch_bytes/4)
     throw Error(ErrorCode::invalid_argument,"label","label exceeds scratch budget");
 preflight_zarr(d,options.scratch_bytes);
+detail::preflight_anndata_write(d.data(),Validation::full,
+    detail::write_budgets(detail::WriteBackend::zarr,options.scratch_bytes/2));
 write(detail::create_zarr_store_impl(p,3,false,options.scratch_bytes/2,"zstd",3,Validation::full),d,true,options.scratch_bytes);
 #else
 (void)d; (void)options;

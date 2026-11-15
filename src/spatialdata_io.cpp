@@ -13,6 +13,7 @@ module;
 module anndatapp.spatialdata;
 #if ANNDATAPP_HAS_ZARR
 import anndatapp.zarr;
+import anndatapp.backed;
 #endif
 #include "spatialdata_parquet.hpp"
 #include "spatialdata_names.hpp"
@@ -219,8 +220,16 @@ void write_spatialdata(std::string_view path,const SpatialDataView& data,Spatial
     if(options.validation==Validation::full)data.validate(options.scratch_bytes);
     const auto names=data.names();if(!spatial_parquet_available())for(const auto& n:names)if(data.kind(n)==SpatialElementKind::points||data.kind(n)==SpatialElementKind::shapes)fail(n,"SpatialData vector payloads require Arrow/Parquet",ErrorCode::unavailable_filter);
     if(!options.parquet_row_group_rows)fail(path,"Parquet row-group size must be nonzero",ErrorCode::invalid_argument);
+    auto budgets=detail::write_budgets(detail::WriteBackend::zarr,options.scratch_bytes);
+    for(const auto& n:names){
+        auto kind=data.kind(n);
+        if(kind==SpatialElementKind::image||kind==SpatialElementKind::labels){auto r=data.raster(n);auto attrs=raster_attrs(r);detail::preflight_zarr_attributes(attrs.view());for(std::size_t i=0;i<r.n_levels();++i)detail::preflight_array_write(r.level(i),options.validation,budgets,n);}
+        else if(kind==SpatialElementKind::points){auto p=data.points(n);auto attrs=vector_attrs("ngff:points","0.2",p.axes(),p.transforms(),p.feature_key(),p.instance_key());detail::preflight_zarr_attributes(attrs.view());spatial_detail::preflight_parquet_points(n,p,options.parquet_row_group_rows,options.scratch_bytes);}
+        else if(kind==SpatialElementKind::shapes){auto p=data.shapes(n);auto attrs=vector_attrs("ngff:shapes","0.3",{SpatialAxis::x,SpatialAxis::y},p.transforms());detail::preflight_zarr_attributes(attrs.view());spatial_detail::preflight_parquet_shapes(n,p,options.parquet_row_group_rows,options.scratch_bytes);}
+        else {detail::preflight_anndata_write(data.table(n),options.validation,budgets);auto annotation=data.annotation(n);auto attrs=Element::mapping();attrs.set("spatialdata-encoding-type",Element("ngff:regions_table"));attrs.set("version",Element("0.2"));attrs.set("region",annotation.regions.empty()?Element(nullptr):string_list(annotation.regions));attrs.set("region_key",annotation.region_key.empty()?Element(nullptr):Element(annotation.region_key));attrs.set("instance_key",annotation.instance_key.empty()?Element(nullptr):Element(annotation.instance_key));detail::preflight_zarr_attributes(attrs.view());}
+    }
     ZarrWriteOptions z;z.format=ZarrFormat::v3;z.mode=options.exclusive?ZarrWriteMode::exclusive:ZarrWriteMode::truncate;z.validation=options.validation;z.scratch_bytes=options.scratch_bytes;
-    auto root=data.metadata().copy();auto spatial=root.view().contains("spatialdata_attrs")?root.at("spatialdata_attrs").copy():Element::mapping();if(spatial.view().kind()!=ElementKind::mapping)fail(path,"spatialdata_attrs must be a mapping");spatial.set("version",Element("0.2"));root.set("spatialdata_attrs",std::move(spatial));auto store=create_zarr_store(path,z);store.set_attributes("/",root.view());
+    auto root=data.metadata().copy();auto spatial=root.view().contains("spatialdata_attrs")?root.at("spatialdata_attrs").copy():Element::mapping();if(spatial.view().kind()!=ElementKind::mapping)fail(path,"spatialdata_attrs must be a mapping");spatial.set("version",Element("0.2"));root.set("spatialdata_attrs",std::move(spatial));detail::preflight_zarr_attributes(root.view());auto store=create_zarr_store(path,z);store.set_attributes("/",root.view());
     std::vector<std::string> labels;
     for(const auto& n:names){const auto kind=data.kind(n);std::string group=kind==SpatialElementKind::image?"/images":kind==SpatialElementKind::labels?"/labels":kind==SpatialElementKind::points?"/points":kind==SpatialElementKind::shapes?"/shapes":"/tables";if(!store.exists(group))store.create_group(group);const auto p=child(group,n);
         if(kind==SpatialElementKind::image||kind==SpatialElementKind::labels){auto r=data.raster(n);auto attrs=raster_attrs(r);store.create_group(p,attrs.view());for(std::size_t i=0;i<r.n_levels();++i)store.write_array(child(p,r.level_path(i)),r.level(i));if(kind==SpatialElementKind::labels)labels.push_back(n);}

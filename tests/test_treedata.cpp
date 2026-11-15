@@ -30,6 +30,55 @@ static AnnData data(std::vector<std::string> obs) {
 int main(int argc, char** argv) {
     if (argc == 3) {
         const std::string_view mode(argv[1]);
+        if (mode == "--reject-embedded-budget-h5" || mode == "--reject-embedded-budget-zarr" ||
+            mode == "--reject-embedded-invalid-h5" || mode == "--reject-embedded-invalid-zarr") {
+            const bool hdf5=mode.ends_with("h5"), invalid=mode.find("invalid")!=std::string_view::npos;
+            std::vector<float> values(1000,1.f);
+            std::vector<std::int32_t> columns(1000,0);
+            std::int32_t offsets[2]={0,1000};
+            auto d=AnnData::empty(1,1);
+            d.set_x(Array::borrow_sparse(Layout::csr,1,1,values.size(),values.data(),columns.data(),offsets));
+            TreeData source(std::move(d));
+            auto selected=source.slice(indices{0,0},all);
+            if (invalid) columns[0]=1; // Caller mutation invalidates a previously checked borrowed array.
+            const auto budget=invalid?std::size_t(1<<20):hdf5?std::size_t(1024):std::size_t(2048);
+            try {
+                if (hdf5) write_h5td(argv[2],selected,TreeWriteOptions{.scratch_bytes=budget});
+                else write_treedata_zarr(argv[2],selected,TreeWriteOptions{.scratch_bytes=budget});
+            } catch (const Error& e) {
+                return e.code()==(invalid?ErrorCode::invalid_sparse_structure:ErrorCode::invalid_argument)?0:1;
+            }
+            return 1;
+        }
+        if (mode == "--scalar-query-h5" || mode == "--scalar-query-zarr") {
+            auto backed=mode.ends_with("h5")?open_h5td(argv[2]):open_treedata_zarr(argv[2]);
+            auto names=backed.obs_tree_names();
+            assert(names==std::vector<std::string>({"alpha","beta"}));
+            auto alpha=backed.obs_tree("alpha");
+            assert(alpha.n_nodes()==4 && alpha.node_attributes(0).at("depth").signed_integer()==0);
+            bool rejected=false;
+            try { (void)backed.obs_tree("beta"); } catch (const Error&) { rejected=true; }
+            assert(rejected);
+            rejected=false;
+            try { (void)backed.read(); } catch (const Error&) { rejected=true; }
+            assert(rejected);
+            return 0;
+        }
+        if (mode == "--expect-unknown-zarr") {
+            auto backed=open_treedata_zarr(argv[2]);
+            for (int access=0;access<3;++access) {
+                bool rejected=false;
+                try {
+                    if (access==0) (void)backed.obs_tree("alpha");
+                    else if (access==1) (void)backed.read(indices{0},indices{0});
+                    else (void)backed.read();
+                } catch (const Error& e) {
+                    rejected=e.code()==ErrorCode::unsupported_encoding && e.path()=="/obst/alpha/unknown";
+                }
+                assert(rejected);
+            }
+            return 0;
+        }
         if (mode == "--expect-unsupported-integer-h5" || mode == "--expect-malformed-h5") {
             try { (void)read_h5td(argv[2]); }
             catch (const Error& e) {

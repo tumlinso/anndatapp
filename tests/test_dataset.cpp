@@ -220,6 +220,52 @@ void check_narrow_widths(const fs::path& root, Layout layout) {
                 "promoted major offsets differ");
     require(wide_offsets[129] == 129, "final promoted offset differs");
 }
+void check_deferred_validation(const fs::path& root, Layout layout) {
+    auto dir = root / (layout == Layout::dense ? "deferred-dense" :
+                       layout == Layout::csr ? "deferred-csr" : "deferred-csc");
+    fs::create_directories(dir);
+    write_component(dir / "first.h5ad", layout, false);
+    write_component(dir / "second.h5ad", layout, true);
+    auto created = create_h5ads((dir / "data.h5ads").string(),
+                                {{"first", "first.h5ad"}, {"second", "second.h5ad"}});
+    created.close();
+    BackedOptions options;
+    options.mode = AccessMode::read_write;
+    auto second = open_h5ad((dir / "second.h5ad").string(), options);
+    auto edit = second.edit_structure();
+    edit.set_obs(Table::with_index({"changed", "last"}));
+    edit.set_var(Table::with_index({"peak-z", "changed", "gene-m"}));
+    edit.apply();
+    second.close();
+
+    auto collection = open_h5ads((dir / "data.h5ads").string());
+    auto selected = collection.slice(indices{3, 0}, indices{0, 2});
+    auto good = unpack(selected.materialize().x());
+    require(good[0] == 6 && good[1] == 0 && good[2] == 1 && good[3] == 2,
+            "unaffected selection failed deferred validation");
+    expect_error(ErrorCode::shape_mismatch, [&] { collection.validate(); });
+    auto bad_obs = collection.slice(indices{0, 2}, indices{0});
+    auto bad_var = collection.slice(indices{0, 3}, indices{1});
+    if (layout == Layout::dense) {
+        float untouched[]{-1, -1};
+        for (const auto* bad : {&bad_obs, &bad_var}) {
+            expect_error(ErrorCode::shape_mismatch, [&] {
+                bad->read_x_into(DenseBuffer::from(untouched, {2, 1}));
+            });
+            require(untouched[0] == -1 && untouched[1] == -1, "name mismatch modified dense destination");
+        }
+    } else {
+        auto r = collection.slice(indices{0, 3}, indices{0}).requirements();
+        float values[8]; std::int64_t positions[8], offsets[8];
+        std::fill_n(values, 8, -1); std::fill_n(positions, 8, -1); std::fill_n(offsets, 8, -1);
+        SparseBuffer destination{values, positions, offsets, r.dtype, r.index_dtype, r.offset_dtype, 8, 8, 8};
+        for (const auto* bad : {&bad_obs, &bad_var}) {
+            expect_error(ErrorCode::shape_mismatch, [&] { bad->read_x_into(destination); });
+            require(values[0] == -1 && positions[0] == -1 && offsets[0] == -1,
+                    "name mismatch modified sparse destination");
+        }
+    }
+}
 void check_reference(const fs::path& input, const fs::path& output) {
     auto d = open_h5ads(input.string());
     require(d.n_obs() == 4 && d.n_vars() == 3, "reference shape differs");
@@ -259,6 +305,9 @@ int main(int argc, char** argv) {
             check_collection(root, Layout::csc);
             check_narrow_widths(root, Layout::csr);
             check_narrow_widths(root, Layout::csc);
+            check_deferred_validation(root, Layout::dense);
+            check_deferred_validation(root, Layout::csr);
+            check_deferred_validation(root, Layout::csc);
         }
         std::cout << "AnnDataSet checks passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

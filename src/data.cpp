@@ -272,7 +272,7 @@ bool valid_utf8_string(std::string_view value) noexcept {
     }
     return true;
 }
-void validate_packed_strings(const std::vector<char>& bytes,const std::vector<std::size_t>& offsets) {
+void validate_packed_strings(const std::vector<char>& bytes,const std::vector<std::size_t>& offsets, bool text = true) {
     if(offsets.empty()||offsets.front()!=0)
         fail(ErrorCode::invalid_argument,"column/strings","packed offsets must start at zero");
     if(bytes.size()>static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()))
@@ -280,7 +280,7 @@ void validate_packed_strings(const std::vector<char>& bytes,const std::vector<st
     for(std::size_t i=1;i<offsets.size();++i) {
         const auto first=offsets[i-1],last=offsets[i];
         if(last<first||last>bytes.size())fail(ErrorCode::invalid_argument,"column/strings","packed offsets are nonmonotonic or exceed byte size");
-        if(last!=first && !valid_utf8_string(std::string_view(bytes.data()+first,last-first)))
+        if(text && last!=first && !valid_utf8_string(std::string_view(bytes.data()+first,last-first)))
             fail(ErrorCode::invalid_argument,"column/strings","string is not valid UTF-8");
     }
     if(offsets.back()!=bytes.size())fail(ErrorCode::invalid_argument,"column/strings","final packed offset differs from byte size");
@@ -757,6 +757,27 @@ void Column::set_valid(std::size_t row, bool valid) {
     impl_->nullable = true;
     impl_->validity[row] = valid;
 }
+void detail::validate_column_storage(const ColumnView& c) {
+    if (!c.impl_) return;
+    const auto& s = *c.impl_->source;
+    if (s.kind == ColumnKind::string) validate_packed_strings(s.bytes, s.offsets, false);
+    if (s.nullable && s.validity.size() != s.size())
+        fail(ErrorCode::shape_mismatch, "column/validity", "nullable validity length differs from column length");
+    check_validity(s.size(), s.validity);
+    if (s.values) s.values->validate();
+    for (std::size_t i = 0; i < c.size(); ++i)
+        if (c.impl_->rows.index(i) >= s.size())
+            fail(ErrorCode::out_of_bounds, "column", "selected row is outside source storage");
+}
+void ColumnView::validate() const {
+    if (!impl_) return;
+    Column(impl_->source).validate();
+    for (std::size_t i = 0; i < size(); ++i) {
+        if (impl_->rows.index(i) >= impl_->source->size())
+            fail(ErrorCode::out_of_bounds, "column", "selected row is outside source storage");
+        if (kind() == ColumnKind::categorical) (void)code(i);
+    }
+}
 void Column::validate() const {
     if (kind()==ColumnKind::string) validate_packed_strings(impl_->bytes,impl_->offsets);
     if (impl_->nullable && impl_->validity.size() != size())
@@ -825,6 +846,16 @@ void Table::set_names(std::vector<std::string> names, std::string index_name) {
     if (names.size() != size()) fail(ErrorCode::shape_mismatch, "table/index", "index length differs from table length");
     impl_->names = std::make_shared<std::vector<std::string>>(std::move(names));
     impl_->index_name = std::move(index_name);
+}
+void TableView::validate() const {
+    if (!impl_) return;
+    for (std::size_t i = 0; i < size(); ++i)
+        if (impl_->rows.index(i) >= impl_->names->size())
+            fail(ErrorCode::out_of_bounds, "table/index", "selected row is outside retained index");
+    for (const auto& [name, c] : impl_->columns) {
+        if (c.size() != size()) fail(ErrorCode::shape_mismatch, "table/" + name, "column length differs from table length");
+        validate_at(c, name);
+    }
 }
 void Table::validate() const {
     for (const auto& [name, c] : impl_->columns) {
@@ -961,6 +992,10 @@ ElementView Element::at(std::string_view key) const { return view().at(key); }
 ElementView Element::at(std::size_t index) const { return view().at(index); }
 void Element::validate() const {
     if (auto p = std::get_if<Array>(&impl_->value)) p->validate();
+    else if (auto p = std::get_if<ArrayView>(&impl_->value)) p->validate();
+    else if (auto p = std::get_if<StringArrayView>(&impl_->value)) p->validate();
+    else if (auto p = std::get_if<ColumnView>(&impl_->value)) p->validate();
+    else if (auto p = std::get_if<TableView>(&impl_->value)) p->validate();
     else if (auto p = std::get_if<StringArray>(&impl_->value)) p->validate();
     else if (auto p = std::get_if<RecordArray>(&impl_->value)) p->validate();
     else if (auto p = std::get_if<Column>(&impl_->value)) p->validate();
@@ -1483,39 +1518,34 @@ AnnData AnnDataView::copy() const {
     return a;
 }
 
-void AnnData::validate() const {
-    validate_at(impl_->obs, "obs"); validate_at(impl_->var, "var"); validate_at(impl_->uns, "uns");
-    if (impl_->obs.size() != n_obs()) fail(ErrorCode::shape_mismatch, "obs", "table length differs from observation axis");
-    if (impl_->var.size() != n_vars()) fail(ErrorCode::shape_mismatch, "var", "table length differs from variable axis");
-    if (has_x()) { check_matrix(x(), n_obs(), n_vars(), "X"); validate_at(*impl_->x, "X"); }
-    for (const auto& [name, a] : impl_->layers) { check_matrix(a.view(), n_obs(), n_vars(), "layers/" + name); validate_at(a, "layers/" + name); }
-    for (const auto& [name, a] : impl_->obsp) { check_pairwise(a.view(), n_obs(), "obsp/" + name); validate_at(a, "obsp/" + name); }
-    for (const auto& [name, a] : impl_->varp) { check_pairwise(a.view(), n_vars(), "varp/" + name); validate_at(a, "varp/" + name); }
-    for (const auto& [name, e] : impl_->obsm) {
-        validate_at(e, "obsm/" + name);
-        if (e.view().kind() == ElementKind::array) check_first(e.view().array(), n_obs(), "obsm/" + name);
-        else if (e.view().kind() == ElementKind::string_array) check_first(e.view().string_array(), n_obs(), "obsm/" + name);
-        else if (!same_index(*std::get<Table>(e.impl_->value).impl_->names, *impl_->obs.impl_->names)) fail(ErrorCode::shape_mismatch, "obsm/" + name, "table index differs from observation index");
-    }
-    for (const auto& [name, e] : impl_->varm) {
-        validate_at(e, "varm/" + name);
-        if (e.view().kind() == ElementKind::array) check_first(e.view().array(), n_vars(), "varm/" + name);
-        else if (e.view().kind() == ElementKind::string_array) check_first(e.view().string_array(), n_vars(), "varm/" + name);
-        else if (!same_index(*std::get<Table>(e.impl_->value).impl_->names, *impl_->var.impl_->names)) fail(ErrorCode::shape_mismatch, "varm/" + name, "table index differs from variable index");
-    }
+void AnnData::validate() const { view().validate(); }
+void AnnDataView::validate() const {
+    const auto o = obs(), v = var();
+    validate_at(o, "obs"); validate_at(v, "var"); validate_at(uns(), "uns");
+    if (o.size() != n_obs() || v.size() != n_vars())
+        fail(ErrorCode::shape_mismatch, "/", "axis table length differs from AnnData dimensions");
+    if (!impl_) return;
+    if (has_x()) { check_matrix(x(), n_obs(), n_vars(), "X"); validate_at(x(), "X"); }
+    for (const auto& [name, a] : impl_->layers) { check_matrix(a, n_obs(), n_vars(), "layers/" + name); validate_at(a, "layers/" + name); }
+    for (const auto& [name, a] : impl_->obsp) { check_pairwise(a, n_obs(), "obsp/" + name); validate_at(a, "obsp/" + name); }
+    for (const auto& [name, a] : impl_->varp) { check_pairwise(a, n_vars(), "varp/" + name); validate_at(a, "varp/" + name); }
+    const auto aligned = [&](ElementView e, TableView axis, std::string_view path) {
+        validate_at(e, path);
+        if (e.kind() == ElementKind::array) check_first(e.array(), axis.size(), path);
+        else if (e.kind() == ElementKind::string_array) check_first(e.string_array(), axis.size(), path);
+        else if (e.kind() == ElementKind::table) {
+            const auto t = e.table();
+            if (t.size() != axis.size()) fail(ErrorCode::shape_mismatch, path, "aligned table length differs from axis");
+            for (std::size_t i = 0; i < axis.size(); ++i)
+                if (t.name(i) != axis.name(i)) fail(ErrorCode::shape_mismatch, path, "aligned table index differs from axis");
+        } else fail(ErrorCode::unsupported_encoding, path, "aligned slots require an array, string array or table");
+    };
+    for (const auto& [name, e] : impl_->obsm) aligned(e, o, "obsm/" + name);
+    for (const auto& [name, e] : impl_->varm) aligned(e, v, "varm/" + name);
     if (has_raw()) {
-        validate_at(impl_->raw->var, "raw/var");
-        if (has_raw_x()) {
-            check_matrix(raw_x(), n_obs(), raw_var().size(), "raw/X");
-            validate_at(*impl_->raw->x, "raw/X");
-        }
-        for (const auto& [name, e] : impl_->raw->varm) {
-            validate_at(e, "raw/varm/" + name);
-            if (e.view().kind() == ElementKind::array) check_first(e.view().array(), raw_var().size(), "raw/varm/" + name);
-            else if (e.view().kind() == ElementKind::string_array) check_first(e.view().string_array(), raw_var().size(), "raw/varm/" + name);
-            else if (!same_index(*std::get<Table>(e.impl_->value).impl_->names, *impl_->raw->var.impl_->names))
-                fail(ErrorCode::shape_mismatch, "raw/varm/" + name, "table index differs from raw variable index");
-        }
+        const auto rv = raw_var(); validate_at(rv, "raw/var");
+        if (has_raw_x()) { check_matrix(raw_x(), n_obs(), rv.size(), "raw/X"); validate_at(raw_x(), "raw/X"); }
+        for (const auto& [name, e] : impl_->raw_varm) aligned(e, rv, "raw/varm/" + name);
     }
 }
 

@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.28)
+project(format_family_screen LANGUAGES CXX)
+set(CMAKE_CXX_EXTENSIONS OFF)
+find_package(anndatapp 1.0 CONFIG REQUIRED)
+add_executable(format-family-screen screen.cpp)
+target_link_libraries(format-family-screen PRIVATE anndatapp::anndatapp)

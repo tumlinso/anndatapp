@@ -45,7 +45,8 @@ public:
     AnnDataSetView slice(Selection obs = all, Selection var = all) const;
 
     // Selection metadata may allocate; numerical payload is read only by the
-    // explicit transfers. requirements() reports the stacked output layout.
+    // explicit transfers. requirements() checks the selected axis names and
+    // reports the stacked output layout. Label selections read axis names.
     ReadRequirements requirements() const;
     void read_x_into(const DenseBuffer& destination) const;
     void read_x_into(const SparseBuffer& destination) const;
@@ -78,6 +79,9 @@ public:
     // Collection-level metadata can be edited through the existing explicit
     // structure interface. Do not replace the reserved uns/AnnDataSet table.
     void set_annotation(std::string path, Element value);
+    // Check all component observation and variable names against the manifest.
+    // Opening checks component presence, axis sizes, and X presence, but does
+    // not compare the axis names.
     void validate() const;
     void flush();
     void close();

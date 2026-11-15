@@ -24,6 +24,10 @@ try {
     values.set("y", Column::numeric(make_array<double>({10,11,12,13,14},{5})));
     auto codes = make_array<std::int8_t>({0,1,-1,0,1},{5});
     values.set("gene", Column::categorical(std::move(codes), Column::strings({"a","b"}), true));
+    values.set("u8",Column::categorical(make_array<std::uint8_t>({0,1,0,1,0},{5}),Column::strings({"a","b"}),true));
+    values.set("u16",Column::categorical(make_array<std::uint16_t>({0,1,0,1,0},{5}),Column::strings({"a","b"}),true));
+    values.set("u32",Column::categorical(make_array<std::uint32_t>({0,1,0,1,0},{5}),Column::strings({"a","b"}),true));
+    values.set("u64",Column::categorical(make_array<std::uint64_t>({0,1,0,1,0},{5}),Column::strings({"a","b"}),true));
     values.set("comment",Column::strings({"a","b","c","d","e"},{1,0,1,1,1}));
     auto ids = Column::numeric(make_array<std::int64_t>({90,91,92,93,94},{5}));
     SpatialPoints points(std::move(values),std::move(ids));
@@ -32,6 +36,7 @@ try {
     auto p = spatial_detail::read_parquet_points(points_path,1,3,{SpatialAxis::x,SpatialAxis::y}).view();
     assert(p.size()==3 && p.identifiers().values().dense<std::int64_t>().data()[0]==91);
     assert(p.values().column("x").values().dense<double>().data()[2]==3);
+    for (auto name : {"u8","u16","u32","u64"}) { auto c=p.values().column(name); assert(c.ordered() && c.code(0)==1 && c.code(1)==0); }
     assert(p.values().column("gene").kind()==ColumnKind::categorical);
     assert(p.values().column("gene").ordered());
     assert(p.values().column("gene").code(0)==1 && !p.values().column("gene").valid(1));
@@ -43,6 +48,11 @@ try {
     try { spatial_detail::write_parquet_points(too_small,points.view(),2,63); }
     catch (const Error& e) { budget_rejected = e.code()==ErrorCode::invalid_argument; }
     assert(budget_rejected && !fs::exists(too_small));
+    auto recoded=points.view().select(Axis::gather({1,3}));
+    auto recoded_path=(dir/"recoded-points.parquet").string();
+    spatial_detail::write_parquet_points(recoded_path,recoded,1);
+    auto recoded_result=spatial_detail::read_parquet_points(recoded_path,0,2,{SpatialAxis::x,SpatialAxis::y}).view();
+    for(auto name:{"u8","u16","u32","u64"}) {auto c=recoded_result.values().column(name);assert(c.ordered() && c.categories().size()==1 && c.categories().string(0)=="b" && c.code(0)==0 && c.code(1)==0);}
     auto gathered=points.view().select(Axis::gather({4,1,3,0,2}));
     auto bounded_path=(dir/"bounded-points.parquet").string();
     spatial_detail::write_parquet_points(bounded_path,gathered,65536,64);
@@ -82,6 +92,10 @@ try {
     auto eid=ep.identifiers().values().dense<std::int64_t>();
     assert(ep.size()==4 && eid.data()[0]==101 && eid.data()[1]==102 && eid.data()[2]==200 && eid.data()[3]==201);
     assert(ep.values().index_name()=="rowid");
+    auto range=spatial_detail::read_parquet_shapes((external/"unselected-invalid-wkb.parquet").string(),1,1,64).view();
+    assert(range.kind()==SpatialGeometryKind::circles && range.size()==1 && range.radii().dense<double>().data()[0]==2);
+    auto empty_range=spatial_detail::read_parquet_shapes((external/"unselected-invalid-wkb.parquet").string(),0,0,64).view();
+    assert(empty_range.kind()==SpatialGeometryKind::circles && empty_range.size()==0);
     auto es=spatial_detail::read_parquet_shapes((external/"point.parquet").string()).view();
     assert(es.kind()==SpatialGeometryKind::circles && es.radii().dense<double>().data()[1]==2);
     es=spatial_detail::read_parquet_shapes((external/"polygon.parquet").string()).view();

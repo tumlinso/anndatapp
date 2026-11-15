@@ -497,6 +497,8 @@ public:
             values_.clear();values_.shrink_to_fit();
             values_=index_->session->backend->read_strings_bounded(index_->path,{axis.at(i)},{requested},budget_);
             if(values_.empty()||values_.size()>requested)fail(ErrorCode::io_error,index_->path,"index transfer returned an incorrect length");
+            if(index_->session->options.validation==Validation::full)
+                for(const auto& value:values_)validate_utf8_string(value,index_->path);
             first_=i;
         }
         return values_[i-first_];
@@ -521,3 +523,9 @@ void compare_table_indexes(const BackedTable& left,const TableView& right){
 }
 
 } // namespace anndatapp::backed_detail
+
+namespace anndatapp::detail {
+void compare_backed_table_indexes(const BackedTable& left, const BackedTable& right) {
+    backed_detail::compare_table_indexes(left, right);
+}
+}

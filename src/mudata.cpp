@@ -238,16 +238,30 @@ struct BackedMuDataImpl {
     MuAxis axis = MuAxis::observations;
     std::vector<std::string> names;
 };
+struct BackedMuAxisCache {
+    std::vector<std::uint64_t> map;
+    std::vector<std::ptrdiff_t> local;
+};
 struct BackedMuModalityView {
     std::string name;
-    BackedAnnDataView data;
-    std::vector<std::uint64_t> obs, var;
+    mutable std::optional<BackedMuAxisCache> obs, var;
+    mutable std::optional<BackedAnnDataView> data;
+};
+struct BackedMuSnapshot {
+    struct Modality {
+        BackedArray obs, var;
+        std::uint64_t obs_revision, var_revision;
+        BackedAnnDataView data;
+    };
+    std::vector<Modality> modalities;
 };
 struct BackedMuDataViewImpl {
     std::shared_ptr<BackedMuDataImpl> owner;
+    std::shared_ptr<const BackedMuSnapshot> snapshot;
     BackedTable obs, var;
     std::vector<BackedMuModalityView> modalities;
     std::vector<::anndatapp::Selection> obs_chain, var_chain;
+    bool projected = false;
 };
 }
 namespace {
@@ -360,17 +374,6 @@ std::vector<std::uint64_t> decode_map(Array a, std::string_view path) {
 std::vector<std::uint64_t> read_map(const BackedStore& store, std::string_view path) {
     return decode_map(store.array(path).read(), path);
 }
-std::vector<std::uint64_t> read_selected_map(const BackedStore& store, std::string_view path,
-                                              Selection rows, std::size_t extent) {
-    auto a = store.array(path);
-    if (a.rank() != 1 && (a.rank() != 2 || a.extent(1) != 1))
-        fail(ErrorCode::shape_mismatch, path, "MuData map must have shape (n,) or (n,1)");
-    if (a.extent(0) != extent) fail(ErrorCode::shape_mismatch, path, "map length differs from global axis");
-    std::vector<Selection> selectors;
-    selectors.push_back(std::move(rows));
-    if (a.rank() == 2) selectors.emplace_back(all);
-    return decode_map(a.select(std::move(selectors)).read(), path);
-}
 void read_aligned(AnnData& a, const BackedStore& store, std::string_view root, bool obs) {
     if (!store.exists(root)) return;
     auto names = store.children(root);
@@ -421,101 +424,10 @@ void check_view(const MuDataView& m, std::size_t scratch_bytes) {
         check_map(vm, m.n_vars(), mod.n_vars(), "varmap/" + name, scratch_bytes);
     }
 }
-// Reject indivisible strings before opening or truncating a destination. The
-// ordinary writer performs the same check per element, after creating a store.
-void check_string_budget(std::string_view value, std::size_t budget, std::size_t metadata,
-                         std::string_view path) {
-    if (metadata >= budget || value.size() > budget - metadata - 1)
-        fail(ErrorCode::invalid_argument, path, "one string value exceeds the available scratch buffer");
-}
-struct MuBudgets { std::size_t strings; std::size_t packing; };
-void check_array_budget(ArrayView a, MuBudgets budget) {
-    if (a.layout() == Layout::dense) {
-        bool empty = false;
-        for (std::size_t axis = 0; axis < a.rank(); ++axis) empty |= a.extent(axis) == 0;
-        if (empty) return;
-        bool contiguous = false;
-        try { contiguous = a.bytes().contiguous(); }
-        catch (const Error& error) { if (error.code() != ErrorCode::non_contiguous) throw; }
-        if (!contiguous && budget.packing < dtype_size(a.dtype()))
-            fail(ErrorCode::invalid_argument, "array", "scratch budget after backend workspace must hold one numerical element");
-        return;
-    }
-    try { (void)a.sparse_bytes(); }
-    catch (const Error& error) {
-        if (error.code() != ErrorCode::non_contiguous) throw;
-        // A selected sparse view requires one packed output and bounded index
-        // staging. Probe that indivisible allocation before opening the store.
-        (void)a.copy(Validation::none, budget.packing);
-    }
-}
-void check_column_budget(ColumnView c, MuBudgets budget) {
-    if (c.kind() == ColumnKind::categorical) { check_array_budget(c.codes(), budget); check_column_budget(c.categories(), budget); return; }
-    if (c.kind() == ColumnKind::numeric) check_array_budget(c.values(), budget);
-    if (c.kind() == ColumnKind::string)
-        for (std::size_t i = 0; i < c.size(); ++i)
-            check_string_budget(c.string(i), budget.strings, sizeof(std::string), "column");
-}
-void check_table_budget(TableView t, MuBudgets budget) {
-    for (std::size_t i = 0; i < t.size(); ++i)
-        check_string_budget(t.name(i), budget.strings, sizeof(std::string), "table index");
-    for (const auto& name : t.column_names()) check_column_budget(t.column(name), budget);
-}
-void check_element_budget(ElementView e, MuBudgets budget) {
-    switch (e.kind()) {
-    case ElementKind::string:
-        check_string_budget(e.string(), budget.strings, sizeof(std::string), "metadata"); break;
-    case ElementKind::string_array: {
-        auto a = e.string_array();
-        for (std::size_t i = 0; i < a.size(); ++i)
-            check_string_budget(a.string(i), budget.strings, sizeof(std::string), "string array");
-        break;
-    }
-    case ElementKind::array: check_array_budget(e.array(), budget); break;
-    case ElementKind::column: check_column_budget(e.column(), budget); break;
-    case ElementKind::table: check_table_budget(e.table(), budget); break;
-    case ElementKind::mapping:
-        for (std::size_t i = 0; i < e.mapping_size(); ++i)
-            check_element_budget(e.at(e.mapping_key(i)), budget);
-        break;
-    case ElementKind::record_array: {
-        auto r = e.record_array();
-        for (const auto& name : r.field_names()) {
-            if (r.field(name).kind == RecordFieldKind::numeric) continue;
-            auto shape = r.shape();
-            const auto per = sizeof(std::string) + sizeof(char*);
-            const auto cap = budget.strings > sizeof(std::vector<std::string>)
-                ? std::max<std::size_t>(1, (budget.strings - sizeof(std::vector<std::string>)) / (2 * per)) : 1;
-            std::vector<std::string> slots;
-            slots.reserve(std::min(cap, shape.empty() ? r.size() : shape.back()));
-            const auto metadata = sizeof(slots) + slots.capacity() * sizeof(std::string) + sizeof(char*);
-            auto text = r.text(name);
-            for (std::size_t i = 0; i < r.size(); ++i) check_string_budget(text.string(i), budget.strings, metadata, "record string");
-        }
-        break;
-    }
-    default: break;
-    }
-}
-void check_anndata_budget(AnnDataView a, MuBudgets budget) {
-    check_table_budget(a.obs(), budget);
-    check_table_budget(a.var(), budget);
-    check_element_budget(a.uns(), budget);
-    if (a.has_x()) check_array_budget(a.x(), budget);
-    for (const auto& name : a.layer_names()) check_array_budget(a.layer(name), budget);
-    for (const auto& name : a.obsp_names()) check_array_budget(a.obsp(name), budget);
-    for (const auto& name : a.varp_names()) check_array_budget(a.varp(name), budget);
-    for (const auto& name : a.obsm_names()) check_element_budget(a.obsm(name), budget);
-    for (const auto& name : a.varm_names()) check_element_budget(a.varm(name), budget);
-    if (a.has_raw()) {
-        check_table_budget(a.raw_var(), budget);
-        if (a.has_raw_x()) check_array_budget(a.raw_x(), budget);
-        for (const auto& name : a.raw_varm_names()) check_element_budget(a.raw_varm(name), budget);
-    }
-}
-void check_mudata_budget(const MuDataView& m, MuBudgets budget) {
-    check_anndata_budget(m.annotations(), budget);
-    for (const auto& name : m.modality_names()) check_anndata_budget(m.modality(name), budget);
+void check_mudata_budget(const MuDataView& m, Validation validation, detail::WriteBudgets budget) {
+    detail::preflight_anndata_write(m.annotations(), validation, budget);
+    for (const auto& name : m.modality_names())
+        detail::preflight_anndata_write(m.modality(name), validation, budget);
 }
 void write_mudata(BackedStore& store, const MuDataView& m, Validation validation) {
     const auto names = m.modality_names();
@@ -638,6 +550,11 @@ Axis resolve_backed(const Selection& selection, const BackedTable& axis, std::st
 void require_view(const std::shared_ptr<const detail::BackedMuDataViewImpl>& p) {
     if (!p || !p->owner || !p->owner->store.is_open())
         fail(ErrorCode::invalid_argument, "mudata", "backed MuData view is closed");
+    for (const auto& m : p->snapshot->modalities) {
+        if (m.obs.content_revision() != m.obs_revision || m.var.content_revision() != m.var_revision)
+            fail(ErrorCode::invalid_argument, "mudata", "backed MuData view is stale after map mutation");
+        (void)m.data.n_obs();
+    }
 }
 BackedArray select_array(BackedArray a, const std::vector<Selection>& selections,
                          bool pairwise, std::string_view path) {
@@ -670,36 +587,19 @@ BackedMuDataView BackedMuData::view() const {
     if (!is_open()) fail(ErrorCode::invalid_argument, "mudata", "backed MuData is closed");
     auto out = std::make_shared<detail::BackedMuDataViewImpl>();
     out->owner = impl_; out->obs = obs(); out->var = var();
+    auto snapshot = std::make_shared<detail::BackedMuSnapshot>();
     for (const auto& name : impl_->names) {
+        auto o = obs_map(name), v = var_map(name);
+        auto ov = o.content_revision(), vv = v.content_revision();
         auto data = modality(name).view();
-        auto o = read_map(impl_->store, child_path("/obsmap", name));
-        auto v = read_map(impl_->store, child_path("/varmap", name));
-        check_map(o, out->obs.size(), data.n_obs(), "obsmap/" + name);
-        check_map(v, out->var.size(), data.n_vars(), "varmap/" + name);
-        out->modalities.push_back({name, std::move(data), std::move(o), std::move(v)});
+        snapshot->modalities.push_back({std::move(o), std::move(v), ov, vv, std::move(data)});
+        out->modalities.push_back({name, {}, {}, {}});
     }
+    out->snapshot = std::move(snapshot);
     return BackedMuDataView(std::move(out));
 }
 BackedMuDataView BackedMuData::slice(Selection obs_selection, Selection var_selection) const {
-    if (!is_open()) fail(ErrorCode::invalid_argument, "mudata", "backed MuData is closed");
-    auto o = obs(), v = var();
-    const auto rows = resolve_backed(obs_selection, o, "obs");
-    const auto cols = resolve_backed(var_selection, v, "var");
-    auto ro = positional(rows, o.size(), "obs"), rv = positional(cols, v.size(), "var");
-    auto out = std::make_shared<detail::BackedMuDataViewImpl>();
-    out->owner = impl_;
-    out->obs = o.select(ro); out->var = v.select(rv);
-    out->obs_chain.push_back(ro); out->var_chain.push_back(rv);
-    for (const auto& name : impl_->names) {
-        std::vector<std::ptrdiff_t> local_obs, local_var;
-        auto om = read_selected_map(impl_->store, child_path("/obsmap", name), ro, o.size());
-        auto vm = read_selected_map(impl_->store, child_path("/varmap", name), rv, v.size());
-        auto selected_obs = project_map(om, Axis::all(), local_obs, "obsmap/" + name);
-        auto selected_var = project_map(vm, Axis::all(), local_var, "varmap/" + name);
-        auto data = modality(name).slice(indices(std::move(local_obs)), indices(std::move(local_var)));
-        out->modalities.push_back({name, std::move(data), std::move(selected_obs), std::move(selected_var)});
-    }
-    return BackedMuDataView(std::move(out));
+    return view().slice(std::move(obs_selection), std::move(var_selection));
 }
 BackedMuDataView::BackedMuDataView() = default;
 BackedMuDataView::BackedMuDataView(std::shared_ptr<const detail::BackedMuDataViewImpl> p) : impl_(std::move(p)) {}
@@ -714,14 +614,61 @@ std::vector<std::string> BackedMuDataView::modality_names() const {
     for (const auto& m : impl_->modalities) names.push_back(m.name);
     return names;
 }
+namespace {
+const detail::BackedMuAxisCache& load_axis(const detail::BackedMuDataViewImpl& view,
+                                            const detail::BackedMuModalityView& m, bool obs) {
+    auto& cache = obs ? m.obs : m.var;
+    if (cache) return *cache;
+    auto& store = view.owner->store;
+    const auto path = child_path(obs ? "/obsmap" : "/varmap", m.name);
+    auto array = store.array(path);
+    if (array.rank() != 1 && (array.rank() != 2 || array.extent(1) != 1))
+        fail(ErrorCode::shape_mismatch, path, "MuData map must have shape (n,) or (n,1)");
+    const auto global = obs ? store.element("/obs").table().size() : store.element("/var").table().size();
+    if (array.extent(0) != global) fail(ErrorCode::shape_mismatch, path, "map length differs from global axis");
+    const auto& chain = obs ? view.obs_chain : view.var_chain;
+    for (const auto& selection : chain) {
+        std::vector<Selection> axes(array.rank(), Selection(all));
+        axes[0] = selection;
+        array = array.select(std::move(axes));
+    }
+    auto values = decode_map(array.read(), path);
+    const auto i = std::size_t(&m - view.modalities.data());
+    const auto& modality = view.snapshot->modalities[i].data;
+    const auto local = obs ? modality.n_obs() : modality.n_vars();
+    for (const auto value : values)
+        if (value > local) fail(ErrorCode::out_of_bounds, path, "map position exceeds modality axis");
+    detail::BackedMuAxisCache result;
+    if (view.projected)
+        result.map = project_map(values, Axis::all(), result.local, path);
+    else {
+        check_map(values, global, local, path);
+        result.map = std::move(values);
+    }
+    cache.emplace(std::move(result));
+    return *cache;
+}
+}
 BackedAnnDataView BackedMuDataView::modality(std::string_view name) const {
-    require_view(impl_); return modality_at(impl_->modalities, name).data;
+    require_view(impl_);
+    const auto& m = modality_at(impl_->modalities, name);
+    if (!m.data) {
+        auto& o = load_axis(*impl_, m, true);
+        auto& v = load_axis(*impl_, m, false);
+        const auto i = std::size_t(&m - impl_->modalities.data());
+        auto data = impl_->snapshot->modalities[i].data;
+        if (impl_->projected) m.data.emplace(data.slice(indices(o.local), indices(v.local)));
+        else m.data.emplace(std::move(data));
+    }
+    return *m.data;
 }
 MuMapView BackedMuDataView::obs_map(std::string_view name) const {
-    require_view(impl_); const auto& m = modality_at(impl_->modalities, name).obs; return {m.data(), m.size()};
+    require_view(impl_); const auto& m = load_axis(*impl_, modality_at(impl_->modalities, name), true).map;
+    return {m.data(), m.size()};
 }
 MuMapView BackedMuDataView::var_map(std::string_view name) const {
-    require_view(impl_); const auto& m = modality_at(impl_->modalities, name).var; return {m.data(), m.size()};
+    require_view(impl_); const auto& m = load_axis(*impl_, modality_at(impl_->modalities, name), false).map;
+    return {m.data(), m.size()};
 }
 BackedArray BackedMuDataView::obsm_array(std::string_view name) const {
     require_view(impl_); auto p = child_path("/obsm", name);
@@ -762,17 +709,12 @@ BackedMuDataView BackedMuDataView::slice(Selection obs_selection, Selection var_
     const auto cols = resolve_backed(var_selection, impl_->var, "var");
     auto ro = positional(rows, impl_->obs.size(), "obs"), rv = positional(cols, impl_->var.size(), "var");
     auto out = std::make_shared<detail::BackedMuDataViewImpl>();
-    out->owner = impl_->owner;
+    out->owner = impl_->owner; out->snapshot = impl_->snapshot;
     out->obs = impl_->obs.select(ro); out->var = impl_->var.select(rv);
     out->obs_chain = impl_->obs_chain; out->obs_chain.push_back(ro);
     out->var_chain = impl_->var_chain; out->var_chain.push_back(rv);
-    for (const auto& m : impl_->modalities) {
-        std::vector<std::ptrdiff_t> local_obs, local_var;
-        auto om = project_map(m.obs, rows, local_obs, "obsmap/" + m.name);
-        auto vm = project_map(m.var, cols, local_var, "varmap/" + m.name);
-        auto data = m.data.slice(indices(std::move(local_obs)), indices(std::move(local_var)));
-        out->modalities.push_back({m.name, std::move(data), std::move(om), std::move(vm)});
-    }
+    out->projected = true;
+    for (const auto& m : impl_->modalities) out->modalities.push_back({m.name, {}, {}, {}});
     return BackedMuDataView(std::move(out));
 }
 MuData BackedMuDataView::read() const {
@@ -802,7 +744,12 @@ MuData BackedMuDataView::read() const {
     if (store.exists("/obsp")) for (const auto& name : store.children("/obsp")) a.set_obsp(name, obsp(name).read());
     if (store.exists("/varp")) for (const auto& name : store.children("/varp")) a.set_varp(name, varp(name).read());
     if (store.exists("/uns")) a.set_uns(uns().read());
-    for (const auto& x : impl_->modalities) m.set_modality(x.name, x.data.read(), x.obs, x.var);
+    for (const auto& x : impl_->modalities) {
+        auto data = modality(x.name).read();
+        const auto& o = load_axis(*impl_, x, true).map;
+        const auto& v = load_axis(*impl_, x, false).map;
+        m.set_modality(x.name, std::move(data), o, v);
+    }
     return m;
 }
 MuData BackedMuData::read() const {
@@ -855,7 +802,7 @@ void write_h5mu(std::string_view path, const MuDataView& data, MuWriteOptions op
 #if ANNDATAPP_HAS_HDF5
     if (options.scratch_bytes < 64) fail(ErrorCode::invalid_argument, path, "scratch budget is too small");
     if (options.validation == Validation::full) check_view(data, options.scratch_bytes);
-    check_mudata_budget(data, {options.scratch_bytes, options.scratch_bytes});
+    check_mudata_budget(data, options.validation, detail::write_budgets(detail::WriteBackend::hdf5, options.scratch_bytes));
     WriteOptions w;
     w.validation = options.validation;
     w.mode = options.overwrite ? WriteMode::truncate : WriteMode::exclusive;
@@ -874,7 +821,7 @@ void write_mudata_zarr(std::string_view path, const MuDataView& data, MuWriteOpt
 #if ANNDATAPP_HAS_ZARR
     if (options.scratch_bytes < 64) fail(ErrorCode::invalid_argument, path, "scratch budget is too small");
     if (options.validation == Validation::full) check_view(data, options.scratch_bytes);
-    check_mudata_budget(data, {options.scratch_bytes, options.scratch_bytes - (options.scratch_bytes / 8) * 7});
+    check_mudata_budget(data, options.validation, detail::write_budgets(detail::WriteBackend::zarr, options.scratch_bytes));
     ZarrWriteOptions w;
     w.validation = options.validation;
     w.mode = options.overwrite ? ZarrWriteMode::truncate : ZarrWriteMode::exclusive;

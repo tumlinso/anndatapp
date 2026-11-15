@@ -41,6 +41,8 @@ namespace {
 SpatialPoints read_parquet_points(std::string_view p, std::size_t, std::size_t, std::vector<SpatialAxis>, std::size_t) { unavailable(p); }
 SpatialShapes read_parquet_shapes(std::string_view p, std::size_t) { unavailable(p); }
 SpatialShapes read_parquet_shapes(std::string_view p, std::size_t, std::size_t, std::size_t) { unavailable(p); }
+void preflight_parquet_points(std::string_view p, const SpatialPointsView&, std::size_t, std::size_t) { unavailable(p); }
+void preflight_parquet_shapes(std::string_view p, const SpatialShapesView&, std::size_t, std::size_t) { unavailable(p); }
 void write_parquet_points(std::string_view p, const SpatialPointsView&, std::size_t, std::size_t) { unavailable(p); }
 void write_parquet_shapes(std::string_view p, const SpatialShapesView&, std::size_t, std::size_t) { unavailable(p); }
 #else
@@ -447,19 +449,6 @@ std::shared_ptr<ar::Array> numeric_array(const ColumnView& col, std::string_view
     }
     fail(path, "unsupported native numerical type", ErrorCode::unsupported_dtype);
 }
-template<class T, class Builder> std::shared_ptr<ar::Array> categorical_indices(
-    const ColumnView& col, const ArrayView& code_view, std::string_view path, std::size_t budget) {
-    NumericSource<T> codes(code_view, col.size(), budget, path);
-    Builder builder;
-    check(builder.Reserve(static_cast<std::int64_t>(col.size())), path);
-    for (std::size_t i = 0; i < col.size(); ++i) {
-        if (!col.valid(i)) check(builder.AppendNull(), path);
-        else check(builder.Append(codes.view.data()[static_cast<std::ptrdiff_t>(i)*codes.view.stride(0)]), path);
-    }
-    std::shared_ptr<ar::Array> out;
-    check(builder.Finish(&out), path);
-    return out;
-}
 std::shared_ptr<ar::Array> arrow_array(const ColumnView& col, std::string_view path, std::size_t budget) {
     if (col.kind() == ColumnKind::numeric) return numeric_array(col, path, budget);
     if (col.kind() == ColumnKind::string) {
@@ -475,15 +464,14 @@ std::shared_ptr<ar::Array> arrow_array(const ColumnView& col, std::string_view p
     }
     if (col.kind() == ColumnKind::categorical) {
         if (col.size() > budget / 8) fail(path, "scratch budget is too small for categorical codes", ErrorCode::invalid_argument);
-        auto codes = col.codes();
-        std::shared_ptr<ar::Array> indices;
-        switch (codes.dtype()) {
-        case DType::int8: indices = categorical_indices<std::int8_t, ar::Int8Builder>(col, codes, path, budget); break;
-        case DType::int16: indices = categorical_indices<std::int16_t, ar::Int16Builder>(col, codes, path, budget); break;
-        case DType::int32: indices = categorical_indices<std::int32_t, ar::Int32Builder>(col, codes, path, budget); break;
-        case DType::int64: indices = categorical_indices<std::int64_t, ar::Int64Builder>(col, codes, path, budget); break;
-        default: fail(path, "categorical codes require signed integer storage", ErrorCode::unsupported_dtype);
+        ar::Int64Builder builder;
+        check(builder.Reserve(static_cast<std::int64_t>(col.size())), path);
+        for (std::size_t i = 0; i < col.size(); ++i) {
+            if (!col.valid(i)) check(builder.AppendNull(), path);
+            else check(builder.Append(col.code(i)), path);
         }
+        std::shared_ptr<ar::Array> indices;
+        check(builder.Finish(&indices), path);
         auto dictionary = arrow_array(col.categories(), path, budget);
         auto type = ar::dictionary(indices->type(), dictionary->type(), col.ordered());
         return get(ar::DictionaryArray::FromArrays(type, indices, dictionary), path);
@@ -950,33 +938,47 @@ SpatialShapes read_parquet_shapes(std::string_view path, std::size_t scratch_byt
 }
 SpatialShapes read_parquet_shapes(std::string_view path, std::size_t first, std::size_t count, std::size_t scratch_bytes) {
     if (scratch_bytes < 64) fail(path, "scratch budget must be at least 64 bytes", ErrorCode::invalid_argument);
-    // Probe a single geometry to identify the element kind even for an empty selection.
     bool circles = false, known = false;
-    std::string encoding;
-    scan_batches(path, 0, 1,
-        [&](auto schema, auto) { encoding = geometry_encoding(schema, path); },
+    auto files = open_parts(path);
+    auto schema = files.front().schema;
+    auto encoding = geometry_encoding(schema, path);
+    if (schema->GetFieldIndex("geometry") < 0) fail(path, "GeoParquet geometry column is missing");
+    if (encoding == "point") { circles = true; known = true; }
+    else if (encoding == "polygon" || encoding == "multipolygon") known = true;
+    else if (encoding == "WKB") {
+        auto meta = json(attr(schema->metadata(), "geo", path), path);
+        try {
+            auto& geometry = meta.at("columns").at("geometry");
+            if (geometry.contains("geometry_types") && geometry.at("geometry_types").is_array()) {
+                bool points = false, polygons = false, other = false;
+                for (const auto& entry : geometry.at("geometry_types")) {
+                    auto type = entry.get<std::string>();
+                    if (type == "Point") points = true;
+                    else if (type == "Polygon" || type == "MultiPolygon") polygons = true;
+                    else other = true;
+                }
+                if (!other && points != polygons) { circles = points; known = true; }
+            }
+        } catch (const Json::exception& e) { fail(path, std::string("invalid GeoParquet metadata: ") + e.what()); }
+    } else fail(path, "unsupported GeoParquet geometry encoding '" + encoding + "'");
+    // Older WKB metadata can omit geometry_types. Inspect one row only in that case.
+    if (!known) scan_batches(path, 0, 1,
+        [&](auto, auto) {},
         [&](auto batch, auto) {
-            auto i = batch->schema()->GetFieldIndex("geometry");
-            if (i < 0) fail(path, "GeoParquet geometry column is missing");
-            auto value = batch->column(i);
+            auto value = batch->GetColumnByName("geometry");
             if (value->IsNull(0)) fail(path, "null shape geometry");
-            if (encoding == "point") circles = true;
-            else if (encoding == "polygon" || encoding == "multipolygon") circles = false;
-            else if (encoding == "WKB") {
-                std::string_view bytes;
-                if (value->type_id() == ar::Type::BINARY) bytes = std::static_pointer_cast<ar::BinaryArray>(value)->GetView(0);
-                else if (value->type_id() == ar::Type::LARGE_BINARY) bytes = std::static_pointer_cast<ar::LargeBinaryArray>(value)->GetView(0);
-                else fail(path, "WKB geometry must be binary", ErrorCode::unsupported_dtype);
-                try {
-                    ::anndatapp_spatial_wkb::Reader reader(bytes.data(), bytes.size());
-                    auto order = reader.order(); auto type = reader.u32(order);
-                    if (type != 1 && type != 3 && type != 6) fail(path, "unsupported WKB geometry type");
-                    circles = type == 1;
-                } catch (const std::runtime_error& e) { fail(path, e.what()); }
-            } else fail(path, "unsupported GeoParquet geometry encoding '" + encoding + "'");
-            known = true;
+            std::string_view bytes;
+            if (value->type_id() == ar::Type::BINARY) bytes = std::static_pointer_cast<ar::BinaryArray>(value)->GetView(0);
+            else if (value->type_id() == ar::Type::LARGE_BINARY) bytes = std::static_pointer_cast<ar::LargeBinaryArray>(value)->GetView(0);
+            else fail(path, "WKB geometry must be binary", ErrorCode::unsupported_dtype);
+            try {
+                ::anndatapp_spatial_wkb::Reader reader(bytes.data(), bytes.size());
+                auto order = reader.order(); auto type = reader.u32(order);
+                if (type != 1 && type != 3 && type != 6) fail(path, "unsupported WKB geometry type");
+                circles = type == 1; known = true;
+            } catch (const std::runtime_error& e) { fail(path, e.what()); }
         });
-    if (!known) fail(path, "SpatialData shape payload must contain a row");
+    if (!known) fail(path, "SpatialData shape payload must identify its geometry kind");
     std::unique_ptr<StreamTable> table;
     Geometries decoded;
     std::vector<double> radii;
@@ -1013,6 +1015,28 @@ SpatialShapes read_parquet_shapes(std::string_view path, std::size_t first, std:
     auto types = owned_array<std::uint8_t>(std::move(decoded.types), {nt});
     return SpatialShapes::polygons(std::move(coordinates), std::move(ring), std::move(polygon),
         std::move(feature), std::move(ids), std::move(attrs), std::move(types));
+}
+
+void preflight_parquet_points(std::string_view path, const SpatialPointsView& points,
+                              std::size_t row_group_rows, std::size_t scratch_bytes) {
+    if (scratch_bytes < 64 || !row_group_rows) fail(path, "invalid Parquet scratch or row-group budget", ErrorCode::invalid_argument);
+    auto n = points.size(), batch_size = std::min<std::size_t>({row_group_rows, 65536, scratch_bytes / 16});
+    auto index = index_field(points.values());
+    auto first = points_batch(points, index, 0, std::min(n, batch_size), path, scratch_bytes);
+    (void)schema(first, index, points.values().index_name(), false);
+    for (std::size_t pos = std::min(n, batch_size); pos < n; pos += std::min(n-pos, batch_size))
+        (void)points_batch(points, index, pos, std::min(n-pos, batch_size), path, scratch_bytes);
+}
+void preflight_parquet_shapes(std::string_view path, const SpatialShapesView& shapes,
+                              std::size_t row_group_rows, std::size_t scratch_bytes) {
+    if (scratch_bytes < 64 || !row_group_rows) fail(path, "invalid Parquet scratch or row-group budget", ErrorCode::invalid_argument);
+    auto n = shapes.size(), batch_size = std::min<std::size_t>({row_group_rows, 65536, scratch_bytes / 16});
+    if (!n) fail(path, "SpatialData shape payload must contain a row", ErrorCode::invalid_argument);
+    auto index = index_field(shapes.attributes());
+    auto first = shapes_batch(shapes, index, 0, std::min(n, batch_size), path, scratch_bytes);
+    (void)schema(first, index, shapes.attributes().index_name(), true);
+    for (std::size_t pos = std::min(n, batch_size); pos < n; pos += std::min(n-pos, batch_size))
+        (void)shapes_batch(shapes, index, pos, std::min(n-pos, batch_size), path, scratch_bytes);
 }
 
 void write_parquet_points(std::string_view path, const SpatialPointsView& points,

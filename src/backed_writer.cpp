@@ -151,29 +151,17 @@ void validate_column(ColumnView column, std::string_view path, Validation valida
         if (categories.kind() == ColumnKind::categorical)
             fail(ErrorCode::unsupported_encoding, child_path(path, "categories"), "category dictionaries cannot themselves be categorical");
         validate_column(categories, child_path(path, "categories"), validation);
-        if (validation == Validation::full && categories.kind() == ColumnKind::string) {
-            std::unordered_set<std::string_view> seen;
-            seen.reserve(categories.size());
-            for (std::size_t i = 0; i < categories.size(); ++i) {
-                if (!categories.valid(i))
-                    fail(ErrorCode::invalid_argument, child_path(path, "categories"), "category dictionaries cannot contain nulls");
-                if (!seen.insert(categories.string(i)).second)
-                    fail(ErrorCode::invalid_argument, child_path(path, "categories"), "category dictionaries must contain unique values");
+        if (validation == Validation::full) {
+            try { column.validate(); }
+            catch (const Error& e) {
+                const auto at = e.path().starts_with("categorical/categories")
+                    ? child_path(path, "categories") : std::string(path);
+                throw Error(e.code(), at, e.what());
             }
-        } else if (validation == Validation::full && categories.kind() == ColumnKind::numeric) {
-            for (std::size_t i = 0; i < categories.size(); ++i)
-                if (!categories.valid(i))
-                    fail(ErrorCode::invalid_argument, child_path(path, "categories"), "category dictionaries cannot contain nulls");
-            validate_unique_numeric(categories.values(), child_path(path, "categories"));
-        }
-        validate_array(column.codes(), child_path(path, "codes"), validation);
-        if (validation == Validation::full) for (std::size_t i = 0; i < column.size(); ++i) {
-            const auto code = column.code(i);
-            if (code < -1 || (code >= 0 && static_cast<std::uint64_t>(code) >= categories.size()))
-                fail(ErrorCode::out_of_bounds, child_path(path, "codes"), "categorical code is outside dictionary bounds");
         }
         return;
     }
+    if (validation == Validation::full) detail::validate_column_storage(column);
     if (column.kind() == ColumnKind::numeric) {
         auto values = column.values();
         validate_array(values, child_path(path, "values"), validation);
@@ -209,6 +197,7 @@ void validate_table(TableView table, std::string_view path, Validation validatio
                     fail(ErrorCode::invalid_argument, path, "index name collides with a column having different values");
         }
     }
+    if (validation == Validation::full) table.validate();
     });
 }
 
@@ -713,6 +702,91 @@ void validate_dataset_impl(const AnnDataView& data, Validation validation) {
     }
 }
 
+void check_array_capacity(ArrayView a, detail::WriteBudgets budget, std::string_view path) {
+    with_validation_path(path, [&] {
+        if (a.layout() != Layout::dense) {
+            try { (void)a.sparse_bytes(); }
+            catch (const Error& e) {
+                if (e.code() != ErrorCode::non_contiguous) throw;
+                (void)a.copy_buffer_bytes(Validation::none, budget.packing_bytes);
+            }
+            return;
+        }
+        for (std::size_t i = 0; i < a.rank(); ++i) if (!a.extent(i)) return;
+        try { if (a.bytes().contiguous()) return; }
+        catch (const Error& e) { if (e.code() != ErrorCode::non_contiguous) throw; }
+        if (budget.packing_bytes < dtype_size(a.dtype()))
+            fail(ErrorCode::invalid_argument, path, "scratch budget after backend workspace must hold one numerical element");
+    });
+}
+void check_string_capacity(std::string_view text, std::size_t scratch, std::string_view path,
+                           std::size_t metadata = sizeof(std::string)) {
+    if (metadata >= scratch || text.size() > scratch - metadata - 1)
+        fail(ErrorCode::invalid_argument, path, "one string value exceeds the available scratch buffer");
+}
+void check_column_capacity(ColumnView c, detail::WriteBudgets b, std::string_view path) {
+    if (c.kind() == ColumnKind::categorical) {
+        check_column_capacity(c.categories(), b, child_path(path, "categories"));
+    } else if (c.kind() == ColumnKind::numeric) check_array_capacity(c.values(), b, path);
+    else for (std::size_t i = 0; i < c.size(); ++i) check_string_capacity(c.string(i), b.scratch_bytes, path);
+}
+void check_table_capacity(TableView t, detail::WriteBudgets b, std::string_view path) {
+    for (std::size_t i = 0; i < t.size(); ++i) check_string_capacity(t.name(i), b.scratch_bytes, path);
+    for (const auto& name : t.column_names()) check_column_capacity(t.column(name), b, child_path(path, name));
+}
+void check_element_capacity(ElementView e, detail::WriteBudgets b, std::string_view path) {
+    switch (e.kind()) {
+        case ElementKind::array: check_array_capacity(e.array(), b, path); break;
+        case ElementKind::string: check_string_capacity(e.string(), b.scratch_bytes, path); break;
+        case ElementKind::string_array: {
+            auto a = e.string_array();
+            for (std::size_t i = 0; i < a.size(); ++i) check_string_capacity(a.string(i), b.scratch_bytes, path);
+            break;
+        }
+        case ElementKind::column: check_column_capacity(e.column(), b, path); break;
+        case ElementKind::table: check_table_capacity(e.table(), b, path); break;
+        case ElementKind::mapping:
+            for (std::size_t i = 0; i < e.mapping_size(); ++i) {
+                auto key = e.mapping_key(i);
+                check_element_capacity(e.at(key), b, child_path(path, key));
+            }
+            break;
+        case ElementKind::record_array: {
+            auto r = e.record_array();
+            for (const auto& name : r.field_names()) {
+                if (r.field(name).kind == RecordFieldKind::numeric) continue;
+                const auto shape = r.shape();
+                const auto per = sizeof(std::string) + sizeof(char*);
+                const auto capacity = b.scratch_bytes > sizeof(std::vector<std::string>)
+                    ? std::max<std::size_t>(1, (b.scratch_bytes - sizeof(std::vector<std::string>)) / (2*per)) : 1;
+                const auto n = std::min(capacity, shape.empty() ? r.size() : shape.back());
+                if (n > (std::numeric_limits<std::size_t>::max() - sizeof(std::vector<std::string>) - sizeof(char*)) / sizeof(std::string))
+                    fail(ErrorCode::invalid_argument, path, "record string metadata size overflows");
+                const auto metadata = sizeof(std::vector<std::string>) + n*sizeof(std::string) + sizeof(char*);
+                auto text = r.text(name);
+                for (std::size_t i = 0; i < r.size(); ++i) check_string_capacity(text.string(i), b.scratch_bytes, path, metadata);
+            }
+            break;
+        }
+        default: break;
+    }
+}
+void check_dataset_capacity(AnnDataView a, detail::WriteBudgets b) {
+    check_table_capacity(a.obs(), b, "/obs"); check_table_capacity(a.var(), b, "/var");
+    check_element_capacity(a.uns(), b, "/uns");
+    if (a.has_x()) check_array_capacity(a.x(), b, "/X");
+    for (const auto& key : a.layer_names()) check_array_capacity(a.layer(key), b, child_path("/layers", key));
+    for (const auto& key : a.obsp_names()) check_array_capacity(a.obsp(key), b, child_path("/obsp", key));
+    for (const auto& key : a.varp_names()) check_array_capacity(a.varp(key), b, child_path("/varp", key));
+    for (const auto& key : a.obsm_names()) check_element_capacity(a.obsm(key), b, child_path("/obsm", key));
+    for (const auto& key : a.varm_names()) check_element_capacity(a.varm(key), b, child_path("/varm", key));
+    if (a.has_raw()) {
+        check_table_capacity(a.raw_var(), b, "/raw/var");
+        if (a.has_raw_x()) check_array_capacity(a.raw_x(), b, "/raw/X");
+        for (const auto& key : a.raw_varm_names()) check_element_capacity(a.raw_varm(key), b, child_path("/raw/varm", key));
+    }
+}
+
 void validate_dataset(const AnnDataView& data) {
     validate_dataset_impl(data, Validation::full);
 }
@@ -770,3 +844,18 @@ void initialize_store(Backend& backend, const AnnDataView& source, std::size_t s
 }
 
 } // namespace anndatapp::backed_detail
+
+namespace anndatapp::detail {
+WriteBudgets write_budgets(WriteBackend backend, std::size_t scratch) {
+    return {scratch, backend == WriteBackend::zarr ? scratch - (scratch/8)*7 : scratch};
+}
+void preflight_array_write(ArrayView a, Validation validation, WriteBudgets b, std::string_view path) {
+    backed_detail::validate_array(a, path, validation);
+    backed_detail::check_array_capacity(a, b, path);
+}
+void preflight_anndata_write(AnnDataView a, Validation validation, WriteBudgets b) {
+    backed_detail::validate_dataset_impl(a, validation);
+    if (validation == Validation::full) a.validate();
+    backed_detail::check_dataset_capacity(a, b);
+}
+}

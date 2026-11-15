@@ -101,7 +101,7 @@ public:
     // The two map writes are synchronous, not a cross-path transaction.
     void set_maps(std::string_view name, std::vector<std::uint64_t> obs_map,
                   std::vector<std::uint64_t> var_map);
-    // Acquiring a view reads its selected axis maps, but does not read matrices.
+    // Views and positional slices defer map and matrix payload reads.
     BackedMuDataView view() const;
     BackedMuDataView slice(Selection obs = all, Selection var = all) const;
     MuData read() const;
@@ -115,8 +115,10 @@ private:
 };
 
 
-// Retains the store session and selected maps. Access and transfers remain lazy;
-// read() is the explicit full materialization of the selected view.
+// Retains the store session and selections. Maps are read on first access per
+// modality and axis, and their pointers remain valid for this view lifetime.
+// Map or modality structural mutation invalidates existing views. Label slices
+// read axis names. read() explicitly materializes the selected view.
 class BackedMuDataView {
 public:
     BackedMuDataView();

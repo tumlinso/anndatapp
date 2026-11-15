@@ -25,6 +25,7 @@ def write(name, encoding, geometry_type, arr, radius=None):
 
 point=pa.struct([('x',pa.float64()),('y',pa.float64())])
 write('point.parquet','point','Point',pa.array([{'x':1.0,'y':2.0},{'x':3.0,'y':4.0}],type=point), [1.0,2.0])
+write('unselected-invalid-wkb.parquet','WKB','Point',pa.array([b'bad', struct.pack('<BIdd', 1, 1, 3., 4.)],type=pa.binary()), [1.0,2.0])
 ring0=[{'x':0.,'y':0.},{'x':1.,'y':0.},{'x':1.,'y':1.},{'x':0.,'y':0.}]
 ring1=[{'x':2.,'y':2.},{'x':3.,'y':2.},{'x':3.,'y':3.},{'x':2.,'y':2.}]
 poly=pa.list_(pa.list_(point))
@@ -64,6 +65,13 @@ assert p.schema.metadata and json.loads(p.schema.metadata[b'pandas'])['index_col
 assert p['__index_level_0__'].to_pylist() == [90, 91, 92, 93, 94]
 assert pa.types.is_dictionary(p['gene'].type) and p['gene'].type.ordered
 assert p['gene'].to_pylist() == ['a','b',None,'a','b']
+for name in ('u8', 'u16', 'u32', 'u64'):
+    assert pa.types.is_dictionary(p[name].type) and p[name].type.ordered
+    assert p[name].to_pylist() == ['a', 'b', 'a', 'b', 'a']
+selected = pq.read_table(output / 'recoded-points.parquet')
+for name in ('u8', 'u16', 'u32', 'u64'):
+    assert selected[name].type.ordered and selected[name].to_pylist() == ['b', 'b']
+    assert selected[name].chunk(0).dictionary.to_pylist() == ['b']
 for name, types in [('circles.parquet',[1,1]), ('shapes.parquet',[3,6])]:
     t = pq.read_table(output / name)
     geo = json.loads(t.schema.metadata[b'geo'])

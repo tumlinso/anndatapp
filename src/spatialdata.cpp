@@ -406,6 +406,13 @@ SpatialShapes SpatialShapes::polygons(Array xy,Array rings,Array polygons,Array 
     if(!attrs.size() && s.impl_->ids.size())attrs=Table::numbered(s.impl_->ids.size());
     s.impl_->attributes=std::move(attrs);
     if(!types.rank()){
+        auto xy_view=s.impl_->xy.view();
+        if(xy_view.rank()!=2)fail("spatial/shapes", "coordinates must be a rank-2 array");
+        offsets_valid(s.impl_->rings.view(),xy_view.extent(0),"spatial/shapes/rings");
+        offsets_valid(s.impl_->polygons.view(),s.impl_->rings.extent(0)-1,"spatial/shapes/polygons");
+        offsets_valid(s.impl_->geometries.view(),s.impl_->polygons.extent(0)-1,"spatial/shapes/geometries");
+        if(s.impl_->ids.size()==~std::size_t{0} || s.impl_->geometries.extent(0)!=s.impl_->ids.size()+1)
+            fail("spatial/shapes", "geometry offsets differ from rows");
         types=Array::empty<std::uint8_t>({s.impl_->ids.size()});auto t=types.edit().dense<std::uint8_t>();auto g=s.impl_->geometries.view().dense<std::uint64_t>();
         for(std::size_t i=0;i<s.impl_->ids.size();++i)t.data()[i]=g.data()[std::ptrdiff_t(i+1)*g.stride(0)]-g.data()[std::ptrdiff_t(i)*g.stride(0)]>1?6:3;
     }
@@ -420,22 +427,7 @@ SpatialShapesView SpatialShapes::view()const{
     v->ids=d.ids.view();v->attributes=d.attributes.view();v->transforms=d.transforms;return SpatialShapesView(std::move(v));
 }
 SpatialShapes SpatialShapes::copy()const{return view().copy();}
-void SpatialShapes::validate(std::size_t scratch)const{
-    const auto& d=*impl_;shape_coordinates(d.xy.view());ids_valid(d.ids.view(),d.ids.size(),true,scratch);d.attributes.validate();
-    if(d.attributes.size()!=d.ids.size())fail("spatial/shapes","attribute count differs from geometries",ErrorCode::shape_mismatch);
-    if(d.attributes.view().contains("z"))fail("spatial/shapes","z is reserved; shape geometries must be two-dimensional");
-    if(d.attributes.view().contains("geometry")||(d.kind==SpatialGeometryKind::circles&&d.attributes.view().contains("radius")))fail("spatial/shapes","attribute name conflicts with a geometry payload column");
-    if(d.kind==SpatialGeometryKind::circles){
-        if(d.xy.extent(0)!=d.ids.size() || d.radii.rank()!=1 || d.radii.extent(0)!=d.ids.size() || d.radii.dtype()!=DType::float64)fail("spatial/shapes","circle buffers differ from geometry count");
-        auto r=d.radii.view().dense<double>();for(std::size_t i=0;i<d.ids.size();++i)if(!__builtin_isfinite(r.data()[std::ptrdiff_t(i)*r.stride(0)]) || r.data()[std::ptrdiff_t(i)*r.stride(0)]<=0)fail("spatial/shapes","circle radius must be finite and positive");
-    }else{
-        offsets_valid(d.rings.view(),d.xy.extent(0),"spatial/shapes/rings");offsets_valid(d.polygons.view(),d.rings.extent(0)-1,"spatial/shapes/polygons");offsets_valid(d.geometries.view(),d.polygons.extent(0)-1,"spatial/shapes/geometries");
-        if(d.geometries.extent(0)!=d.ids.size()+1 || d.types.dtype()!=DType::uint8 || d.types.rank()!=1 || d.types.extent(0)!=d.ids.size())fail("spatial/shapes","geometry offsets/types differ from rows");
-        auto types=d.types.view().dense<std::uint8_t>();auto g=d.geometries.view().dense<std::uint64_t>();
-        for(std::size_t i=0;i<d.ids.size();++i)if((types.data()[std::ptrdiff_t(i)*types.stride(0)]!=3 && types.data()[std::ptrdiff_t(i)*types.stride(0)]!=6) || (types.data()[std::ptrdiff_t(i)*types.stride(0)]==3 && g.data()[std::ptrdiff_t(i+1)*g.stride(0)]-g.data()[std::ptrdiff_t(i)*g.stride(0)]!=1))fail("spatial/shapes","invalid Polygon/MultiPolygon type or polygon count");
-    }
-    transforms_valid(d.transforms,{SpatialAxis::x,SpatialAxis::y});
-}
+void SpatialShapes::validate(std::size_t scratch)const{view().validate(scratch);}
 SpatialShapesView::SpatialShapesView()=default;
 SpatialShapesView::SpatialShapesView(std::shared_ptr<detail::SpatialShapesViewImpl> p):impl_(std::move(p)){}
 SpatialGeometryKind SpatialShapesView::kind()const{return require(impl_).kind;}
@@ -451,9 +443,11 @@ ArrayView SpatialShapesView::geometry_types()const{return require(impl_).types;}
 std::size_t SpatialShapesView::source_row(std::size_t i)const{const auto& d=require(impl_);if(i>=size())fail("spatial/shapes","geometry out of bounds",ErrorCode::out_of_bounds);return d.rows.index(i);}
 const std::vector<SpatialNamedTransform>& SpatialShapesView::transforms()const{return require(impl_).transforms;}
 void SpatialShapesView::validate(std::size_t scratch)const{
-    const auto& p=*this;auto xy=p.coordinates();shape_coordinates(xy);ids_valid(p.identifiers(),p.size(),true,scratch);if(p.attributes().size()!=p.size()||p.attributes().contains("z"))fail("spatial/shapes","shape attributes differ from geometries or contain reserved z");if(p.attributes().contains("geometry")||(p.kind()==SpatialGeometryKind::circles&&p.attributes().contains("radius")))fail("spatial/shapes","attribute name conflicts with geometry payload");
-        if(p.kind()==SpatialGeometryKind::circles){auto radius=p.radii();if(radius.dtype()!=DType::float64||radius.rank()!=1)fail("spatial/shapes","circle radius must be FP64 vector");auto r=radius.dense<double>();for(std::size_t i=0;i<p.size();++i){auto row=p.source_row(i);if(row>=xy.extent(0)||row>=radius.extent(0))fail("spatial/shapes","circle row out of bounds");const double v=r.data()[std::ptrdiff_t(row)*r.stride(0)];if(!__builtin_isfinite(v)||v<=0)fail("spatial/shapes","circle radius must be finite and positive");}}
-        else{auto rings=p.ring_offsets(),polygons=p.polygon_offsets(),geometries=p.geometry_offsets();offsets_valid(rings,xy.extent(0),"spatial/shapes/rings");offsets_valid(polygons,rings.extent(0)-1,"spatial/shapes/polygons");offsets_valid(geometries,polygons.extent(0)-1,"spatial/shapes/geometries");auto types=p.geometry_types();if(types.dtype()!=DType::uint8||types.rank()!=1||types.extent(0)+1!=geometries.extent(0))fail("spatial/shapes","shape type count differs");auto g=geometries.dense<std::uint64_t>();auto t=types.dense<std::uint8_t>();for(std::size_t i=0;i<p.size();++i){const auto row=p.source_row(i);if(row>=types.extent(0))fail("spatial/shapes","geometry row out of bounds");auto type=t.data()[std::ptrdiff_t(row)*t.stride(0)];if(type!=3&&type!=6)fail("spatial/shapes","unsupported geometry type");if(type==3&&g.data()[std::ptrdiff_t(row+1)*g.stride(0)]-g.data()[std::ptrdiff_t(row)*g.stride(0)]!=1)fail("spatial/shapes","Polygon must contain exactly one polygon");}}
+    const auto& p=*this;const auto& source=require(impl_);const auto source_count=source.ids.size();
+    if(source.attributes.size()!=source_count)fail("spatial/shapes","attribute count differs from geometries",ErrorCode::shape_mismatch);
+    auto xy=p.coordinates();xy.validate();p.identifiers().validate();p.attributes().validate();shape_coordinates(xy);ids_valid(p.identifiers(),p.size(),true,scratch);if(p.attributes().size()!=p.size()||p.attributes().contains("z"))fail("spatial/shapes","shape attributes differ from geometries or contain reserved z");if(p.attributes().contains("geometry")||(p.kind()==SpatialGeometryKind::circles&&p.attributes().contains("radius")))fail("spatial/shapes","attribute name conflicts with geometry payload");
+        if(p.kind()==SpatialGeometryKind::circles){auto radius=p.radii();radius.validate();if(radius.dtype()!=DType::float64||radius.rank()!=1||radius.extent(0)!=source_count||xy.extent(0)!=source_count)fail("spatial/shapes","circle buffers differ from geometry count");auto r=radius.dense<double>();for(std::size_t i=0;i<p.size();++i){auto row=p.source_row(i);if(row>=xy.extent(0)||row>=radius.extent(0))fail("spatial/shapes","circle row out of bounds");const double v=r.data()[std::ptrdiff_t(row)*r.stride(0)];if(!__builtin_isfinite(v)||v<=0)fail("spatial/shapes","circle radius must be finite and positive");}}
+        else{auto rings=p.ring_offsets(),polygons=p.polygon_offsets(),geometries=p.geometry_offsets();rings.validate();polygons.validate();geometries.validate();offsets_valid(rings,xy.extent(0),"spatial/shapes/rings");offsets_valid(polygons,rings.extent(0)-1,"spatial/shapes/polygons");offsets_valid(geometries,polygons.extent(0)-1,"spatial/shapes/geometries");auto types=p.geometry_types();types.validate();if(source_count==~std::size_t{0}||types.dtype()!=DType::uint8||types.rank()!=1||types.extent(0)!=source_count||geometries.extent(0)!=source_count+1)fail("spatial/shapes","geometry offsets/types differ from rows");auto g=geometries.dense<std::uint64_t>();auto t=types.dense<std::uint8_t>();for(std::size_t i=0;i<p.size();++i){const auto row=p.source_row(i);if(row>=types.extent(0))fail("spatial/shapes","geometry row out of bounds");auto type=t.data()[std::ptrdiff_t(row)*t.stride(0)];if(type!=3&&type!=6)fail("spatial/shapes","unsupported geometry type");if(type==3&&g.data()[std::ptrdiff_t(row+1)*g.stride(0)]-g.data()[std::ptrdiff_t(row)*g.stride(0)]!=1)fail("spatial/shapes","Polygon must contain exactly one polygon");}}
         transforms_valid(p.transforms(),{SpatialAxis::x,SpatialAxis::y});
 }
 SpatialShapesView SpatialShapesView::select(const Axis& rows)const{
@@ -518,25 +512,7 @@ SpatialDataView SpatialData::view()const{
     v->metadata=impl_->metadata.view();return SpatialDataView(std::move(v));
 }
 SpatialData SpatialData::copy()const{return view().copy();}
-void SpatialData::validate(std::size_t scratch)const{
-    validate_name_set(element_names(*impl_));impl_->metadata.validate();
-    for(const auto& x:impl_->rasters)x.second.validate();for(const auto& x:impl_->points)x.second.validate();for(const auto& x:impl_->shapes)x.second.validate(scratch);
-    for(const auto& x:impl_->tables){
-        x.second.data.validate();auto a=x.second.data.view();table_names_valid(a);const auto& t=x.second.annotation;
-        if(t.region_key.empty()!=t.instance_key.empty())fail(x.first,"both region_key and instance_key are needed for an annotation");
-        if(t.region_key.empty()){if(!t.regions.empty())fail(x.first,"annotation regions require link columns");continue;}
-        auto obs=a.obs();if(!obs.contains(t.region_key)||!obs.contains(t.instance_key))fail(x.first,"annotation columns are missing");
-        auto region=obs.column(t.region_key);auto ids=obs.column(t.instance_key);
-        if(region.kind()!=ColumnKind::string && region.kind()!=ColumnKind::categorical)fail(x.first,"region column must contain strings");
-        ids_valid(ids,obs.size(),false);
-        for(std::size_t i=0;i<obs.size();++i){if(!region.valid(i))fail(x.first,"annotation region cannot be null");
-            auto s=region.kind()==ColumnKind::string?region.string(i):region.categories().string(std::size_t(region.code(i)));
-            if(std::find(t.regions.begin(),t.regions.end(),s)==t.regions.end())fail(x.first,"annotation region is absent from declared regions");
-        }
-        annotation_unique(a,t,scratch);
-        // Missing referenced elements/instances are valid after filtering.
-    }
-}
+void SpatialData::validate(std::size_t scratch)const{ view().validate(scratch); }
 SpatialDataView::SpatialDataView()=default;
 SpatialDataView::SpatialDataView(std::shared_ptr<detail::SpatialDataViewImpl> p):impl_(std::move(p)){}
 std::vector<std::string> SpatialDataView::names()const{return element_names(require(impl_));}
@@ -559,24 +535,24 @@ SpatialData SpatialDataView::copy()const{
 }
 
 void SpatialDataView::validate(std::size_t scratch)const{
-    const auto& d=require(impl_);validate_name_set(element_names(d));
+    const auto& d=require(impl_);validate_name_set(element_names(d));d.metadata.validate();
     if(d.metadata.kind()!=ElementKind::mapping)fail("spatial/metadata","dataset metadata must be a mapping");
     for(const auto& x:d.rasters){const auto r=x.second;const bool image=r.kind()==SpatialElementKind::image;
         const std::vector<SpatialAxis> a2=image?std::vector<SpatialAxis>{SpatialAxis::c,SpatialAxis::y,SpatialAxis::x}:std::vector<SpatialAxis>{SpatialAxis::y,SpatialAxis::x};
         const std::vector<SpatialAxis> a3=image?std::vector<SpatialAxis>{SpatialAxis::c,SpatialAxis::z,SpatialAxis::y,SpatialAxis::x}:std::vector<SpatialAxis>{SpatialAxis::z,SpatialAxis::y,SpatialAxis::x};
         if((r.kind()!=SpatialElementKind::image&&r.kind()!=SpatialElementKind::labels)||(r.axes()!=a2&&r.axes()!=a3)||!r.n_levels())fail(x.first,"invalid raster kind, axes or resolution levels");
-        auto base=r.level(0);for(std::size_t i=0;i<r.n_levels();++i){auto a=r.level(i);if(a.layout()!=Layout::dense||a.rank()!=r.axes().size()||a.dtype()!=base.dtype())fail(x.first,"raster rank, layout or dtype differs");
+        auto base=r.level(0);r.channel_labels().validate();for(std::size_t i=0;i<r.n_levels();++i){auto a=r.level(i);a.validate();if(a.layout()!=Layout::dense||a.rank()!=r.axes().size()||a.dtype()!=base.dtype())fail(x.first,"raster rank, layout or dtype differs");
             if(!image&&unsigned(a.dtype())>=unsigned(DType::float32))fail(x.first,"labels require integer or boolean arrays");
-            for(std::size_t j=0;j<a.rank();++j){if(!a.extent(j)||a.extent(j)>base.extent(j))fail(x.first,"invalid pyramid extent");if(image&&j==0&&a.extent(j)!=base.extent(j))fail(x.first,"pyramid channel extents differ");}
+            for(std::size_t j=0;j<a.rank();++j){if(!a.extent(j)||(i && a.extent(j)>r.level(i-1).extent(j)))fail(x.first,"invalid pyramid extent");if(image&&j==0&&a.extent(j)!=base.extent(j))fail(x.first,"pyramid channel extents differ");}
         }
         if(r.channel_labels().kind()!=ElementKind::null&&(!image||r.channel_labels().size()!=base.extent(0)))fail(x.first,"channel labels differ from image channels");transforms_valid(r.transforms(),r.axes());
     }
-    for(const auto& x:d.points){const auto p=x.second;auto values=p.values();ids_valid(p.identifiers(),values.size(),false);
+    for(const auto& x:d.points){const auto p=x.second;auto values=p.values();values.validate();p.identifiers().validate();ids_valid(p.identifiers(),values.size(),false);
         if(p.axes()!=std::vector<SpatialAxis>{SpatialAxis::x,SpatialAxis::y}&&p.axes()!=std::vector<SpatialAxis>{SpatialAxis::x,SpatialAxis::y,SpatialAxis::z})fail(x.first,"point axes must be xy or xyz");
         for(auto axis:p.axes()){if(!values.contains(axis_name(axis)))fail(x.first,"point coordinate column missing");auto c=values.column(axis_name(axis));if(c.kind()!=ColumnKind::numeric)fail(x.first,"point coordinates must be numeric");auto type=c.values().dtype();if(type!=DType::int32&&type!=DType::int64&&type!=DType::float32&&type!=DType::float64)fail(x.first,"point coordinate dtype unsupported");}
         if((!p.feature_key().empty()&&!values.contains(p.feature_key()))||(!p.instance_key().empty()&&!values.contains(p.instance_key())))fail(x.first,"point annotation key missing");transforms_valid(p.transforms(),p.axes());
     }
     for(const auto& x:d.shapes)x.second.validate(scratch);
-    for(const auto& x:d.tables){auto a=x.second.data;table_names_valid(a);const auto& t=x.second.annotation;if(t.region_key.empty()!=t.instance_key.empty())fail(x.first,"both annotation link columns are needed");if(t.region_key.empty()){if(!t.regions.empty())fail(x.first,"regions require annotation columns");continue;}auto obs=a.obs();if(!obs.contains(t.region_key)||!obs.contains(t.instance_key))fail(x.first,"annotation columns missing");auto region=obs.column(t.region_key);auto ids=obs.column(t.instance_key);if(region.kind()!=ColumnKind::string&&region.kind()!=ColumnKind::categorical)fail(x.first,"annotation regions must be strings");if(region.kind()==ColumnKind::categorical&&region.categories().kind()!=ColumnKind::string)fail(x.first,"annotation region categories must be strings");ids_valid(ids,obs.size(),false);for(std::size_t i=0;i<obs.size();++i){if(!region.valid(i))fail(x.first,"annotation region cannot be null");auto name=region.kind()==ColumnKind::string?region.string(i):region.categories().string(std::size_t(region.code(i)));if(std::find(t.regions.begin(),t.regions.end(),name)==t.regions.end())fail(x.first,"annotation region is not declared");}annotation_unique(a,t,scratch);}
+    for(const auto& x:d.tables){auto a=x.second.data;a.validate();table_names_valid(a);const auto& t=x.second.annotation;if(t.region_key.empty()!=t.instance_key.empty())fail(x.first,"both annotation link columns are needed");if(t.region_key.empty()){if(!t.regions.empty())fail(x.first,"regions require annotation columns");continue;}auto obs=a.obs();if(!obs.contains(t.region_key)||!obs.contains(t.instance_key))fail(x.first,"annotation columns missing");auto region=obs.column(t.region_key);auto ids=obs.column(t.instance_key);if(region.kind()!=ColumnKind::string&&region.kind()!=ColumnKind::categorical)fail(x.first,"annotation regions must be strings");if(region.kind()==ColumnKind::categorical&&region.categories().kind()!=ColumnKind::string)fail(x.first,"annotation region categories must be strings");ids_valid(ids,obs.size(),false);for(std::size_t i=0;i<obs.size();++i){if(!region.valid(i))fail(x.first,"annotation region cannot be null");auto name=region.kind()==ColumnKind::string?region.string(i):region.categories().string(std::size_t(region.code(i)));if(std::find(t.regions.begin(),t.regions.end(),name)==t.regions.end())fail(x.first,"annotation region is not declared");}annotation_unique(a,t,scratch);}
 }
 } // namespace anndatapp

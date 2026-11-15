@@ -9,6 +9,7 @@
 
 using anndatapp::detail::dump_tree_json;
 using anndatapp::detail::parse_tree_json;
+using anndatapp::detail::scan_tree_json_members;
 using Json = nlohmann::ordered_json;
 
 int main() {
@@ -103,4 +104,37 @@ int main() {
     try { (void)parse_tree_json("{\"same\":NaN,\"same\":Infinity,\"next\":-Infinity}"); }
     catch (const Json::parse_error&) { rejected = true; }
     assert(rejected);
+
+    assert(scan_tree_json_members("\xef\xbb\xbf{}").empty());
+    const std::string source = R"json( {"first": {"ignored":[true,null,"text"]}, "\u0061": [NaN,Infinity,-Infinity], "last": 1, "a": {"updated":2}}  )json";
+    const auto members = scan_tree_json_members(source);
+    assert(members.size() == 3);
+    assert(members[0].name == "first" && members[1].name == "a" && members[2].name == "last");
+    assert(source.substr(members[0].begin, members[0].end - members[0].begin) == R"({"ignored":[true,null,"text"]})");
+    assert(source.substr(members[1].begin, members[1].end - members[1].begin) == R"({"updated":2})");
+    assert(parse_tree_json(std::string_view(source).substr(members[1].begin,
+                           members[1].end - members[1].begin))["updated"] == 2);
+    const std::string special = R"({"tree":[NaN,Infinity,-Infinity]})";
+    const auto span = scan_tree_json_members(special).front();
+    const auto selected = parse_tree_json(std::string_view(special).substr(span.begin, span.end - span.begin));
+    assert(std::isnan(selected[0].get<double>()));
+    assert(std::isinf(selected[1].get<double>()) && selected[1].get<double>() > 0);
+    assert(std::isinf(selected[2].get<double>()) && selected[2].get<double>() < 0);
+    assert(scan_tree_json_members(R"({"\ud83d\ude00":"\u0000"})")[0].name == "\xf0\x9f\x98\x80");
+    for (const auto* bad : {"[]", "{}x", "{\"x\":[1,]}", "{\"x\":{\"y\":}}",
+                            "{\"x\":01}", "{\"x\":NaNfoo}", "{\"x\":\"\\ud800\"}",
+                            "{\"x\":\"\\q\"}", "{\"x\":1,}", "{\"x\":1e9999}"}) {
+        bool failed = false;
+        try { (void)scan_tree_json_members(bad); }
+        catch (const Json::exception&) { failed = true; }
+        assert(failed);
+    }
+    for (const auto* bad : {"{\"ignored\":18446744073709551616}",
+                            "{\"ignored\":[-9223372036854775809]}"}) {
+        bool failed = false;
+        try { (void)scan_tree_json_members(bad); }
+        catch (const std::out_of_range&) { failed = true; }
+        assert(failed);
+    }
+
 }

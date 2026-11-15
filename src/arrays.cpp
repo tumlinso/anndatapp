@@ -309,6 +309,150 @@ std::ptrdiff_t signed_index(std::size_t i) {
     return static_cast<std::ptrdiff_t>(i);
 }
 
+struct CopyByteAccounting {
+    std::size_t max_bytes;
+    std::size_t charged = 0;
+
+    void charge(std::size_t count, std::size_t width) {
+        const auto bytes = checked_byte_span(count, width);
+        if (bytes > max_bytes - charged)
+            fail(ErrorCode::invalid_argument, "copy exceeds numerical buffer byte budget");
+        charged += bytes;
+    }
+};
+
+template<class T> void check_sparse_width(std::size_t value) {
+    if (value > static_cast<std::uint64_t>(std::numeric_limits<T>::max()))
+        fail(ErrorCode::invalid_sparse_structure, "sparse index does not fit original dtype");
+}
+
+struct SparseCopyPlan {
+    enum class Lookup { none, direct_table, sorted_pairs };
+
+    std::size_t output_minor = 0;
+    Axis minor;
+    Lookup lookup_kind = Lookup::none;
+    std::vector<std::size_t> offsets;
+    std::vector<std::size_t> head;
+    std::vector<std::size_t> next;
+    std::vector<std::pair<std::size_t, std::size_t>> pairs;
+
+    template<class F> void for_each_output_index(std::size_t source_index, F&& emit) const {
+        if (minor.is_gather()) {
+            if (lookup_kind == Lookup::direct_table) {
+                if (source_index >= head.size()) return;
+                const auto none = std::numeric_limits<std::size_t>::max();
+                for (auto j = head[source_index]; j != none; j = next[j]) emit(j);
+            } else {
+                auto p = std::lower_bound(pairs.begin(), pairs.end(), source_index,
+                    [](const auto& x, std::size_t j) { return x.first < j; });
+                for (; p != pairs.end() && p->first == source_index; ++p) emit(p->second);
+            }
+            return;
+        }
+
+        const auto first = minor.first(), step = minor.step();
+        if (!step) {
+            if (source_index == first)
+                for (std::size_t j = 0; j < output_minor; ++j) emit(j);
+            return;
+        }
+        if (minor.reverse() ? source_index > first : source_index < first) return;
+        const auto distance = minor.reverse() ? first - source_index : source_index - first;
+        if (distance % step == 0 && distance / step < output_minor) emit(distance / step);
+    }
+};
+
+SparseCopyPlan make_sparse_copy_plan(const State& state,
+    const std::shared_ptr<const ArraySelection>& selection,
+    std::size_t major_axis, std::size_t minor_axis, std::size_t output_major,
+    std::size_t output_minor, CopyByteAccounting& accounting) {
+    if (output_major == std::numeric_limits<std::size_t>::max())
+        fail(ErrorCode::invalid_argument, "sparse major dimension overflow");
+    checked_byte_span(output_major + 1, dtype_size(state.offset_type));
+    checked_byte_span(output_major + 1, sizeof(std::size_t));
+
+    SparseCopyPlan plan;
+    plan.output_minor = output_minor;
+    plan.minor = selection->axes[minor_axis];
+    accounting.charge(output_major + 1, sizeof(std::size_t));
+    plan.offsets.assign(output_major + 1, 0);
+
+    const auto source_minor = state.shape[minor_axis];
+    if (plan.minor.is_gather()) {
+        // Use the same compact direct table or gather-sized sorted lookup as
+        // the copier. Scratch never scales as nnz times gather length.
+        if (source_minor <= (std::size_t{1} << 20) &&
+            output_minor >= source_minor / 4 + (source_minor % 4 != 0)) {
+            checked_byte_span(source_minor, sizeof(std::size_t));
+            checked_byte_span(output_minor, sizeof(std::size_t));
+            accounting.charge(source_minor, sizeof(std::size_t));
+            accounting.charge(output_minor, sizeof(std::size_t));
+            plan.lookup_kind = SparseCopyPlan::Lookup::direct_table;
+            const auto none = std::numeric_limits<std::size_t>::max();
+            plan.head.assign(source_minor, none);
+            plan.next.resize(output_minor);
+            for (std::size_t j = output_minor; j > 0; --j) {
+                const auto i = plan.minor.index(j - 1);
+                plan.next[j - 1] = plan.head[i];
+                plan.head[i] = j - 1;
+            }
+        } else {
+            checked_byte_span(output_minor, sizeof(std::pair<std::size_t, std::size_t>));
+            accounting.charge(output_minor, sizeof(std::pair<std::size_t, std::size_t>));
+            plan.lookup_kind = SparseCopyPlan::Lookup::sorted_pairs;
+            plan.pairs.reserve(output_minor);
+            for (std::size_t j = 0; j < output_minor; ++j)
+                plan.pairs.emplace_back(plan.minor.index(j), j);
+            std::sort(plan.pairs.begin(), plan.pairs.end());
+        }
+    }
+
+    auto add_entries = [](std::size_t& total, std::size_t n) {
+        if (n > std::numeric_limits<std::size_t>::max() - total)
+            fail(ErrorCode::invalid_sparse_structure, "selected sparse entry count overflows");
+        total += n;
+    };
+    if (plan.minor.is_all()) {
+        visit_index(state.offset_type, [&]<class Offset> {
+            for (std::size_t m = 0; m < output_major; ++m) {
+                const auto i = original_index(selection, major_axis, m);
+                auto n = plan.offsets[m];
+                add_entries(n, read_nonnegative<Offset>(state.offsets, i + 1) -
+                               read_nonnegative<Offset>(state.offsets, i));
+                plan.offsets[m + 1] = n;
+            }
+        });
+    } else {
+        visit_index(state.offset_type, [&]<class Offset> {
+            visit_index(state.index_type, [&]<class Index> {
+                for (std::size_t m = 0; m < output_major; ++m) {
+                    const auto i = original_index(selection, major_axis, m);
+                    const auto a = read_nonnegative<Offset>(state.offsets, i);
+                    const auto b = read_nonnegative<Offset>(state.offsets, i + 1);
+                    auto n = plan.offsets[m];
+                    for (auto k = a; k < b; ++k) {
+                        const auto source_index = read_nonnegative<Index>(state.indices, k);
+                        plan.for_each_output_index(source_index, [&](std::size_t j) {
+                            check_sparse_width<Index>(j);
+                            add_entries(n, 1);
+                        });
+                    }
+                    plan.offsets[m + 1] = n;
+                }
+            });
+        });
+    }
+
+    visit_index(state.offset_type, [&]<class Offset> {
+        check_sparse_width<Offset>(plan.offsets.back());
+    });
+    accounting.charge(plan.offsets.back(), dtype_size(state.type));
+    accounting.charge(plan.offsets.back(), dtype_size(state.index_type));
+    accounting.charge(output_major + 1, dtype_size(state.offset_type));
+    return plan;
+}
+
 std::ptrdiff_t extent_stride(std::size_t count, std::ptrdiff_t stride) {
     if (!count || !stride) return 0;
     const auto positive_limit = static_cast<std::uintmax_t>(std::numeric_limits<std::ptrdiff_t>::max());
@@ -692,19 +836,46 @@ Array ArrayView::copy(Validation validation) const {
     return copy(validation, std::numeric_limits<std::size_t>::max());
 }
 
-Array ArrayView::copy(Validation validation, std::size_t max_bytes) const {
+std::size_t ArrayView::copy_buffer_bytes(Validation validation, std::size_t max_bytes) const {
     require_state(state_);
-    std::size_t charged = 0;
-    auto charge = [&](std::size_t count, std::size_t width) {
-        const auto bytes = checked_byte_span(count, width);
-        if (bytes > max_bytes - charged)
-            fail(ErrorCode::invalid_argument, "copy exceeds numerical buffer byte budget");
-        charged += bytes;
-    };
+    if (validation == Validation::full) validate_state(*state_);
+    CopyByteAccounting accounting{max_bytes};
     if (state_->format == Layout::dense) {
         std::vector<std::size_t> shape;
         for (std::size_t a = 0; a < rank(); ++a) shape.push_back(extent(a));
-        charge(element_count(shape), dtype_size(state_->type));
+        accounting.charge(element_count(shape), dtype_size(state_->type));
+        return accounting.charged;
+    }
+    const std::size_t major_axis = state_->format == Layout::csr ? 0 : 1;
+    if (!has_selection(selection_)) {
+        if (state_->shape[major_axis] == std::numeric_limits<std::size_t>::max())
+            fail(ErrorCode::invalid_argument, "sparse major dimension overflow");
+        accounting.charge(state_->nnz, dtype_size(state_->type));
+        accounting.charge(state_->nnz, dtype_size(state_->index_type));
+        accounting.charge(state_->shape[major_axis] + 1, dtype_size(state_->offset_type));
+        return accounting.charged;
+    }
+
+    const auto minor_axis = 1 - major_axis;
+    const auto output_major = extent(major_axis), output_minor = extent(minor_axis);
+    if (output_major == std::numeric_limits<std::size_t>::max())
+        fail(ErrorCode::invalid_argument, "sparse major dimension overflow");
+    // Match copy() validation and staging checks before counting entries.
+    checked_byte_span(output_major + 1, dtype_size(state_->offset_type));
+    checked_byte_span(output_major + 1, sizeof(std::size_t));
+    auto plan = make_sparse_copy_plan(*state_, selection_, major_axis, minor_axis,
+                                      output_major, output_minor, accounting);
+    (void)plan;
+    return accounting.charged;
+}
+
+Array ArrayView::copy(Validation validation, std::size_t max_bytes) const {
+    require_state(state_);
+    CopyByteAccounting accounting{max_bytes};
+    if (state_->format == Layout::dense) {
+        std::vector<std::size_t> shape;
+        for (std::size_t a = 0; a < rank(); ++a) shape.push_back(extent(a));
+        accounting.charge(element_count(shape), dtype_size(state_->type));
         auto result = Array::allocate_dense(state_->type, state_->native, shape, false);
         result.state_->value_byte_order = state_->value_byte_order;
         // Owning dense copy historically trusts the source storage. Reuse the
@@ -717,9 +888,9 @@ Array ArrayView::copy(Validation validation, std::size_t max_bytes) const {
     if (!has_selection(selection_)) {
         if (state_->shape[major_axis] == std::numeric_limits<std::size_t>::max())
             fail(ErrorCode::invalid_argument, "sparse major dimension overflow");
-        charge(state_->nnz, dtype_size(state_->type));
-        charge(state_->nnz, dtype_size(state_->index_type));
-        charge(state_->shape[major_axis] + 1, dtype_size(state_->offset_type));
+        accounting.charge(state_->nnz, dtype_size(state_->type));
+        accounting.charge(state_->nnz, dtype_size(state_->index_type));
+        accounting.charge(state_->shape[major_axis] + 1, dtype_size(state_->offset_type));
         auto result = Array::allocate_sparse(state_->format, state_->type, state_->index_type,
                                               state_->offset_type, state_->native, state_->native_index,
                                               state_->native_offset, state_->shape[0], state_->shape[1], state_->nnz);
@@ -737,112 +908,55 @@ Array ArrayView::copy(Validation validation, std::size_t max_bytes) const {
     const auto out_major = extent(major_axis), out_minor = extent(minor_axis);
     if (out_major == std::numeric_limits<std::size_t>::max())
         fail(ErrorCode::invalid_argument, "sparse major dimension overflow");
-    // Check both the stored offsets and the size_t staging vector before
-    // building a minor-index map or traversing the selected major axis.
+    // Check both output offsets and size_t staging before traversing the
+    // selected major axis.
     checked_byte_span(out_major + 1, dtype_size(state_->offset_type));
     checked_byte_span(out_major + 1, sizeof(std::size_t));
     if (validation == Validation::full) validate_state(*state_);
     const auto width = dtype_size(state_->type), index_width = dtype_size(state_->index_type);
-    const auto minor = selection_->axes[minor_axis];
-    charge(out_major + 1, sizeof(std::size_t));
-    std::vector<std::size_t> offsets(out_major + 1, 0);
-    auto allocate = [&](std::size_t nnz) {
-        charge(nnz, width);
-        charge(nnz, index_width);
-        charge(out_major + 1, dtype_size(state_->offset_type));
-        auto out = Array::allocate_sparse(state_->format, state_->type, state_->index_type, state_->offset_type,
-            state_->native, state_->native_index, state_->native_offset, extent(0), extent(1), nnz);
-        out.state_->value_byte_order = state_->value_byte_order;
-        out.state_->indices_byte_order = state_->indices_byte_order;
-        out.state_->offsets_byte_order = state_->offsets_byte_order;
-        return out;
-    };
-    auto add_entries = [](std::size_t& total, std::size_t n) {
-        if (n > std::numeric_limits<std::size_t>::max() - total)
-            fail(ErrorCode::invalid_sparse_structure, "selected sparse entry count overflows");
-        total += n;
-    };
-    if (minor.is_all()) return visit_index(state_->offset_type, [&]<class Offset> {
+    auto plan = make_sparse_copy_plan(*state_, selection_, major_axis, minor_axis,
+                                      out_major, out_minor, accounting);
+    auto result = Array::allocate_sparse(state_->format, state_->type, state_->index_type, state_->offset_type,
+        state_->native, state_->native_index, state_->native_offset, extent(0), extent(1), plan.offsets.back());
+    result.state_->value_byte_order = state_->value_byte_order;
+    result.state_->indices_byte_order = state_->indices_byte_order;
+    result.state_->offsets_byte_order = state_->offsets_byte_order;
+
+    if (plan.minor.is_all()) return visit_index(state_->offset_type, [&]<class Offset> {
         for (std::size_t m = 0; m < out_major; ++m) {
             const auto i = original_index(selection_, major_axis, m);
-            auto n = offsets[m];
-            add_entries(n, read_nonnegative<Offset>(state_->offsets, i + 1) - read_nonnegative<Offset>(state_->offsets, i));
-            offsets[m + 1] = n;
-        }
-        auto out = allocate(offsets.back());
-        for (std::size_t m = 0; m < out_major; ++m) {
-            const auto i = original_index(selection_, major_axis, m);
-            const auto from = read_nonnegative<Offset>(state_->offsets, i), to = offsets[m], n = offsets[m + 1] - to;
+            const auto from = read_nonnegative<Offset>(state_->offsets, i);
+            const auto to = plan.offsets[m], n = plan.offsets[m + 1] - to;
             if (n) {
-                std::memcpy(static_cast<std::byte*>(out.state_->data) + to*width,
+                std::memcpy(static_cast<std::byte*>(result.state_->data) + to*width,
                     static_cast<const std::byte*>(state_->data) + from*width, n*width);
-                std::memcpy(static_cast<std::byte*>(out.state_->indices) + to*index_width,
+                std::memcpy(static_cast<std::byte*>(result.state_->indices) + to*index_width,
                     static_cast<const std::byte*>(state_->indices) + from*index_width, n*index_width);
             }
         }
-        for (std::size_t m = 0; m <= out_major; ++m) write_checked<Offset>(out.state_->offsets, m, offsets[m]);
-        return out;
+        for (std::size_t m = 0; m <= out_major; ++m) write_checked<Offset>(result.state_->offsets, m, plan.offsets[m]);
+        return std::move(result);
     });
-    auto selected = [&]<class Match>(Match match) {
-        return visit_index(state_->offset_type, [&]<class Offset> {
-            return visit_index(state_->index_type, [&]<class Index> {
-                for (std::size_t m = 0; m < out_major; ++m) {
-                    const auto i = original_index(selection_, major_axis, m);
-                    const auto a = read_nonnegative<Offset>(state_->offsets, i), b = read_nonnegative<Offset>(state_->offsets, i + 1);
-                    auto n = offsets[m];
-                    for (auto k = a; k < b; ++k)
-                        match(read_nonnegative<Index>(state_->indices, k), [&](std::size_t) { add_entries(n, 1); });
-                    offsets[m + 1] = n;
-                }
-                auto out = allocate(offsets.back());
-                for (std::size_t m = 0; m < out_major; ++m) {
-                    const auto i = original_index(selection_, major_axis, m);
-                    const auto a = read_nonnegative<Offset>(state_->offsets, i), b = read_nonnegative<Offset>(state_->offsets, i + 1);
-                    auto n = offsets[m];
-                    for (auto k = a; k < b; ++k) match(read_nonnegative<Index>(state_->indices, k), [&](std::size_t j) {
-                        std::memcpy(static_cast<std::byte*>(out.state_->data) + n*width,
+    return visit_index(state_->offset_type, [&]<class Offset> {
+        return visit_index(state_->index_type, [&]<class Index> {
+            for (std::size_t m = 0; m < out_major; ++m) {
+                const auto i = original_index(selection_, major_axis, m);
+                const auto a = read_nonnegative<Offset>(state_->offsets, i);
+                const auto b = read_nonnegative<Offset>(state_->offsets, i + 1);
+                auto n = plan.offsets[m];
+                for (auto k = a; k < b; ++k) {
+                    const auto source_index = read_nonnegative<Index>(state_->indices, k);
+                    plan.for_each_output_index(source_index, [&](std::size_t j) {
+                        std::memcpy(static_cast<std::byte*>(result.state_->data) + n*width,
                             static_cast<const std::byte*>(state_->data) + k*width, width);
-                        write_checked<Index>(out.state_->indices, n++, j);
+                        write_checked<Index>(result.state_->indices, n++, j);
                     });
                 }
-                for (std::size_t m = 0; m <= out_major; ++m) write_checked<Offset>(out.state_->offsets, m, offsets[m]);
-                return out;
-            });
+            }
+            for (std::size_t m = 0; m <= out_major; ++m)
+                write_checked<Offset>(result.state_->offsets, m, plan.offsets[m]);
+            return std::move(result);
         });
-    };
-    if (!minor.is_gather()) return selected([&](std::size_t i, auto emit) {
-        const auto first = minor.first(), step = minor.step();
-        if (!step) { if (i == first) for (std::size_t j = 0; j < out_minor; ++j) emit(j); return; }
-        if (minor.reverse() ? i > first : i < first) return;
-        const auto d = minor.reverse() ? first - i : i - first;
-        if (d % step == 0 && d/step < out_minor) emit(d/step);
-    });
-    // A compact source axis earns a direct table; cap its size and keep the
-    // scratch proportional to the requested gather, including repetitions.
-    const auto source_minor = state_->shape[minor_axis];
-    if (source_minor <= (std::size_t{1} << 20) &&
-        out_minor >= source_minor/4 + (source_minor % 4 != 0)) {
-        checked_byte_span(out_minor, sizeof(std::size_t));
-        charge(source_minor, sizeof(std::size_t));
-        charge(out_minor, sizeof(std::size_t));
-        const auto none = std::numeric_limits<std::size_t>::max();
-        std::vector<std::size_t> head(source_minor, none), next(out_minor);
-        for (std::size_t j = out_minor; j > 0; --j) {
-            const auto i = minor.index(j - 1);
-            next[j - 1] = head[i]; head[i] = j - 1;
-        }
-        return selected([&](std::size_t i, auto emit) {
-            for (auto j = head[i]; j != none; j = next[j]) emit(j);
-        });
-    }
-    charge(out_minor, sizeof(std::pair<std::size_t, std::size_t>));
-    std::vector<std::pair<std::size_t, std::size_t>> lookup;
-    lookup.reserve(out_minor);
-    for (std::size_t j = 0; j < out_minor; ++j) lookup.emplace_back(minor.index(j), j);
-    std::sort(lookup.begin(), lookup.end());
-    return selected([&](std::size_t i, auto emit) {
-        auto p = std::lower_bound(lookup.begin(), lookup.end(), i, [](const auto& x, std::size_t j) { return x.first < j; });
-        for (; p != lookup.end() && p->first == i; ++p) emit(p->second);
     });
 }
 } // namespace anndatapp
