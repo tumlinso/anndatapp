@@ -2,6 +2,8 @@
 
 This guide describes the native C++ models and the selected file-version scope. It records current source support, not interoperability results. The original feature qualification is recorded in [format-family-validation.md](format-family-validation.md); the 2026-11-15 repairs and their final matrix are tracked separately in [format-family-repair-validation.md](format-family-repair-validation.md).
 
+The later prepared-collection and gathered-metadata changes, bounded pre-extension comparisons, Python screens and remaining raster selectivity concern are recorded in [format-family-io-validation.md](format-family-io-validation.md).
+
 The C++ facade can be imported with either `import anndata;` or `import anndatapp;`. Both export the same types in namespace `anndatapp`. The package, CMake target, and repository remain named `anndatapp`. The format modules can also be imported directly: `anndatapp.mudata`, `anndatapp.treedata`, `anndatapp.dataset`, and `anndatapp.spatialdata`.
 
 The [native example](../examples/format_family.cpp) demonstrates construction and selection with `import anndata;`, plus optional backed inspection of an existing `.h5ads` manifest. CMake builds it as `anndatapp_format_family_example` when examples are enabled.

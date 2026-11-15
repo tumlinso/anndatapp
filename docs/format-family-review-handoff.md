@@ -103,3 +103,7 @@ The implementation and raw evidence are committed or stored persistently, with r
 ## Requested review output
 
 Report confirmed defects first, with severity, exact file/line, input trigger, observed/expected result and a minimal regression. Explicitly reject false positives. Distinguish compatibility checks, memory bounds, numerical performance, API maintainability and coverage gaps. State whether the original acceptance contract is met, and what evidence is missing. Do not turn optional style preferences into a broad rewrite or claim measured speed from source appearance.
+
+## Subsequent I/O work, 15 November 2026
+
+The [I/O qualification and reviewer handoff](format-family-io-validation.md) records the changes through `c0fefce`, compared with pre-extension `e8c51ce` and before-change `bbe693c`. It covers reusable collection preparation, bounded gathered metadata, resolved independent-review findings, nine passing configurations and matched source-bound screens. Raster-window amplification and remaining collection setup cost are explicitly retained as follow-ups; passing checks do not establish package-wide optimal performance.

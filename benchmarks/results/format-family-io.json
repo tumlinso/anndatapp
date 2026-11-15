@@ -1,0 +1,1608 @@
+{
+  "schema": "anndatapp-format-family-io/1",
+  "date": "2026-11-15",
+  "pre_extension": "e8c51ce7c3d8c2ded9d1b5f43c1e4d035ea13629",
+  "before": "bbe693ce53a729cc8bc475cf56ee55bf1a33a666",
+  "implementation_commit": "c0fefced2793e0edbf96567cbb99bac361b7070a",
+  "measurement_source_commit": "faf4e3150e27c1c0420554af9e7eede6cf1e4e45",
+  "source_inputs_sha256": "026db73847482d6c932c1a9eeab23db0d490a36ca240723e72008980f4ea2953",
+  "source_input_count": 173,
+  "toolchain": {
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+    "cmake": "cmake version 3.28.3",
+    "ninja": "1.11.1"
+  },
+  "reference": {
+    "packages": {
+      "anndata": "0.13.4",
+      "mudata": "0.4.1",
+      "treedata": "0.4.0",
+      "snapatac2": "2.10.0",
+      "spatialdata": "0.9.0",
+      "pyarrow": "21.0.0",
+      "zarr": "3.4.2",
+      "numpy": "2.2.6",
+      "h5py": "3.16.0"
+    },
+    "h5py_hdf5": "2.0.0"
+  },
+  "matrix": [
+    {
+      "configuration": "debug",
+      "tests": 38,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 19.0,
+      "xml_sha256": "a45b2646f19d066b996f5b52971ea55c0d95dc2dea8bcdd3abfc9764609d17bc",
+      "test_log_sha256": "0f871368c5d0d4b03b001fcdaf85178a18e7567c8dc5c6158fe6ed30149f67aa",
+      "build_log_sha256": "aed99b23a314570e84f3e284848f68551929540ddfc08bf4b836a9744c0be4d2",
+      "cmake_cache_sha256": "5a469437994c26c0c4d13a5d5cc928054e3f7cf905c8bdb39036f2e85fba4f64",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "release",
+      "tests": 39,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 17.0,
+      "xml_sha256": "9edc5911babe4f121fc127440d945fba9bfd89ce1a1e729fb7c831018aaa60a5",
+      "test_log_sha256": "068ce52dc81ac74e5f4d5ca423c862a4f3f264c53ace349454cbb9f11bfdb1ff",
+      "build_log_sha256": "b7d74fddfb39c2cb40456e783581575f7eda402cdead210a9141d66a4e9c2ef7",
+      "cmake_cache_sha256": "d7b60800ea05a55824ab4cd95eccb886778a7a98d172083e6c1d41453fed1748",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "sanitizers",
+      "tests": 39,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 46.0,
+      "xml_sha256": "a215607b9f285c2d5359a7620588cc8fc82a1be40c1d4fff76c5ec225c6e017d",
+      "test_log_sha256": "753ca11ef6235588e17ff2a45dac585905e72e602cd95c713fce748dd631978f",
+      "build_log_sha256": "b5c571cf57e8e40cd0f517da6932c094e6b2be1ea20ed9b0d316c5052d29b812",
+      "cmake_cache_sha256": "909cef0ae3ded6cf807060720dfcbb6cf7068eea04e26bff25ad3cc87d441b12",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "ON",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "core-only",
+      "tests": 22,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 19.0,
+      "xml_sha256": "c5ead2c0c85fdbf4bfbdae6e929c1bf7a602112ccc5b2763be6afc0b771c9aa4",
+      "test_log_sha256": "52de608674114e4d619497549f64b0907e40ea8e78a184cba54a04be77b902ea",
+      "build_log_sha256": "11227ff2ce94558958d7b5ea7c0096b03df64becd46baa4db386e8c036de0895",
+      "cmake_cache_sha256": "e02977f6f8cc655782c732505fa0aaa3d389c00fa3d86a8a7fa1f1706a924155",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "OFF",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "hdf5-only",
+      "tests": 32,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 20.0,
+      "xml_sha256": "79c45fe9ba04adabfe2aba3f9ec07df832dd132d9d0fb72101d6b5b89a77f9ac",
+      "test_log_sha256": "4d7012c12075309a065adfea72206fa04993cbb76cd56efbb37fc82a62861fa5",
+      "build_log_sha256": "55de5466c32162a73f0fbdf8bf01e9427fcedd944aeb5534032cb7bfd3960770",
+      "cmake_cache_sha256": "1a6638e833990b47e507bbf8d7f2d7acd48c224cdfd24b02b5f4ada1d169d194",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "OFF",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "zarr-only",
+      "tests": 29,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 20.0,
+      "xml_sha256": "bd7eb26c6cdcfaa2dd233822d8370d08a2668943de933e365ebe3c7f21ed2244",
+      "test_log_sha256": "ece63f586fa6c278e67e0d67b479abbda154e6061269a722111b4ef8969e9d2a",
+      "build_log_sha256": "8ac239dea24cc92c468bba888b4237adc26b5776bc48ee19c8b02616f3229d95",
+      "cmake_cache_sha256": "f2e5834bd0ba395cd46f135c0c49fc869f394bb692dc369b478bf2b52d22eb8b",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "OFF",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "shared",
+      "tests": 39,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 22.0,
+      "xml_sha256": "64b44fc674a668044fc37e77d353a3abeb57d402d20f3dd104c462657d013823",
+      "test_log_sha256": "1e63b743a121cd20e355797161fc1c100867d92ceed5fa14c6c860042538b75a",
+      "build_log_sha256": "36ef3a5ad338f281c814f59f779429acad66cdbc5f7b345dcc6979967c4dc963",
+      "cmake_cache_sha256": "4cccd50cb550e74c4263833210c030cfd34096ec0a41f155e2fb47234a7906b9",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": ""
+      }
+    },
+    {
+      "configuration": "parquet",
+      "tests": 54,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 246.0,
+      "xml_sha256": "f3e71fdc0b9ddb5f697c71f0220a0cefd24518a52eeb17e50515950745001e13",
+      "test_log_sha256": "89c36c09e5958875ddceb453595ecfc4187f90d20a59fee67b3575f9905b927d",
+      "build_log_sha256": "ae286298f50b16050743c5806162fca14cb95c8d02564b06c99246380cf85976",
+      "cmake_cache_sha256": "bdb7415ef0c0d513b4d7a679e2cc3c7b4cde2aae821a2fcca91ee31e20942697",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "ON",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++-18",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_EXE_LINKER_FLAGS": "",
+        "Python3_EXECUTABLE": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/full/bin/python3"
+      }
+    },
+    {
+      "configuration": "thread-sanitizers",
+      "tests": 4,
+      "failures": 0,
+      "skipped": 0,
+      "ctest_seconds": 21.0,
+      "xml_sha256": "9bf253cb965366e82431aabf987e344c2e2a8f97213d08f6dccf2dddcc53b2c1",
+      "test_log_sha256": "f93c680bc3066f6bb3a0b931d7ee4beb7d469b9c720bb20846db15e48fdd342d",
+      "build_log_sha256": "3e3bef2f2e4472cd8e59123ed0af9084c7dad3cc8c19f0c4c73c54d373280d54",
+      "cmake_cache_sha256": "4a52f46942519230992e403b7afe28676b4ebdd2223ea99d98a2029afa31f911",
+      "settings": {
+        "ANNDATAPP_ENABLE_FORMAT_INTEROP_TESTS": "OFF",
+        "ANNDATAPP_ENABLE_HDF5": "ON",
+        "ANNDATAPP_ENABLE_INTEROP_TESTS": "ON",
+        "ANNDATAPP_ENABLE_PARQUET": "OFF",
+        "ANNDATAPP_ENABLE_SANITIZERS": "OFF",
+        "ANNDATAPP_ENABLE_ZARR": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_CXX_FLAGS": "-fsanitize=thread -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread",
+        "Python3_EXECUTABLE": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/full/bin/python3"
+      }
+    }
+  ],
+  "sanitizer_limits": "ASan detect_leaks=0; UBSan halt_on_error=1. TSan only repository-targeted transfer/streaming preset, not global allocator instrumentation tests. Linux Clang18 only.",
+  "baseline_checks": {
+    "tests": 20,
+    "failures": 0,
+    "log_sha256": "45e8cae3e696e2bd0b0cef3bff0faf0e37758b6631cd2bb704860da2d1550b72",
+    "xml_sha256": "aceadcf365de5e3e7fb31cd38b650f08863fddee4fb2ee95aed84f866b2eeadd"
+  },
+  "legacy_mudata": {
+    "result": "pass; native HDF5/Zarr conversion of pinned0.3.10 missing-axis fixtures, current0.4.1 reopen",
+    "log_sha256": "f544d97f021517231803166e7626676b52dd3a60b400cd62f9f9426f2a4b5aee"
+  },
+  "prefix_receipt_sha256": "6de584c7572761dfaa2e1918cb86673c9f154cc299967d51bb51158a0e594d22",
+  "mapping": {
+    "result": "pass; rooted H5MU dense, retained mapped pointer, physical CSR data/indices/indptr, selected/logical sparse rejection",
+    "source_sha256": "67cc66c2307de971b08889ddd5b885025df70888f4cc43cb9b1312a68da86abe",
+    "log_sha256": "70870eb87e67a979679723f8282118fd79a121206c3d64a076b53ed22bb592a8"
+  },
+  "private_rebuild": {
+    "source_sha256": "fb3d4ca6e149eb9c9cb109cb30544d86c00c5a9ad9ea869b69d21cbdb0a06483",
+    "public_bmis_unchanged": 15,
+    "consumer_objects_unchanged": 2,
+    "restored_binary_hashes_match": true
+  },
+  "screen": {
+    "summary_sha256": "4af4764eee6f41835565bac12f7ee235749d24f8f151ff23baeacd4fc513e1a9",
+    "raw_receipts": {
+      "anndata-diagnostic-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/anndata-diagnostic-final.jsonl",
+        "sha256": "1c0be4c84250a64356acd44a78f8a97ce7c32c837f4004e61ab90a8abe800ae4"
+      },
+      "anndata-timing-v2.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/anndata-timing-v2.jsonl",
+        "sha256": "72da7bedebd028a29ada2f16e65381cc1783d3b347fdf9c728ef0ebb5f4f41fb"
+      },
+      "core-diagnostic-final/provenance.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/core-diagnostic-final/provenance.json",
+        "sha256": "9b16adc4bc0e978c4df7325ee18d9482547ddfc430135ea9da7b771adca4afc2"
+      },
+      "core-diagnostic-final/result.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/core-diagnostic-final/result.json",
+        "sha256": "d6cb6482ad25d7cb7edbc27a5a73c61b188e4b06558244c3bbe771549a0bacff"
+      },
+      "core-timing-final/provenance.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/core-timing-final/provenance.json",
+        "sha256": "1318d3fb538ad70b4971f497c3faf059ef4f361946b4654d77d76ba522fbd1c2"
+      },
+      "core-timing-final/result.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/core-timing-final/result.json",
+        "sha256": "cd76e8b361a882c631c5fb4dd4b734516ce6ecca22ed5f9d1a4eed5c9e64917e"
+      },
+      "dataset-diagnostic-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/dataset-diagnostic-final.jsonl",
+        "sha256": "676d4c459356bde7ee04429e2010a8f8410dd11101b76a3453730dfd426a3d42"
+      },
+      "dataset-family-diagnostic-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/dataset-family-diagnostic-final.jsonl",
+        "sha256": "eaa18cc1e2ebcdfa090b92a40625277fc47e8784a2a89a81550c62771b3b91ef"
+      },
+      "dataset-family-timing-v2.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/dataset-family-timing-v2.jsonl",
+        "sha256": "091a43e7ad23beb22bafd24898a0a9adca5a09fe4837be69bcba1e187e6d841c"
+      },
+      "dataset-timing-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/dataset-timing-final.jsonl",
+        "sha256": "637a071813bb60e957f9c4bd499e0bc01659d4199362b31b49f1d1375dd343f4"
+      },
+      "dense-confirmation-plan/identity.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/dense-confirmation-plan/identity.json",
+        "sha256": "fc48aa7fe60ab1903d5710c39bb1150d91dacc1388c199a06ec448f0edd10f53"
+      },
+      "dense-confirmation-v1.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/dense-confirmation-v1.jsonl",
+        "sha256": "1517a0b36bd2fa6001c5b279289c322806beac445728acdc2f7de13f62d5b0de"
+      },
+      "final-plans-v3/receipt.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/final-plans-v3/receipt.json",
+        "sha256": "9fb7c325538a8bd5ceadf1fa59b0e6ef99555faafe714e533ba9cd52200131b8"
+      },
+      "final-plans-v4/receipt.json": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/final-plans-v4/receipt.json",
+        "sha256": "a802d84af4b4fe8f1db220818b51b7f5b92ab5e6651b9ee4732e17037cceb978"
+      },
+      "mudata-diagnostic-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/mudata-diagnostic-final.jsonl",
+        "sha256": "ba9a3896f349877d21eca62f331f88891a5eb6d8c7370d0eb11c66f0129269b9"
+      },
+      "mudata-timing-v2.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/mudata-timing-v2.jsonl",
+        "sha256": "867ad2a52b2520f6418f7f8f2b968d2989a69bf0ec25a590c3c6f3eedb8009ab"
+      },
+      "spatialdata-diagnostic-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/spatialdata-diagnostic-final.jsonl",
+        "sha256": "e66379cf7194bdde7110887e9737acb843be843fbfba087a7d352119301ef3a9"
+      },
+      "spatialdata-points-timing-v3.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/spatialdata-points-timing-v3.jsonl",
+        "sha256": "791fe15c0a58e93ebe397efec54f79f5220a33aa5397235855c358673265185d"
+      },
+      "spatialdata-timing-v2.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/spatialdata-timing-v2.jsonl",
+        "sha256": "2883290b8f54e0df0b41c8b821b1c4a8ec0d5a23f81f5432d092c389cbe96449"
+      },
+      "treedata-diagnostic-final.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/treedata-diagnostic-final.jsonl",
+        "sha256": "a4382d082bd71660dff5db0f85620dfe64126e730ab1e3d84f9b732f4fbdf5ef"
+      },
+      "treedata-timing-v2.jsonl": {
+        "path": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/screen/treedata-timing-v2.jsonl",
+        "sha256": "db326ef797702fa00006e835646c15f6bb65624555009c2dca576d3a7c8e5762"
+      }
+    },
+    "conditions": {
+      "cache": "fixture hash preflight warms core inputs; ordinary OS/HDF5 caches, no eviction",
+      "collection_common": "C++ requests X with requirements and caller-buffer transfer, does not call materialize or read all annotations; performs selected-axis validation/preflight and repeats preparation; Python requests indexed X",
+      "contexts": "four workers constrained to the one allowed CPU; not scaling measurement",
+      "correctness": "independent formula/golden on completed records; Python HDF interposed diagnostics failed, not timing cases",
+      "cpu": "single allowed CPU; see raw provenance",
+      "diagnostic_limits": "separate interposed runs; intercepted libc and H5D calls not total device I/O; C++ operator new excludes malloc/Python allocations; zeros in uninstrumented runs not measurements",
+      "prepared_operation": "legacy one-shot repeats internal preparation while candidate prepared read includes automatic preflight; do not ratio operation only",
+      "python_comparison": "output matches; imports excluded; work can differ due to validation, ownership, lazy/eager behavior and selected groups; do not report speed ratios",
+      "samples": "one per case/version except dense H5AD three samples",
+      "thread_limits": 1,
+      "timing_flags": "strict >10% and >0.1ms candidate vs bbe; one sample screening, not established regression"
+    },
+    "core": {
+      "h2h/h5ad_eager_read_dense": {
+        "bbe": {
+          "elapsed_ms": 6.01788,
+          "golden_sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13",
+          "prepare_ms": 0.018255999999999998
+        },
+        "candidate": {
+          "elapsed_ms": 7.378984,
+          "golden_sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13",
+          "prepare_ms": 0.023773000000000002
+        },
+        "pre": {
+          "elapsed_ms": 6.059662,
+          "golden_sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13",
+          "prepare_ms": 0.022821
+        }
+      },
+      "h2h/h5ad_sparse_cols_csc": {
+        "bbe": {
+          "elapsed_ms": 0.857167,
+          "golden_sha256": "30d9ff2b6f9fcc2f37296464d467be33458d6ad1f2a17b051035e198e1dc3d61",
+          "prepare_ms": 3.0360460000000002
+        },
+        "candidate": {
+          "elapsed_ms": 0.777513,
+          "golden_sha256": "30d9ff2b6f9fcc2f37296464d467be33458d6ad1f2a17b051035e198e1dc3d61",
+          "prepare_ms": 3.050617
+        },
+        "pre": {
+          "elapsed_ms": 0.763807,
+          "golden_sha256": "30d9ff2b6f9fcc2f37296464d467be33458d6ad1f2a17b051035e198e1dc3d61",
+          "prepare_ms": 3.014218
+        }
+      },
+      "h2h/h5ad_sparse_rows_csr": {
+        "bbe": {
+          "elapsed_ms": 0.7511380000000001,
+          "golden_sha256": "2702092843d0f60450919addf5f33be0cc8da367a20c5872d538cf5a2ec057f3",
+          "prepare_ms": 3.052524
+        },
+        "candidate": {
+          "elapsed_ms": 0.760205,
+          "golden_sha256": "2702092843d0f60450919addf5f33be0cc8da367a20c5872d538cf5a2ec057f3",
+          "prepare_ms": 3.0517220000000003
+        },
+        "pre": {
+          "elapsed_ms": 0.853134,
+          "golden_sha256": "2702092843d0f60450919addf5f33be0cc8da367a20c5872d538cf5a2ec057f3",
+          "prepare_ms": 3.0496770000000004
+        }
+      },
+      "h2h/zarr3_gather_read": {
+        "bbe": {
+          "elapsed_ms": 67.637492,
+          "golden_sha256": "f437f53d6b2d505eccf179ba6339680e3e5fb25a76219cdc40499c447cfeb6a5",
+          "prepare_ms": 2.968676
+        },
+        "candidate": {
+          "elapsed_ms": 69.967966,
+          "golden_sha256": "f437f53d6b2d505eccf179ba6339680e3e5fb25a76219cdc40499c447cfeb6a5",
+          "prepare_ms": 3.005287
+        },
+        "pre": {
+          "elapsed_ms": 67.228831,
+          "golden_sha256": "f437f53d6b2d505eccf179ba6339680e3e5fb25a76219cdc40499c447cfeb6a5",
+          "prepare_ms": 2.950982
+        }
+      },
+      "mmap": {
+        "bbe": {
+          "bytes": 262144,
+          "end_to_end_seconds": 0.002298779,
+          "map_seconds": 0.000420526,
+          "open_seconds": 0.001341973,
+          "sha256": "e8d9616ed5039d263413986032512cc8725e67fc33353cb2e60c2da4da4945a1",
+          "touch_seconds": 0.00053628
+        },
+        "candidate": {
+          "bytes": 262144,
+          "end_to_end_seconds": 0.002161692,
+          "map_seconds": 0.000418395,
+          "open_seconds": 0.001290299,
+          "sha256": "e8d9616ed5039d263413986032512cc8725e67fc33353cb2e60c2da4da4945a1",
+          "touch_seconds": 0.000452998
+        },
+        "pre": {
+          "bytes": 262144,
+          "end_to_end_seconds": 0.002124155,
+          "map_seconds": 0.000397434,
+          "open_seconds": 0.00127335,
+          "sha256": "e8d9616ed5039d263413986032512cc8725e67fc33353cb2e60c2da4da4945a1",
+          "touch_seconds": 0.000453371
+        }
+      },
+      "v1/contexts/adaptive_4reserved_worker_read": {
+        "bbe": {
+          "elapsed_ms": 3.9701500000000003,
+          "iterations": 128,
+          "payload_bytes": 2097152,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 4.162977,
+          "iterations": 128,
+          "payload_bytes": 2097152,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 4.086874,
+          "iterations": 128,
+          "payload_bytes": 2097152,
+          "validated": true
+        }
+      },
+      "v1/contexts/disjoint_chunk_4worker_write": {
+        "bbe": {
+          "elapsed_ms": 2.163258,
+          "iterations": 16,
+          "payload_bytes": 262144,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 2.2487470000000003,
+          "iterations": 16,
+          "payload_bytes": 262144,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 2.094861,
+          "iterations": 16,
+          "payload_bytes": 262144,
+          "validated": true
+        }
+      },
+      "v1/contexts/reused_contexts_4worker_read": {
+        "bbe": {
+          "elapsed_ms": 0.435537,
+          "iterations": 16,
+          "payload_bytes": 262144,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 0.450096,
+          "iterations": 16,
+          "payload_bytes": 262144,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 0.454759,
+          "iterations": 16,
+          "payload_bytes": 262144,
+          "validated": true
+        }
+      },
+      "v1/h5ad/h5ad_csc_native": {
+        "bbe": {
+          "elapsed_ms": 0.030252,
+          "iterations": 4,
+          "payload_bytes": 8720,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 0.030801,
+          "iterations": 4,
+          "payload_bytes": 8720,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 0.030484,
+          "iterations": 4,
+          "payload_bytes": 8720,
+          "validated": true
+        }
+      },
+      "v1/h5ad/h5ad_csc_opposite": {
+        "bbe": {
+          "elapsed_ms": 240.049153,
+          "iterations": 4,
+          "payload_bytes": 16400,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 237.215121,
+          "iterations": 4,
+          "payload_bytes": 16400,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 246.810534,
+          "iterations": 4,
+          "payload_bytes": 16400,
+          "validated": true
+        }
+      },
+      "v1/h5ad/h5ad_csr_native": {
+        "bbe": {
+          "elapsed_ms": 0.037286,
+          "iterations": 4,
+          "payload_bytes": 8720,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 0.037602,
+          "iterations": 4,
+          "payload_bytes": 8720,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 0.037909,
+          "iterations": 4,
+          "payload_bytes": 8720,
+          "validated": true
+        }
+      },
+      "v1/h5ad/h5ad_csr_opposite": {
+        "bbe": {
+          "elapsed_ms": 241.71197,
+          "iterations": 4,
+          "payload_bytes": 16400,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 239.115237,
+          "iterations": 4,
+          "payload_bytes": 16400,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 241.643077,
+          "iterations": 4,
+          "payload_bytes": 16400,
+          "validated": true
+        }
+      },
+      "v1/h5ad/h5ad_dense_read": {
+        "bbe": {
+          "elapsed_ms": 0.25373799999999996,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 0.220533,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 0.263306,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        }
+      },
+      "v1/h5ad/h5ad_dense_write": {
+        "bbe": {
+          "elapsed_ms": 0.048204000000000004,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 0.048351,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 0.05013,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        }
+      },
+      "v1/zarr2/zarr2_chunk_dense_read": {
+        "bbe": {
+          "elapsed_ms": 0.21958899999999998,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 0.21890500000000002,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 0.22969900000000001,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        }
+      },
+      "v1/zarr2/zarr2_chunk_dense_write": {
+        "bbe": {
+          "elapsed_ms": 1.810566,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 1.7857070000000002,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 1.824198,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        }
+      },
+      "v1/zarr3/zarr3_gather_read": {
+        "bbe": {
+          "elapsed_ms": 6.239993,
+          "iterations": 4,
+          "payload_bytes": 784,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 6.767435,
+          "iterations": 4,
+          "payload_bytes": 784,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 6.662329,
+          "iterations": 4,
+          "payload_bytes": 784,
+          "validated": true
+        }
+      },
+      "v1/zarr3/zarr3_partial_shard_write": {
+        "bbe": {
+          "elapsed_ms": 5.256075,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "candidate": {
+          "elapsed_ms": 4.8545419999999995,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        },
+        "pre": {
+          "elapsed_ms": 5.074471,
+          "iterations": 4,
+          "payload_bytes": 65536,
+          "validated": true
+        }
+      }
+    },
+    "dense_confirmation": {
+      "interpretation": "initial candidate dense flag did not repeat in either confirmation; only three samples",
+      "median_ms": {
+        "bbe": 6.186995,
+        "candidate": 6.169583,
+        "pre": 6.1244439999999996
+      },
+      "samples": {
+        "bbe": [
+          {
+            "ms": 6.01788,
+            "raw": "core-timing-final/result.json",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          },
+          {
+            "ms": 6.365527999999999,
+            "raw": "dense-confirmation-v1.jsonl",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          },
+          {
+            "ms": 6.186995,
+            "raw": "dense-confirmation-v1.jsonl",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          }
+        ],
+        "candidate": [
+          {
+            "ms": 7.378984,
+            "raw": "core-timing-final/result.json",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          },
+          {
+            "ms": 6.169583,
+            "raw": "dense-confirmation-v1.jsonl",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          },
+          {
+            "ms": 6.128395,
+            "raw": "dense-confirmation-v1.jsonl",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          }
+        ],
+        "pre": [
+          {
+            "ms": 6.059662,
+            "raw": "core-timing-final/result.json",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          },
+          {
+            "ms": 8.348232000000001,
+            "raw": "dense-confirmation-v1.jsonl",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          },
+          {
+            "ms": 6.1244439999999996,
+            "raw": "dense-confirmation-v1.jsonl",
+            "sha256": "90b6c4cc61a9e1eb3eab69df2b875c7b0e0b23900e805e9749bbbcaee2f7bd13"
+          }
+        ]
+      },
+      "window_seconds_confirmation": 0.1656382700020913,
+      "window_seconds_initial": 2.458485267998185
+    },
+    "collection": [
+      {
+        "api": "legacy",
+        "case": "end-to-end",
+        "end_to_end_ns": 372506485,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 10777,
+        "mode": "timing",
+        "nnz": 26,
+        "open_ns": 14853975,
+        "operation_ns": 180975420,
+        "prepare_and_allocate_ns": 176676970,
+        "rss_peak_kib": 72960,
+        "setup_ns": 191530945,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "bbe-legacy"
+      },
+      {
+        "api": "prepared",
+        "case": "end-to-end",
+        "end_to_end_ns": 87928722,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 10728,
+        "mode": "timing",
+        "nnz": 26,
+        "open_ns": 13417073,
+        "operation_ns": 12162900,
+        "prepare_and_allocate_ns": 62348518,
+        "rss_peak_kib": 72320,
+        "setup_ns": 75765591,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "candidate-prepared"
+      },
+      {
+        "api": "prepared",
+        "case": "prepared",
+        "end_to_end_ns": 91637127,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 10728,
+        "mode": "timing",
+        "nnz": 26,
+        "open_ns": 13113792,
+        "operation_ns": 12010685,
+        "prepare_and_allocate_ns": 66512568,
+        "rss_peak_kib": 72320,
+        "setup_ns": 79626360,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "candidate-prepared"
+      },
+      {
+        "api": "legacy",
+        "case": "prepared",
+        "end_to_end_ns": 371373752,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 10777,
+        "mode": "timing",
+        "nnz": 26,
+        "open_ns": 13034189,
+        "operation_ns": 183775338,
+        "prepare_and_allocate_ns": 174564132,
+        "rss_peak_kib": 72960,
+        "setup_ns": 187598321,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "bbe-legacy"
+      },
+      {
+        "api": "prepared",
+        "case": "preflight",
+        "end_to_end_ns": 85565468,
+        "golden": "not-applicable",
+        "major_faults": 0,
+        "minor_faults": 10728,
+        "mode": "timing",
+        "nnz": 26,
+        "open_ns": 13377327,
+        "operation_ns": 1678841,
+        "prepare_and_allocate_ns": 70509230,
+        "rss_peak_kib": 72960,
+        "setup_ns": 83886557,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "candidate-prepared"
+      },
+      {
+        "api": "prepared",
+        "case": "end-to-end",
+        "end_to_end_ns": 76030588,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 7404,
+        "mode": "timing",
+        "nnz": 17,
+        "open_ns": 14711974,
+        "operation_ns": 11572194,
+        "prepare_and_allocate_ns": 49746187,
+        "rss_peak_kib": 59520,
+        "setup_ns": 64458161,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "candidate-prepared"
+      },
+      {
+        "api": "legacy",
+        "case": "end-to-end",
+        "end_to_end_ns": 352997315,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 7396,
+        "mode": "timing",
+        "nnz": 17,
+        "open_ns": 13388420,
+        "operation_ns": 181442664,
+        "prepare_and_allocate_ns": 158166140,
+        "rss_peak_kib": 58880,
+        "setup_ns": 171554560,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "bbe-legacy"
+      },
+      {
+        "api": "legacy",
+        "case": "prepared",
+        "end_to_end_ns": 359535277,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 7400,
+        "mode": "timing",
+        "nnz": 17,
+        "open_ns": 14433132,
+        "operation_ns": 176694831,
+        "prepare_and_allocate_ns": 168407220,
+        "rss_peak_kib": 59520,
+        "setup_ns": 182840352,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "bbe-legacy"
+      },
+      {
+        "api": "prepared",
+        "case": "prepared",
+        "end_to_end_ns": 74121278,
+        "golden": "pass",
+        "major_faults": 0,
+        "minor_faults": 7403,
+        "mode": "timing",
+        "nnz": 17,
+        "open_ns": 13963085,
+        "operation_ns": 11366754,
+        "prepare_and_allocate_ns": 48791346,
+        "rss_peak_kib": 59520,
+        "setup_ns": 62754431,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "candidate-prepared"
+      },
+      {
+        "api": "prepared",
+        "case": "preflight",
+        "end_to_end_ns": 63990682,
+        "golden": "not-applicable",
+        "major_faults": 0,
+        "minor_faults": 7404,
+        "mode": "timing",
+        "nnz": 17,
+        "open_ns": 13667250,
+        "operation_ns": 1650032,
+        "prepare_and_allocate_ns": 48673340,
+        "rss_peak_kib": 59520,
+        "setup_ns": 62340590,
+        "shape": [
+          64,
+          64
+        ],
+        "status": "completed",
+        "version": "candidate-prepared"
+      }
+    ],
+    "family": {
+      "anndata": {
+        "bbe": {
+          "end_to_end_ns": 16141189,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 1828763,
+          "operation_ns": 7825321,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 6487105,
+          "raw": "anndata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 15541746,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 1405122,
+          "operation_ns": 7953484,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 6183140,
+          "raw": "anndata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "backed H5AD CSRDataset; selected indexing reads requested rows/columns",
+          "end_to_end_ns": 16568650,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 14295978,
+          "operation_comparable_to_cpp_caller_buffer": false,
+          "operation_ns": 2272672,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1103697762,
+          "raw": "anndata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        }
+      },
+      "dataset": {
+        "bbe": {
+          "end_to_end_ns": 134839976,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 7323194,
+          "operation_ns": 71995192,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 55521590,
+          "raw": "dataset-family-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 42154170,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 6445815,
+          "operation_ns": 21462028,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 14246327,
+          "raw": "dataset-family-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "SnapATAC2 AnnDataSet indexed X API",
+          "end_to_end_ns": 6362715,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 4995844,
+          "operation_comparable_to_cpp_caller_buffer": false,
+          "operation_ns": 1366871,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1635691055,
+          "raw": "dataset-family-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        }
+      },
+      "mudata": {
+        "bbe": {
+          "end_to_end_ns": 30973815,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 2069193,
+          "operation_ns": 11325223,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 17579399,
+          "raw": "mudata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 28236451,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 1848163,
+          "operation_ns": 10246662,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 16141626,
+          "raw": "mudata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "one requested rna modality; backed H5MU",
+          "end_to_end_ns": 36485163,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 34656556,
+          "operation_comparable_to_cpp_caller_buffer": false,
+          "operation_ns": 1828607,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1190885688,
+          "raw": "mudata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        }
+      },
+      "mudata-map": {
+        "bbe": {
+          "end_to_end_ns": 10086965,
+          "golden": "pass",
+          "map_acquire_ns": 6005648,
+          "modality_acquire_ns": 228167,
+          "open_ns": 1529115,
+          "output": "retained_maps_and_lazy_modality",
+          "raw": "mudata-timing-v2.jsonl",
+          "selection_ns": 2324035,
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 10304773,
+          "golden": "pass",
+          "map_acquire_ns": 5769875,
+          "modality_acquire_ns": 237978,
+          "open_ns": 1826118,
+          "output": "retained_maps_and_lazy_modality",
+          "raw": "mudata-timing-v2.jsonl",
+          "selection_ns": 2470802,
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "MuData reads global maps and constructs an in-memory selected MuData view",
+          "end_to_end_ns": 38692694,
+          "golden": "pass",
+          "open_ns": 35091046,
+          "operation_comparable_to_cpp_lazy_backed_map": false,
+          "operation_ns": 3601648,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1157640395,
+          "raw": "mudata-timing-v2.jsonl",
+          "sha256": "e2e299ffe4fd4b339befc56d438d3cf764d44cc4e9c487bf952cc366c1da9e76",
+          "status": "completed"
+        }
+      },
+      "spatialdata": {
+        "bbe": {
+          "end_to_end_ns": 46459298,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 4601407,
+          "operation_ns": 24683379,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 17174512,
+          "raw": "spatialdata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 46324819,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 4604627,
+          "operation_ns": 24736939,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 16983253,
+          "raw": "spatialdata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "read_zarr selects tables and its referenced labels/cells region; upstream selection is by element group",
+          "end_to_end_ns": 187144334,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 186667571,
+          "operation_comparable_to_cpp_caller_buffer": false,
+          "operation_ns": 476763,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1986034257,
+          "raw": "spatialdata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        }
+      },
+      "spatialdata-points": {
+        "bbe": {
+          "end_to_end_ns": 8614551,
+          "golden": "pass",
+          "open_ns": 4439274,
+          "operation_ns": 4175277,
+          "output": "eager_bounded_points_batch",
+          "raw": "spatialdata-points-timing-v3.jsonl",
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 7017448,
+          "golden": "pass",
+          "open_ns": 4123738,
+          "operation_ns": 2893710,
+          "output": "eager_bounded_points_batch",
+          "raw": "spatialdata-points-timing-v3.jsonl",
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "SpatialData points require full Dask frame compute before pandas row slice",
+          "end_to_end_ns": 272134287,
+          "golden": "pass",
+          "open_ns": 138708324,
+          "operation_comparable_to_cpp_bounded_parquet_read": false,
+          "operation_ns": 133425963,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1913675312,
+          "raw": "spatialdata-points-timing-v3.jsonl",
+          "sha256": "7244e16a6a03d19352cbea15bfb1b6c1db7d49cf1d51b9b32fbea6b218767e32",
+          "status": "completed"
+        }
+      },
+      "spatialdata-raster": {
+        "bbe": {
+          "end_to_end_ns": 356754188,
+          "golden": "pass",
+          "open_ns": 4706936,
+          "operation_ns": 351904351,
+          "output": "eager_dense_caller_buffer",
+          "prepare_and_allocate_ns": 142901,
+          "raw": "spatialdata-timing-v2.jsonl",
+          "shape": [
+            1,
+            32,
+            32
+          ],
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 363362139,
+          "golden": "pass",
+          "open_ns": 4684838,
+          "operation_ns": 358532594,
+          "output": "eager_dense_caller_buffer",
+          "prepare_and_allocate_ns": 144707,
+          "raw": "spatialdata-timing-v2.jsonl",
+          "shape": [
+            1,
+            32,
+            32
+          ],
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "SpatialData read_zarr selects only images; xarray/Dask computes the requested raster window",
+          "end_to_end_ns": 291069968,
+          "golden": "pass",
+          "open_ns": 155485076,
+          "operation_comparable_to_cpp_caller_buffer": false,
+          "operation_ns": 135584892,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1959628280,
+          "raw": "spatialdata-timing-v2.jsonl",
+          "sha256": "e6b6f09bbff577bb1f14539dd23ef2cd679818c0a0d83e2a11129edf19e64241",
+          "shape": [
+            1,
+            32,
+            32
+          ],
+          "status": "completed"
+        }
+      },
+      "treedata": {
+        "bbe": {
+          "end_to_end_ns": 16310322,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 3072415,
+          "operation_ns": 7528670,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 5709237,
+          "raw": "treedata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 16394015,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 2587212,
+          "operation_ns": 7946781,
+          "output": "eager_csr_caller_buffer",
+          "prepare_and_allocate_ns": 5860022,
+          "raw": "treedata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "H5TD API may eagerly decode tree metadata during open",
+          "end_to_end_ns": 22183241,
+          "golden": "pass",
+          "nnz": 512,
+          "open_ns": 19939095,
+          "operation_comparable_to_cpp_caller_buffer": false,
+          "operation_ns": 2244146,
+          "prepare_and_allocate_ns": 0,
+          "python_imports_ns": 1187300297,
+          "raw": "treedata-timing-v2.jsonl",
+          "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+          "shape": [
+            64,
+            64
+          ],
+          "status": "completed"
+        }
+      },
+      "treedata-tree": {
+        "bbe": {
+          "end_to_end_ns": 35891144,
+          "golden": "pass",
+          "named_tree_ns": 2250389,
+          "names_ns": 634103,
+          "open_ns": 2619328,
+          "output": "named_tree_then_eager_selected_treedata_all_trees",
+          "raw": "treedata-timing-v2.jsonl",
+          "selected_treedata_ns": 30387324,
+          "status": "completed"
+        },
+        "candidate": {
+          "end_to_end_ns": 36644298,
+          "golden": "pass",
+          "named_tree_ns": 2271112,
+          "names_ns": 645496,
+          "open_ns": 2961452,
+          "output": "named_tree_then_eager_selected_treedata_all_trees",
+          "raw": "treedata-timing-v2.jsonl",
+          "selected_treedata_ns": 30766238,
+          "status": "completed"
+        },
+        "python": {
+          "api_boundary": "pinned treedata read_h5td may decode the scalar tree collection eagerly; selected slicing projects the in-memory TreeData",
+          "end_to_end_ns": 30229733,
+          "golden": "pass",
+          "named_tree_ns": 15785,
+          "names_ns": 8598,
+          "open_ns": 19492340,
+          "operation_comparable_to_cpp_keyed_backed_read": false,
+          "python_imports_ns": 1187616233,
+          "raw": "treedata-timing-v2.jsonl",
+          "selected_read_ns": 10713010,
+          "status": "completed"
+        }
+      }
+    },
+    "phase_flags": [
+      {
+        "bbe_ms": 1.529115,
+        "candidate_ms": 1.826118,
+        "case": "mudata-map",
+        "delta_ms": 0.297003,
+        "delta_percent": 19.423195770102318,
+        "metric": "open_ns"
+      },
+      {
+        "bbe_ms": 2.619328,
+        "candidate_ms": 2.961452,
+        "case": "treedata-tree",
+        "delta_ms": 0.342124,
+        "delta_percent": 13.061518068756573,
+        "metric": "open_ns"
+      }
+    ],
+    "diagnostic_failures": [
+      {
+        "case": "anndata",
+        "version": "python",
+        "status": "failed",
+        "counters": null
+      },
+      {
+        "case": "mudata",
+        "version": "python",
+        "status": "failed",
+        "counters": null
+      },
+      {
+        "case": "mudata-map",
+        "version": "python",
+        "status": "failed",
+        "counters": null
+      },
+      {
+        "case": "treedata",
+        "version": "python",
+        "status": "failed",
+        "counters": null
+      },
+      {
+        "case": "treedata-tree",
+        "version": "python",
+        "status": "failed",
+        "counters": null
+      }
+    ],
+    "key_diagnostics": [
+      {
+        "case": "100000-end-to-end",
+        "counters": {
+          "cpp_new_bytes": 2063252,
+          "cpp_new_calls": 87519,
+          "h5dread_calls": 3012,
+          "h5dwrite_calls": 0,
+          "intercepted_read_bytes": 189098480,
+          "intercepted_read_calls": 3823,
+          "intercepted_write_bytes": 0,
+          "intercepted_write_calls": 0
+        },
+        "golden": "pass",
+        "raw": "dataset-diagnostic-final.jsonl",
+        "status": "completed",
+        "version": "bbe-legacy"
+      },
+      {
+        "case": "100000-end-to-end",
+        "counters": {
+          "cpp_new_bytes": 828876,
+          "cpp_new_calls": 22227,
+          "h5dread_calls": 349,
+          "h5dwrite_calls": 0,
+          "intercepted_read_bytes": 36114080,
+          "intercepted_read_calls": 1132,
+          "intercepted_write_bytes": 0,
+          "intercepted_write_calls": 0
+        },
+        "golden": "pass",
+        "raw": "dataset-diagnostic-final.jsonl",
+        "status": "completed",
+        "version": "candidate-prepared"
+      },
+      {
+        "case": "spatialdata-raster",
+        "counters": {
+          "allocation_scope": "global C++ operator new/new[] only; excludes Python and NumPy malloc allocators and does not count all process allocations",
+          "cpp_new_bytes": 0,
+          "cpp_new_calls": 0,
+          "h5dread_calls": 0,
+          "h5dwrite_calls": 0,
+          "instrumented_duration_is_timing_evidence": false,
+          "intercepted_read_bytes": 6910296,
+          "intercepted_read_calls": 600,
+          "intercepted_write_bytes": 0,
+          "intercepted_write_calls": 0,
+          "io_scope": "existing v1 intercepted libc/HDF5 calls; direct syscalls, mmap page-ins, hidden calls and physical device I/O are not counted",
+          "scope": "open_through_requested_output"
+        },
+        "golden": "pass",
+        "raw": "spatialdata-diagnostic-final.jsonl",
+        "status": "completed",
+        "version": "python"
+      },
+      {
+        "case": "spatialdata-raster",
+        "counters": {
+          "cpp_new_bytes": 578069719,
+          "cpp_new_calls": 309937,
+          "intercepted_read_bytes": 135239456,
+          "intercepted_read_calls": 3156,
+          "scope": "open_through_transfer"
+        },
+        "golden": "pass",
+        "raw": "spatialdata-diagnostic-final.jsonl",
+        "status": "completed",
+        "version": "candidate"
+      },
+      {
+        "case": "spatialdata-raster",
+        "counters": {
+          "cpp_new_bytes": 578069719,
+          "cpp_new_calls": 309937,
+          "intercepted_read_bytes": 135239456,
+          "intercepted_read_calls": 3156,
+          "scope": "open_through_transfer"
+        },
+        "golden": "pass",
+        "raw": "spatialdata-diagnostic-final.jsonl",
+        "status": "completed",
+        "version": "bbe"
+      }
+    ],
+    "interpretation": {
+      "collection_100k": "Equivalent requested CSR X output end-to-end 372.506485ms legacy to 87.928722ms prepared; golden passes; prepared operation alone differs in work.",
+      "confirmation_window": "JSONL elapsed 0.16563827s, not outer reported wall; plus initial core 2.458485s remains <30s.",
+      "dense_h5ad": "Initial 22.6% candidate slowdown did not repeat; three-sample bbe median 6.186995ms, candidate 6.169583ms, limited variance coverage.",
+      "family_collection": "C++ read_x_into X only, not materialize; 42.1542ms candidate versus 6.3627ms Python is a follow-up flag with different validation/ownership, not an equal-work speed ratio.",
+      "family_phase_flags": "Only MuData-map open and TreeData-tree open cross +10% and +0.1ms; one sample each and end-to-end <10% change.",
+      "python_hdf_diagnostic": "Five PyHDF interposed cases fail with h5py H5Dread error while uninstrumented timing passes. Diagnostic counters unavailable; libv1_io resolves H5Dread via RTLD_NEXT and returns -1 if absent, but the actual cause was not established.",
+      "raster": "2048-byte raster result: bbe and candidate diagnostic each intercepted 3156 reads/135239456 bytes and observed 309937 C++ new calls/578069719 requested bytes; cumulative interception, not physical I/O or live RSS. Selected raster behavior merits scoped follow-up."
+    },
+    "excluded_records": [
+      {
+        "case": "spatialdata-points",
+        "raw": "spatialdata-timing-v2.jsonl",
+        "reason": "v2 oracle incorrectly equated Parquet index with spot_id; superseded by v3",
+        "status": "failed",
+        "version": "bbe"
+      },
+      {
+        "case": "spatialdata-points",
+        "raw": "spatialdata-timing-v2.jsonl",
+        "reason": "v2 oracle incorrectly equated Parquet index with spot_id; superseded by v3",
+        "status": "failed",
+        "version": "candidate"
+      },
+      {
+        "case": "spatialdata-points",
+        "raw": "spatialdata-timing-v2.jsonl",
+        "reason": "v2 oracle incorrectly equated Parquet index with spot_id; superseded by v3",
+        "status": "completed",
+        "version": "python"
+      }
+    ],
+    "generated_fixture_file_bytes": {
+      "build/format-family-io/screen/core-inputs": 19272420,
+      "build/format-family-io/fixtures-family-v1": 739572,
+      "build/format-family-io/fixtures-family-v2": 739838,
+      "build/format-family-io/fixtures-family-v3": 751559
+    },
+    "reused_collection_fixture_bytes": 213446160
+  },
+  "review": {
+    "artifact": "c0fefced2793e0edbf96567cbb99bac361b7070a",
+    "scope": "independent source review plus focused rechecks; no consequential outstanding issue in changed paths",
+    "repaired_findings": [
+      "unbounded all-component bitmap",
+      "tiny-budget contiguous string regression",
+      "overlapping variable/observation staging"
+    ],
+    "runtime_evidence": "matrix and focused regressions; review itself was source-only"
+  },
+  "evidence_root": "/home/tumlinson/anndatapp/build/format-family-io-qualification-2026-11-15",
+  "limits": [
+    "Single-sample family timings; no cross-language equal-work or general superiority claims.",
+    "Source-bound intercepted calls/bytes and observed allocation requests, not physical device I/O, total allocations or retained memory.",
+    "Five PyHDF diagnostics failed under the interposer; uninstrumented timing cases passed. No asserted cause for symbol-scope failure.",
+    "Raster amplification and remaining collection validation/preparation cost are recorded follow-ups; no extended campaign run.",
+    "Source staging budgets exclude fixed acquisition headers, allocator/control-block overhead, borrowed owners and caller buffers; not RSS limits."
+  ]
+}
