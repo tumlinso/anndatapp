@@ -1,0 +1,1187 @@
+{
+  "window_seconds": 12.653533851000248,
+  "record_count": 22,
+  "settings": {
+    "cpu": 0,
+    "thread_limits": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "1",
+      "BLOSC_NTHREADS": "1"
+    },
+    "cache": "normal OS/HDF5 caches, no eviction",
+    "case_timeout_seconds": 10.0,
+    "plan_sha256": "a7848ed803578a0a44192a58bd09944637d259e0c7fc7fa2dbbedb8904d2f01b",
+    "runner_sha256": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9"
+  },
+  "hashes": {
+    "dataset-small": "bb7805bcc25ffdde",
+    "dataset-10k": "54073d4a0e9be58f"
+  },
+  "metadata": {
+    "dataset-small/baseline": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int32"
+    },
+    "dataset-small/candidate": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int32"
+    },
+    "dataset-small/python": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "native_dtypes": {
+        "data": "float32",
+        "indices": "int32",
+        "indptr": "int32"
+      }
+    },
+    "dataset-10k/python": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "native_dtypes": {
+        "data": "float32",
+        "indices": "int32",
+        "indptr": "int32"
+      }
+    },
+    "dataset-10k/candidate": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64"
+    },
+    "dataset-10k/baseline": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64"
+    }
+  },
+  "timings": {
+    "dataset-small/baseline": {
+      "open_ns": {
+        "samples": [
+          8275828,
+          6259184,
+          6470449
+        ],
+        "median": 6470449
+      },
+      "selection_ns": {
+        "samples": [
+          416941,
+          437159,
+          442699
+        ],
+        "median": 437159
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          7258116,
+          7610314,
+          7664796
+        ],
+        "median": 7610314
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          2338,
+          2437,
+          2395
+        ],
+        "median": 2395
+      },
+      "transfer_ns": {
+        "samples": [
+          1290865,
+          1378222,
+          1329875
+        ],
+        "median": 1329875
+      },
+      "end_to_end_ns": {
+        "samples": [
+          17244088,
+          15687316,
+          15910214
+        ],
+        "median": 15910214
+      }
+    },
+    "dataset-small/candidate": {
+      "open_ns": {
+        "samples": [
+          5378187,
+          5661026,
+          5793042
+        ],
+        "median": 5661026
+      },
+      "selection_ns": {
+        "samples": [
+          404593,
+          408126,
+          488820
+        ],
+        "median": 408126
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          3447267,
+          3647213,
+          3801598
+        ],
+        "median": 3647213
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          2380,
+          2549,
+          2991
+        ],
+        "median": 2549
+      },
+      "transfer_ns": {
+        "samples": [
+          1192928,
+          1195573,
+          1383054
+        ],
+        "median": 1195573
+      },
+      "end_to_end_ns": {
+        "samples": [
+          10425355,
+          10914487,
+          11469505
+        ],
+        "median": 10914487
+      }
+    },
+    "dataset-small/python": {
+      "open_ns": {
+        "samples": [
+          5080791,
+          4942417,
+          5020375
+        ],
+        "median": 5020375
+      },
+      "operation_ns": {
+        "samples": [
+          1083577,
+          1107432,
+          1128848
+        ],
+        "median": 1107432
+      },
+      "end_to_end_ns": {
+        "samples": [
+          6169662,
+          6055351,
+          6154738
+        ],
+        "median": 6154738
+      }
+    },
+    "dataset-10k/python": {
+      "open_ns": {
+        "samples": [
+          31939169,
+          32510324,
+          31984092
+        ],
+        "median": 31984092
+      },
+      "operation_ns": {
+        "samples": [
+          6697946,
+          6662467,
+          6654230
+        ],
+        "median": 6662467
+      },
+      "end_to_end_ns": {
+        "samples": [
+          38644491,
+          39183936,
+          38645312
+        ],
+        "median": 38645312
+      }
+    },
+    "dataset-10k/candidate": {
+      "open_ns": {
+        "samples": [
+          13987910,
+          14070600,
+          13654487
+        ],
+        "median": 13987910
+      },
+      "selection_ns": {
+        "samples": [
+          404453,
+          440777,
+          359625
+        ],
+        "median": 404453
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          25383384,
+          25666215,
+          24694359
+        ],
+        "median": 25383384
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          685,
+          329,
+          345
+        ],
+        "median": 345
+      },
+      "transfer_ns": {
+        "samples": [
+          5161355,
+          5214496,
+          5110738
+        ],
+        "median": 5161355
+      },
+      "end_to_end_ns": {
+        "samples": [
+          44937787,
+          45392417,
+          43819554
+        ],
+        "median": 44937787
+      }
+    },
+    "dataset-10k/baseline": {
+      "open_ns": {
+        "samples": [
+          13797181,
+          14121811,
+          13912830
+        ],
+        "median": 13912830
+      },
+      "selection_ns": {
+        "samples": [
+          387516,
+          380492,
+          387966
+        ],
+        "median": 387516
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          38793599,
+          39162928,
+          38495948
+        ],
+        "median": 38793599
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          512,
+          320,
+          328
+        ],
+        "median": 328
+      },
+      "transfer_ns": {
+        "samples": [
+          5520034,
+          5769777,
+          5544267
+        ],
+        "median": 5544267
+      },
+      "end_to_end_ns": {
+        "samples": [
+          58498842,
+          59435328,
+          58341339
+        ],
+        "median": 58498842
+      }
+    }
+  },
+  "comparisons": {
+    "dataset-small": {
+      "transfer_ns": {
+        "baseline_ns": 1329875,
+        "candidate_ns": 1195573,
+        "delta_ns": -134302,
+        "candidate_over_baseline": 0.8990115612369584,
+        "material": true,
+        "classification": "faster"
+      },
+      "end_to_end_ns": {
+        "baseline_ns": 15910214,
+        "candidate_ns": 10914487,
+        "delta_ns": -4995727,
+        "candidate_over_baseline": 0.6860050405355955,
+        "material": true,
+        "classification": "faster"
+      },
+      "preparation_requirements_ns": {
+        "baseline_ns": 7610314,
+        "candidate_ns": 3647213,
+        "delta_ns": -3963101,
+        "candidate_over_baseline": 0.4792460600180229,
+        "material": true,
+        "classification": "faster"
+      },
+      "open_ns": {
+        "baseline_ns": 6470449,
+        "candidate_ns": 5661026,
+        "delta_ns": -809423,
+        "candidate_over_baseline": 0.8749046627212423,
+        "material": true,
+        "classification": "faster"
+      },
+      "selection_ns": {
+        "baseline_ns": 437159,
+        "candidate_ns": 408126,
+        "delta_ns": -29033,
+        "candidate_over_baseline": 0.9335870930256497,
+        "material": false,
+        "classification": "comparable"
+      },
+      "buffer_allocation_ns": {
+        "baseline_ns": 2395,
+        "candidate_ns": 2549,
+        "delta_ns": 154,
+        "candidate_over_baseline": 1.0643006263048016,
+        "material": false,
+        "classification": "comparable"
+      }
+    },
+    "dataset-10k": {
+      "transfer_ns": {
+        "baseline_ns": 5544267,
+        "candidate_ns": 5161355,
+        "delta_ns": -382912,
+        "candidate_over_baseline": 0.9309355050902131,
+        "material": false,
+        "classification": "comparable"
+      },
+      "end_to_end_ns": {
+        "baseline_ns": 58498842,
+        "candidate_ns": 44937787,
+        "delta_ns": -13561055,
+        "candidate_over_baseline": 0.768182505219505,
+        "material": true,
+        "classification": "faster"
+      },
+      "preparation_requirements_ns": {
+        "baseline_ns": 38793599,
+        "candidate_ns": 25383384,
+        "delta_ns": -13410215,
+        "candidate_over_baseline": 0.6543188735853046,
+        "material": true,
+        "classification": "faster"
+      },
+      "open_ns": {
+        "baseline_ns": 13912830,
+        "candidate_ns": 13987910,
+        "delta_ns": 75080,
+        "candidate_over_baseline": 1.0053964578018995,
+        "material": false,
+        "classification": "comparable"
+      },
+      "selection_ns": {
+        "baseline_ns": 387516,
+        "candidate_ns": 404453,
+        "delta_ns": 16937,
+        "candidate_over_baseline": 1.0437065824378864,
+        "material": false,
+        "classification": "comparable"
+      },
+      "buffer_allocation_ns": {
+        "baseline_ns": 328,
+        "candidate_ns": 345,
+        "delta_ns": 17,
+        "candidate_over_baseline": 1.0518292682926829,
+        "material": false,
+        "classification": "comparable"
+      }
+    }
+  },
+  "diagnostics": {
+    "dataset-small/baseline": {
+      "scope": "open_through_transfer",
+      "intercepted_read_calls": 139,
+      "intercepted_read_bytes": 139739,
+      "intercepted_write_calls": 0,
+      "intercepted_write_bytes": 0,
+      "h5dread_calls": 331,
+      "h5dwrite_calls": 0,
+      "cpp_new_calls": 5201,
+      "cpp_new_bytes": 214974,
+      "phases": {
+        "open": {
+          "v1_io_slots": [
+            108,
+            82693,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          "metadata_slots": [
+            122,
+            33,
+            33,
+            29,
+            209,
+            64,
+            4
+          ],
+          "cpp_new_calls": 1377,
+          "cpp_new_bytes": 55908
+        },
+        "selection": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            12,
+            4,
+            4,
+            4,
+            30,
+            8,
+            0
+          ],
+          "cpp_new_calls": 203,
+          "cpp_new_bytes": 11408
+        },
+        "preparation_requirements": {
+          "v1_io_slots": [
+            25,
+            39630,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            3,
+            135,
+            0
+          ],
+          "metadata_slots": [
+            244,
+            94,
+            94,
+            87,
+            425,
+            157,
+            7
+          ],
+          "cpp_new_calls": 2980,
+          "cpp_new_bytes": 122616
+        },
+        "buffer_allocation": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 4360
+        },
+        "transfer": {
+          "v1_io_slots": [
+            6,
+            17416,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            192,
+            0
+          ],
+          "metadata_slots": [
+            48,
+            18,
+            18,
+            18,
+            32,
+            30,
+            0
+          ],
+          "cpp_new_calls": 638,
+          "cpp_new_bytes": 20682
+        }
+      }
+    },
+    "dataset-small/candidate": {
+      "scope": "open_through_transfer",
+      "intercepted_read_calls": 138,
+      "intercepted_read_bytes": 139141,
+      "intercepted_write_calls": 0,
+      "intercepted_write_bytes": 0,
+      "h5dread_calls": 330,
+      "h5dwrite_calls": 0,
+      "cpp_new_calls": 3260,
+      "cpp_new_bytes": 149252,
+      "phases": {
+        "open": {
+          "v1_io_slots": [
+            108,
+            82693,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          "metadata_slots": [
+            104,
+            29,
+            29,
+            25,
+            170,
+            54,
+            4
+          ],
+          "cpp_new_calls": 1181,
+          "cpp_new_bytes": 50760
+        },
+        "selection": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            12,
+            4,
+            4,
+            4,
+            30,
+            8,
+            0
+          ],
+          "cpp_new_calls": 203,
+          "cpp_new_bytes": 11408
+        },
+        "preparation_requirements": {
+          "v1_io_slots": [
+            24,
+            39032,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            2,
+            134,
+            0
+          ],
+          "metadata_slots": [
+            105,
+            46,
+            46,
+            40,
+            118,
+            65,
+            6
+          ],
+          "cpp_new_calls": 1295,
+          "cpp_new_bytes": 64066
+        },
+        "buffer_allocation": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 4360
+        },
+        "transfer": {
+          "v1_io_slots": [
+            6,
+            17416,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            192,
+            0
+          ],
+          "metadata_slots": [
+            44,
+            18,
+            18,
+            18,
+            16,
+            26,
+            0
+          ],
+          "cpp_new_calls": 578,
+          "cpp_new_bytes": 18658
+        }
+      }
+    },
+    "dataset-10k/candidate": {
+      "scope": "open_through_transfer",
+      "intercepted_read_calls": 713,
+      "intercepted_read_bytes": 16248848,
+      "intercepted_write_calls": 0,
+      "intercepted_write_bytes": 0,
+      "h5dread_calls": 342,
+      "h5dwrite_calls": 0,
+      "cpp_new_calls": 8787,
+      "cpp_new_bytes": 418656,
+      "phases": {
+        "open": {
+          "v1_io_slots": [
+            319,
+            1050544,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          "metadata_slots": [
+            176,
+            47,
+            47,
+            43,
+            347,
+            102,
+            4
+          ],
+          "cpp_new_calls": 2124,
+          "cpp_new_bytes": 117662
+        },
+        "selection": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            12,
+            4,
+            4,
+            4,
+            28,
+            8,
+            0
+          ],
+          "cpp_new_calls": 185,
+          "cpp_new_bytes": 11672
+        },
+        "preparation_requirements": {
+          "v1_io_slots": [
+            322,
+            10931400,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            146,
+            0
+          ],
+          "metadata_slots": [
+            273,
+            124,
+            124,
+            106,
+            412,
+            167,
+            18
+          ],
+          "cpp_new_calls": 3923,
+          "cpp_new_bytes": 193090
+        },
+        "buffer_allocation": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 664
+        },
+        "transfer": {
+          "v1_io_slots": [
+            72,
+            4266904,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            192,
+            0
+          ],
+          "metadata_slots": [
+            176,
+            72,
+            72,
+            72,
+            208,
+            104,
+            0
+          ],
+          "cpp_new_calls": 2552,
+          "cpp_new_bytes": 95568
+        }
+      }
+    },
+    "dataset-10k/baseline": {
+      "scope": "open_through_transfer",
+      "intercepted_read_calls": 718,
+      "intercepted_read_bytes": 16531840,
+      "intercepted_write_calls": 0,
+      "intercepted_write_bytes": 0,
+      "h5dread_calls": 349,
+      "h5dwrite_calls": 0,
+      "cpp_new_calls": 15364,
+      "cpp_new_bytes": 647986,
+      "phases": {
+        "open": {
+          "v1_io_slots": [
+            319,
+            1050544,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          "metadata_slots": [
+            224,
+            57,
+            57,
+            53,
+            449,
+            130,
+            4
+          ],
+          "cpp_new_calls": 2598,
+          "cpp_new_bytes": 131538
+        },
+        "selection": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            12,
+            4,
+            4,
+            4,
+            28,
+            8,
+            0
+          ],
+          "cpp_new_calls": 185,
+          "cpp_new_bytes": 11672
+        },
+        "preparation_requirements": {
+          "v1_io_slots": [
+            327,
+            11214392,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            153,
+            0
+          ],
+          "metadata_slots": [
+            790,
+            310,
+            310,
+            285,
+            1532,
+            505,
+            25
+          ],
+          "cpp_new_calls": 9786,
+          "cpp_new_bytes": 400448
+        },
+        "buffer_allocation": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "metadata_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 664
+        },
+        "transfer": {
+          "v1_io_slots": [
+            72,
+            4266904,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            192,
+            0
+          ],
+          "metadata_slots": [
+            192,
+            72,
+            72,
+            72,
+            272,
+            120,
+            0
+          ],
+          "cpp_new_calls": 2792,
+          "cpp_new_bytes": 103664
+        }
+      }
+    }
+  },
+  "caveats": [
+    "Python native X selection does not perform the same selected-axis validation as C++; compare boundaries with care.",
+    "Diagnostics count intercepted calls and bytes, not physical I/O; C++ new excludes other allocators. String read counts classify H5Dread memory types.",
+    "Normal caches; three fresh-process observations per geometry and version."
+  ],
+  "schema": "anndatapp.collection-preparation-fastpaths.v1",
+  "qualified_source_commit": "0c406e8a3c466fde383c8e3869d2b1ca5e9961be",
+  "baseline_commit": "a5213d22a6e8e67e4537afa2eedd1f76bbe2fc55",
+  "baseline_library_commit": "180c440ad4115306ede27bc2e86f927bee4acf94",
+  "candidate_source_inputs_sha256": "bf1548774ed9f22f5febe2009db49cc07f261e6048ea405733bb994bc9cb2955",
+  "validation": {
+    "debug": {
+      "passed": 38,
+      "run": 38,
+      "log": "debug-ctest-sealed.log"
+    },
+    "asan_ubsan": {
+      "passed": 7,
+      "run": 7,
+      "log": "sanitizers-ctest-sealed.log",
+      "ASAN_OPTIONS": "detect_leaks=0",
+      "UBSAN_OPTIONS": "halt_on_error=1"
+    },
+    "hdf5_only": {
+      "initial_passed": 6,
+      "initial_run": 6,
+      "final_focused_passed": 2,
+      "final_focused_run": 2,
+      "note": "bounded_index overlaps; seven distinct cases"
+    },
+    "zarr_only": {
+      "passed": 5,
+      "run": 5
+    },
+    "core_only": {
+      "passed": 22,
+      "run": 22
+    },
+    "mmap": "actual read-only H5MU dense and physical CSR mappings, retained lifetimes and rejected unsupported mappings passed"
+  },
+  "private_rebuild": {
+    "public_bmis_hashes_and_timestamps_unchanged": 15,
+    "consumer_objects_hashes_and_timestamps_unchanged": 2,
+    "initial_internal_bridge_declarations": "five added declaration lines; no public type changes or inline implementation"
+  },
+  "evidence_root": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-prep-fix-2026-11-16",
+  "release_published": false,
+  "python_validation_boundary": {
+    "untimed": true,
+    "results": [
+      {
+        "case": "manifest-obs-name",
+        "reader": "SnapATAC2 native read_dataset + X[rows,cols]",
+        "accepted_mismatched_selected_name": true,
+        "payload_golden": "pass"
+      },
+      {
+        "case": "component-var-name",
+        "reader": "SnapATAC2 native read_dataset + X[rows,cols]",
+        "accepted_mismatched_selected_name": true,
+        "payload_golden": "pass"
+      }
+    ],
+    "results_sha256": "3efa9f5d5703a1df33c0de90288c605428fa97f395dd17560cdf8911a709170c",
+    "source": "tools/format-family-screen/collection-fix/check_validation.py"
+  }
+}

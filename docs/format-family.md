@@ -2,7 +2,7 @@
 
 This guide describes the native C++ models and the selected file-version scope. It records current source support, not interoperability results. The original feature qualification is recorded in [format-family-validation.md](format-family-validation.md); the 2026-11-15 repairs and their final matrix are tracked separately in [format-family-repair-validation.md](format-family-repair-validation.md).
 
-The later prepared-collection and gathered-metadata changes, bounded pre-extension comparisons, Python screens and remaining raster selectivity concern are recorded in [format-family-io-validation.md](format-family-io-validation.md).
+The prepared-collection and gathered-metadata changes, bounded pre-extension comparisons, Python screens and initial raster selectivity finding are recorded in [format-family-io-validation.md](format-family-io-validation.md). Later corrections are qualified in [raster-selectivity-performance.md](raster-selectivity-performance.md) and [collection-preparation-fastpaths.md](collection-preparation-fastpaths.md).
 
 The C++ facade can be imported with either `import anndata;` or `import anndatapp;`. Both export the same types in namespace `anndatapp`. The package, CMake target, and repository remain named `anndatapp`. The format modules can also be imported directly: `anndatapp.mudata`, `anndatapp.treedata`, `anndatapp.dataset`, and `anndatapp.spatialdata`.
 
@@ -62,6 +62,8 @@ The existing `AnnDataSetView::requirements()` and `read_x_into(...)` methods rem
 A prepared plan retains the collection's backing sessions and selected descriptors, but it is not a coherent snapshot or a thread-safety mechanism. `AnnDataSet::close()` or a manifest structural edit invalidates it; `set_annotation()` also invalidates existing plans, even for an unrelated annotation. Linked components are read-only through the collection; synchronize writes through independent sessions or processes with preparation and transfer. No thread-safety or concurrent-writer consistency is promised.
 
 Opening reads the manifest references and opens every linked component, checking component presence, axis sizes, and consistent X presence without comparing all axis names. `validate()` explicitly compares complete observation and variable indexes; `prepare_x()` compares the selected axis names needed by that transfer, and label selection can read names. Creation requires matching component variable names and consistent X presence; observation data are concatenated in component order.
+
+Preparation reuses freshly checked metadata within the operation and compares bounded manifest observation-name batches against component segments. It retains one reference batch and one peer, with the existing short-prefix and tight-budget fallbacks; metadata is not cached across operations. Numerical reads and mmap/direct-pointer paths retain their existing contracts.
 
 `copy_manifest()` copies the manifest and rebases its component references so they continue to resolve to the existing target files. It does not copy or materialize component data. Relocate or copy data files separately when independent component storage is required.
 
