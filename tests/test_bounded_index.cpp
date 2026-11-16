@@ -1,4 +1,5 @@
 #include <hdf5.h>
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -6,6 +7,7 @@
 #include <vector>
 
 import anndatapp;
+import anndatapp.dataset;
 using namespace anndatapp;
 
 void require(bool ok,const char* text) { if (!ok) throw std::runtime_error(text); }
@@ -44,10 +46,54 @@ void replace_index(const std::string& path,const std::vector<std::string>& names
     }
     H5Dclose(data);H5Sclose(space);H5Tclose(type);H5Fclose(file);
 }
+void corrupt_var_index_version(const std::string& path) {
+    auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(file>=0,"open component index for corruption");
+    auto data=H5Dopen2(file,"/var/_index",H5P_DEFAULT);
+    require(data>=0 && H5Adelete(data,"encoding-version")>=0,"remove index version");
+    auto type=H5Tcopy(H5T_C_S1);auto space=H5Screate(H5S_SCALAR);
+    require(type>=0 && space>=0 && H5Tset_size(type,5)>=0,"create corrupt index version type");
+    auto attr=H5Acreate2(data,"encoding-version",type,space,H5P_DEFAULT,H5P_DEFAULT);
+    require(attr>=0 && H5Awrite(attr,type,"9.0.0")>=0,"write corrupt index version");
+    H5Aclose(attr);H5Sclose(space);H5Tclose(type);H5Dclose(data);
+    require(H5Fflush(file,H5F_SCOPE_GLOBAL)>=0,"flush corrupt index version");
+    H5Fclose(file);
+}
+void empty_dataset_invalid_peer(const std::filesystem::path& root) {
+    const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
+    auto dir=root/("empty-peer-"+std::to_string(stamp));
+    std::filesystem::create_directories(dir);
+    for (int i=0;i<2;++i) {
+        auto data=AnnData::empty(1,3);
+        data.set_obs(Table::with_index({i ? "cell-1" : "cell-0"}));
+        data.set_var(Table::with_index({"v0","v1","v2"}));
+        data.set_x(Array::zeros<float>({1,3}));
+        write_h5ad((dir/(i ? "dataset-right.h5ad" : "dataset-left.h5ad")).string(),data);
+    }
+    // Components are opened read-only by H5ADS; retain a writable HDF5 handle
+    // before opening the collection to emulate a separately changed component.
+    auto writable=H5Fopen((dir/"dataset-right.h5ad").c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(writable>=0,"open writable component before collection");
+    DatasetOptions options;options.backed.mode=AccessMode::read_write;
+    auto data=create_h5ads((dir/"empty-peer.h5ads").string(),
+        {{"left","dataset-left.h5ad"},{"right","dataset-right.h5ad"}},"sample",options);
+    auto selected=data.slice(indices{0,1},range{0,0});
+    corrupt_var_index_version((dir/"dataset-right.h5ad").string());
+    float sentinel=-1;
+    try {
+        selected.read_x_into(DenseBuffer::from(&sentinel,{2,0}));
+        throw std::runtime_error("empty selected variables accepted malformed component index");
+    } catch (const Error& e) {
+        require(e.code()==ErrorCode::unsupported_version,"collection lost malformed peer version error");
+    }
+    require(sentinel==-1,"empty selected variables changed output sentinel");
+    data.close();H5Fclose(writable);
+}
 int main(int argc,char** argv) {
     try {
         if (argc!=2) throw std::runtime_error("output directory required");
         std::filesystem::create_directories(argv[1]);
+        empty_dataset_invalid_peer(argv[1]);
         const auto path=(std::filesystem::path(argv[1])/"index.h5ad").string();
         auto a=AnnData::empty(128,0);
         std::vector<std::string> names;
@@ -73,15 +119,24 @@ int main(int argc,char** argv) {
         const auto component_right=(std::filesystem::path(argv[1])/"component-right.h5ad").string();
         auto component=AnnData::empty(0,names.size());component.set_var(Table::with_index(names));
         write_h5ad(component_left,component);write_h5ad(component_right,component);
-        BackedAnnData files[]{open_h5ad(component_left,options),open_h5ad(component_right,options)};
+        auto component_options=options;component_options.mode=AccessMode::read_write;
+        BackedAnnData files[]{open_h5ad(component_left,component_options),open_h5ad(component_right,component_options)};
         const std::size_t ids[]{1,0,1};
         const Selection columns=indices{127,0,93,0,1,93,126,64,63,64};
         detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,columns);
         detail::compare_backed_component_indexes(oracle.obs(),nullptr,0,nullptr,0,columns);
         detail::compare_backed_component_indexes(oracle.obs().select(range{0,0}),files,2,ids,3,range{0,0});
+        rejects([&] { detail::compare_backed_component_indexes(oracle.obs().select(range{0,0}),files,2,ids,3,indices{0}); });
         const std::size_t bad_id[]{2};
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,bad_id,1,columns); });
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,indices{127,0,93,0,2,93,126,64,63,64}); });
+        corrupt_var_index_version(component_right);
+        try {
+            detail::compare_backed_component_indexes(oracle.obs().select(range{0,0}),files,2,ids,3,range{0,0});
+            throw std::runtime_error("empty reference accepted a malformed peer index");
+        } catch (const Error& e) {
+            require(e.code()==ErrorCode::unsupported_version,"empty reference lost peer index version error");
+        }
         files[1].close();
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,columns); });
         auto wrong=g.obs().select(indices{127,0,93,0,2,93,126,64,63,64});

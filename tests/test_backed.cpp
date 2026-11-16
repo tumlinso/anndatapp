@@ -970,6 +970,49 @@ void h5_string_attr(hid_t object, const char* name, const char* value) {
     H5Tclose(type);
 }
 
+void test_selected_index_metadata(const std::filesystem::path& root) {
+    for (int kind = 0; kind < 4; ++kind) {
+        auto path = root / ("bad-selected-index-" + std::to_string(kind) + ".h5ad");
+        write_h5ad(path.string(), fixture());
+        auto store = open_h5ad(path.string(), BackedOptions{.mode = AccessMode::read_write});
+        auto empty = store.var().select(range{0, 0, 1});
+        require(empty.size() == 0, "valid empty selected index differs");
+        hid_t file = H5Fopen(path.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+        h5_check(file < 0 ? -1 : 0, "open selected index fixture");
+        hid_t index = H5Dopen2(file, "/var/gene_id", H5P_DEFAULT);
+        h5_check(index < 0 ? -1 : 0, "open selected index");
+        if (kind == 0) {
+            h5_check(H5Adelete(index, "encoding-type"), "delete index encoding");
+            h5_string_attr(index, "encoding-type", "array");
+        } else if (kind == 1) {
+            h5_check(H5Adelete(index, "encoding-version"), "delete index version");
+            h5_string_attr(index, "encoding-version", "9.0.0");
+        } else if (kind == 2) {
+            h5_check(H5Adelete(index, "encoding-type"), "delete index encoding");
+        } else {
+            H5Dclose(index);
+            h5_check(H5Ldelete(file, "/var/gene_id", H5P_DEFAULT), "unlink index");
+            hsize_t shape[]{1, 2};
+            hid_t space = H5Screate_simple(2, shape, nullptr);
+            h5_check(space < 0 ? -1 : 0, "create malformed index space");
+            hid_t type = H5Tcopy(H5T_C_S1);
+            h5_check(type < 0 ? -1 : 0, "copy malformed index type");
+            h5_check(H5Tset_size(type, 8), "set malformed index string width");
+            index = H5Dcreate2(file, "/var/gene_id", type, space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            h5_check(index < 0 ? -1 : 0, "create malformed index");
+            h5_string_attr(index, "encoding-type", "string-array");
+            h5_string_attr(index, "encoding-version", "0.2.0");
+            H5Tclose(type); H5Sclose(space);
+        }
+        h5_check(H5Fflush(file, H5F_SCOPE_GLOBAL), "flush malformed index");
+        const auto code = kind == 0 ? ErrorCode::unsupported_dtype :
+                          kind == 1 ? ErrorCode::unsupported_version :
+                          kind == 2 ? ErrorCode::unsupported_encoding : ErrorCode::shape_mismatch;
+        expect_error(code, [&] { (void)empty.size(); }, "empty selection failed to validate index metadata");
+        H5Dclose(index); H5Fclose(file); store.close();
+    }
+}
+
 void test_h5ad_bad_axes(const std::filesystem::path& root) {
     for (const auto* axis : {"obs", "var"}) {
         const auto path = root / (std::string("bad-") + axis + ".h5ad");
@@ -1137,6 +1180,7 @@ int main(int argc, char** argv) {
 
 #if defined(ANNDATAPP_TEST_HDF5) && defined(ANNDATAPP_HAS_HDF5) && ANNDATAPP_HAS_HDF5
         test_h5ad_bad_axes(root);
+        test_selected_index_metadata(root);
         test_bounded_fill_reads(root);
 #endif
         std::cout << "native backed H5AD/Zarr tests passed\n";

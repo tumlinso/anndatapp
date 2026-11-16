@@ -70,6 +70,7 @@ public:
         fork->options.scratch_bytes = scratch;
         return std::make_unique<RootBackend>(std::move(fork), root_, projection_, unversioned_);
     }
+    bool reuse_numeric_reads() const override { return base().reuse_numeric_reads(); }
     std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view p) override { return base().prepare_numeric(path(p)); }
     std::size_t retained_scratch_bytes() const override { return base().retained_scratch_bytes(); }
     std::size_t scratch_allocations() const override { return base().scratch_allocations(); }

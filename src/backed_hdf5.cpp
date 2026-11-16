@@ -921,6 +921,7 @@ public:
         options.validation = c_.validation; options.scratch_bytes = scratch;
         return std::make_unique<Hdf5Backend>(c_.filename, options);
     }
+    bool reuse_numeric_reads() const override { return true; }
     std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view path) override {
         ensure_open();
         return std::make_unique<Hdf5Numeric>(c_, std::string(path), numeric_dataset(path), writable_);

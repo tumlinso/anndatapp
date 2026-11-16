@@ -284,6 +284,60 @@ void check_deferred_validation(const fs::path& root, Layout layout) {
         }
     }
 }
+void check_multi_batch_indexes(const fs::path& root) {
+    auto dir = root / "multi-batch-indexes";
+    fs::create_directories(dir);
+    std::vector<std::string> names;
+    for (std::size_t j = 0; j < 128; ++j) names.push_back("variable-" + std::to_string(j));
+    for (std::size_t k = 0; k < 2; ++k) {
+        auto a = AnnData::empty(2, names.size());
+        a.set_obs(Table::with_index(k ? std::vector<std::string>{"c2", "c3"}
+                                     : std::vector<std::string>{"c0", "c1"}));
+        a.set_var(Table::with_index(names));
+        auto x = Array::empty<float>({2, names.size()});
+        auto* values = x.edit().dense<float>().data();
+        for (std::size_t i = 0; i < 2; ++i)
+            for (std::size_t j = 0; j < names.size(); ++j) values[i*names.size()+j] = float(k*1000+i*200+j);
+        a.set_x(std::move(x));
+        write_h5ad((dir / (k ? "second.h5ad" : "first.h5ad")).string(), a);
+    }
+    auto manifest = dir / "data.h5ads";
+    auto created = create_h5ads(manifest.string(), {{"first", "first.h5ad"}, {"second", "second.h5ad"}});
+    created.close();
+    DatasetOptions options; options.backed.scratch_bytes = 4096;
+    auto d = open_h5ads(manifest.string(), options);
+    auto reversed = d.slice(indices{0, 2}, range{std::nullopt, std::nullopt, -1}).prepare_x();
+    std::vector<float> values(2*names.size(), -1);
+    reversed.read_into(DenseBuffer::from(values.data(), {2, names.size()}));
+    for (std::size_t j = 0; j < names.size(); ++j)
+        require(values[j] == float(127-j) && values[names.size()+j] == float(1127-j),
+                "multi-batch reverse index selection differs");
+    auto duplicates = d.slice(indices{2, 0, 2}, indices{127, 0, 127}).prepare_x();
+    float repeated[9]{};
+    duplicates.read_into(DenseBuffer::from(repeated, {3, 3}));
+    const float expected[]{1127, 1000, 1127, 127, 0, 127, 1127, 1000, 1127};
+    require(std::equal(repeated, repeated+9, expected), "duplicate index selection differs");
+    auto empty = d.slice(indices{0, 2}, range{0, 0, 1}).prepare_x();
+    require(empty.requirements().shape == std::vector<std::size_t>({2, 0}), "empty variable selection differs");
+    d.close();
+
+    BackedOptions writable; writable.mode = AccessMode::read_write;
+    auto second = open_h5ad((dir / "second.h5ad").string(), writable);
+    names[100] = "changed-late-in-index";
+    auto edit = second.edit_structure();
+    edit.set_var(Table::with_index(names)); edit.apply(); second.close();
+    auto changed = open_h5ads(manifest.string(), options);
+    auto valid = changed.slice(indices{0, 2}, indices{0, 1}).prepare_x();
+    float small[4]{}; valid.read_into(DenseBuffer::from(small, {2, 2}));
+    require(small[0] == 0 && small[1] == 1 && small[2] == 1000 && small[3] == 1001,
+            "unaffected index selection failed");
+    auto invalid = changed.slice(indices{0, 2}, all);
+    std::fill(values.begin(), values.end(), -1);
+    expect_error(ErrorCode::shape_mismatch, [&] { invalid.read_x_into(DenseBuffer::from(values.data(), {2, names.size()})); });
+    require(std::all_of(values.begin(), values.end(), [](float x) { return x == -1; }),
+            "late multi-batch index mismatch modified output");
+}
+
 void check_many_components(const fs::path& root) {
     std::vector<DatasetComponent> components;
     for (std::size_t i = 0; i < 256; ++i)
@@ -358,6 +412,7 @@ int main(int argc, char** argv) {
             check_collection(root, Layout::csr);
             check_collection(root, Layout::csc);
             check_many_components(root);
+            check_multi_batch_indexes(root);
             check_batched_then_gathered(root);
             check_narrow_widths(root, Layout::csr);
             check_narrow_widths(root, Layout::csc);

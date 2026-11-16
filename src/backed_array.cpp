@@ -595,9 +595,21 @@ std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffe
     if (scratch / 2 < per) fail(ErrorCode::invalid_argument, n, "remaining scratch budget is smaller than one sparse transfer cell");
     auto chunk = (scratch / 2) / per;
     std::vector<std::byte> index_chunk, value_chunk;
+    // Retain only the HDF5 stream handles used by this scan. Other backends keep
+    // their ordinary read path, including missing-chunk codec semantics.
+    const bool reuse = backend.reuse_numeric_reads();
+    std::unique_ptr<backed_detail::NumericTransfer> offsets, indices, data;
+    std::vector<std::size_t> start, count;
+    auto read = [&](auto& transfer, const std::string& path, std::size_t pos, std::size_t len, void* dst) {
+        if (!reuse) { backend.read_numeric(path, {pos}, {len}, dst); return; }
+        if (!transfer) transfer = backend.prepare_numeric(path);
+        if (start.empty()) { start.resize(1); count.resize(1); }
+        start[0] = pos; count[0] = len;
+        transfer->read(start, count, dst);
+    };
     std::size_t emitted = 0;
     if (major.size == 0 && d.source_shape[major_axis] == 0 && n->session->options.validation == Validation::full) {
-        backend.read_numeric(offsets_path, {0}, {1}, pair.data());
+        read(offsets, offsets_path, 0, 1, pair.data());
         if (read_index(pair.data(), d.offsets.dtype, n) != 0 || nnz != 0)
             fail(ErrorCode::invalid_sparse_structure, n, "empty sparse source has invalid boundary offsets");
     }
@@ -606,7 +618,7 @@ std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffe
     if (out) write_index(static_cast<std::byte*>(out->offsets), out->offset_dtype, 0, n);
     for (std::size_t m = 0; m < major.size; ++m) {
         const auto source_major = major.at(m);
-        backend.read_numeric(offsets_path, {source_major}, {2}, pair.data());
+        read(offsets, offsets_path, source_major, 2, pair.data());
         const auto begin = read_index(pair.data(), d.offsets.dtype, n);
         const auto end = read_index(pair.data() + osz, d.offsets.dtype, n);
         if (end < begin || end > nnz) fail(ErrorCode::invalid_sparse_structure, n, "sparse offsets are nonmonotonic or exceed nnz");
@@ -616,10 +628,10 @@ std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffe
         for (auto pos = begin; pos < end;) {
             const auto len = std::min(chunk, end - pos);
             index_chunk.resize(multiply(len, isz, n));
-            backend.read_numeric(indices_path, {pos}, {len}, index_chunk.data());
+            read(indices, indices_path, pos, len, index_chunk.data());
             if (out) {
                 value_chunk.resize(multiply(len, vsz, n));
-                backend.read_numeric(data_path, {pos}, {len}, value_chunk.data());
+                read(data, data_path, pos, len, value_chunk.data());
             }
             visit_integer(d.indices.dtype, n, [&]<class I> { for (std::size_t j = 0; j < len; ++j) {
                 const auto source_minor = unpack_index<I>(index_chunk.data() + j * sizeof(I), n);

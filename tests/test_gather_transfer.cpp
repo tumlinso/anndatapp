@@ -269,6 +269,30 @@ void ordinary_chunks(const std::filesystem::path& root, ZarrFormat format, ZarrC
 }
 
 
+void sparse_missing_codec_fallback(const std::filesystem::path& root) {
+    auto d=AnnData::empty(2,2);auto x=Array::csr<float,std::int32_t,std::int64_t>(2,2,1);
+    auto v=x.edit().csr<float,std::int32_t,std::int64_t>();
+    v.values()[0]=5;v.unsafe_indices()[0]=0;
+    v.unsafe_offsets()[0]=0;v.unsafe_offsets()[1]=1;v.unsafe_offsets()[2]=1;
+    d.set_x(std::move(x));ZarrWriteOptions options;options.format=ZarrFormat::v3;
+    options.compression=ZarrCompression::none;write_zarr(root.string(),d,options);
+    auto metadata=load_json(root/"zarr.json");
+    for(const auto* name:{"X/indices","X/data"}) {
+        const auto path=root/name;auto m=load_json(path/"zarr.json");
+        m["codecs"].push_back(Json{{"name","unsupported-test-codec"},{"configuration",Json::object()}});
+        save_json(path/"zarr.json",m);
+        if(metadata.contains("consolidated_metadata"))metadata["consolidated_metadata"]["metadata"][name]=m;
+        std::filesystem::remove_all(path/"c");
+    }
+    save_json(root/"zarr.json",metadata);
+    auto backed=open_zarr(root.string());auto read=backed.x().prepare_read();
+    check(read.requirements().nnz==1,"missing sparse index chunk changed selected nnz");
+    float value=-1;std::int32_t index=-1;std::array<std::int64_t,3> offsets{-1,-1,-1};
+    read.read_into(SparseBuffer{&value,&index,offsets.data(),DType::float32,DType::int32,DType::int64,1,1,3});
+    check(value==0 && index==0 && offsets==std::array<std::int64_t,3>{0,1,1},
+          "missing sparse chunks must return fill before parsing unsupported codecs");
+}
+
 void tight_scratch_fallback(const std::filesystem::path& root) {
     auto d=AnnData::empty(2,4096);auto values=Array::empty<float>({2,4096});
     std::fill_n(values.edit().dense<float>().data(),8192,0.0f);d.set_x(std::move(values));
@@ -335,6 +359,7 @@ int main(int argc, char** argv) {
         gathered_x(f,d); higher_ranks_and_dtypes(f,d); sparse_huge_and_fill(d);
         d.close();writable_roundtrip(root);
         tight_scratch_fallback(root.parent_path()/(root.filename().string()+"-tight-scratch"));
+        sparse_missing_codec_fallback(root.parent_path()/(root.filename().string()+"-sparse-missing-codec"));
         ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v2-raw"),ZarrFormat::v2,ZarrCompression::none);
         ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v2-zstd-fortran"),ZarrFormat::v2,ZarrCompression::zstd,true,true);
         ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v3-raw-transpose"),ZarrFormat::v3,ZarrCompression::none,false,true);

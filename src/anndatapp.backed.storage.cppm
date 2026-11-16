@@ -88,6 +88,8 @@ public:
     virtual std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view path) {
         throw Error(ErrorCode::unsupported_layout, std::string(path), "backend cannot prepare numerical transfer");
     }
+    // Automatic scan-local reuse is opt-in; preparation may change fallback semantics.
+    virtual bool reuse_numeric_reads() const { return false; }
     virtual std::size_t retained_scratch_bytes() const { return 0; }
     virtual std::size_t scratch_allocations() const { return 0; }
     virtual NodeInfo inspect(std::string_view path) = 0;
@@ -244,6 +246,7 @@ struct Session {
 };
 std::string child(std::string_view parent, std::string_view name);
 std::string encoding(const NodeInfo&, std::string_view path);
+std::shared_ptr<detail::BackedNode> checked_table_index_node(const std::shared_ptr<detail::BackedNode>&);
 std::string string_attr(const NodeInfo&, std::string_view key, std::string_view path);
 std::vector<std::string> strings_attr(const NodeInfo&, std::string_view key, std::string_view path);
 std::vector<std::size_t> logical_shape(Session&, std::string_view path);
@@ -300,6 +303,7 @@ struct BackedAccess {
     static const std::shared_ptr<BackedNode>& get(const BackedColumn& v) { return v.node_; }
     static const std::shared_ptr<BackedNode>& get(const BackedTable& v) { return v.node_; }
     static const std::shared_ptr<BackedNode>& get(const BackedElement& v) { return v.node_; }
+    static const std::shared_ptr<BackedDataset>& get(const BackedAnnData& v) { return v.impl_; }
     static const std::shared_ptr<BackedDataset>& get(const BackedAnnDataView& v) { return v.impl_; }
 };
 struct BackedDataset {

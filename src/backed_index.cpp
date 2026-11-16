@@ -483,11 +483,9 @@ namespace {
 class IndexCursor {
 public:
     explicit IndexCursor(const BackedTable& table,std::size_t budget):budget_(budget){
-        const auto& t=detail::BackedAccess::get(table);check_node(t);
-        auto info=t->session->backend->inspect(t->path);
-        index_=node(t->session,child(t->path,string_attr(info,"_index",t->path)),t->axes);
-        if(index_->axes.size()!=1)fail(ErrorCode::shape_mismatch,t->path,"table index must be one-dimensional");
+        index_=checked_table_index_node(detail::BackedAccess::get(table));
     }
+    std::size_t size() const { return index_->axes[0].size; }
     const std::vector<std::string>& batch(std::size_t i, std::size_t maximum) {
         const auto& axis = index_->axes[0];
         if (i >= axis.size || !maximum) fail(ErrorCode::out_of_bounds,index_->path,"table row is out of bounds");
@@ -530,14 +528,18 @@ private:
 namespace {
 template<class Peer> void compare_index_batches(const BackedTable& left,std::size_t count,std::size_t budget,Peer peer) {
     const auto& a=detail::BackedAccess::get(left);
-    const auto size=left.size();
     IndexCursor first(left,budget);
+    const auto size=first.size();
+    // Empty reference axes still require every peer's metadata and length check.
+    if (!size) for (std::size_t k=0;k<count;++k) {
+        IndexCursor second(peer(k),budget);
+        if (second.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
+    }
     for (std::size_t i=0;i<size;) {
         const auto& values=first.batch(i,size-i);
         for (std::size_t k=0;k<count;++k) {
-            auto table=peer(k);
-            if (table.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
-            IndexCursor second(table,budget);
+            IndexCursor second(peer(k),budget);
+            if (second.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
             for (std::size_t j=0;j<values.size();) {
                 const auto& batch=second.batch(i+j,values.size()-j);
                 for (std::size_t p=0;p<batch.size();++p)
@@ -552,15 +554,16 @@ template<class Peer> void compare_index_batches(const BackedTable& left,std::siz
 void compare_table_indexes(const BackedTable& left,const BackedTable* others,std::size_t count) {
     if (!count) return;
     const auto& a=detail::BackedAccess::get(left);check_node(a);
-    const auto size=left.size();
     auto budget=a->session->options.scratch_bytes;
     for (std::size_t k=0;k<count;++k) {
-        if (others[k].size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
-        budget=std::min(budget,detail::BackedAccess::get(others[k])->session->options.scratch_bytes);
+        const auto& other=detail::BackedAccess::get(others[k]);check_node(other);
+        budget=std::min(budget,other->session->options.scratch_bytes);
     }
     budget/=2;
     if (count==1) {
         IndexCursor first(left,budget),second(others[0],budget);
+        const auto size=first.size();
+        if (second.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
         for (std::size_t i=0;i<size;++i)
             if (first.at(i)!=second.at(i)) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
         return;
@@ -578,15 +581,15 @@ void compare_component_indexes(const BackedTable& left,const BackedAnnData* file
     auto budget=a->session->options.scratch_bytes;
     for (std::size_t k=0;k<count;++k) {
         if (ids[k]>=file_count) fail(ErrorCode::out_of_bounds,a->path,"component index is out of bounds");
-        auto table=files[ids[k]].var().select(columns);
-        if (table.size()!=left.size()) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
-        budget=std::min(budget,detail::BackedAccess::get(table)->session->options.scratch_bytes);
+        (void)files[ids[k]].n_vars();
+        budget=std::min(budget,detail::BackedAccess::get(files[ids[k]])->session->options.scratch_bytes);
     }
     compare_index_batches(left,count,budget/2,[&](std::size_t k) { return files[ids[k]].var().select(columns); });
 }
 void compare_table_indexes(const BackedTable& left,const TableView& right){
-    if(left.size()!=right.size())fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
-    const auto& a=detail::BackedAccess::get(left);IndexCursor cursor(left,a->session->options.scratch_bytes);
+    const auto& a=detail::BackedAccess::get(left);check_node(a);
+    IndexCursor cursor(left,a->session->options.scratch_bytes);
+    if(cursor.size()!=right.size())fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
     for(std::size_t i=0;i<right.size();++i)if(cursor.at(i)!=right.name(i))fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
 }
 

@@ -322,8 +322,8 @@ std::string element_encoding(const std::shared_ptr<detail::BackedNode>& value) {
 
 std::string table_index_key(const std::shared_ptr<detail::BackedNode>& value,
                             const NodeInfo* known_info = nullptr) {
-    const auto info = known_info ? *known_info : inspect_node(value);
-    return string_attr(info, "_index", value->path);
+    if (known_info) return string_attr(*known_info, "_index", value->path);
+    return string_attr(inspect_node(value), "_index", value->path);
 }
 
 std::shared_ptr<detail::BackedNode> table_index_node(
@@ -559,6 +559,18 @@ Element read_element(const std::shared_ptr<detail::BackedNode>& value) {
 
 } // namespace
 
+std::shared_ptr<detail::BackedNode> checked_table_index_node(const std::shared_ptr<detail::BackedNode>& value) {
+    check_node(value);
+    auto index = table_index_node(value);
+    const auto info = inspect_node(index);
+    if (encoding(info, index->path) != "string-array")
+        codec_fail(ErrorCode::unsupported_dtype, index->path,
+                   "AnnData table indexes currently require string-array encoding");
+    if (info.shape.size() != 1)
+        codec_fail(ErrorCode::shape_mismatch, index->path, "table index must be one-dimensional");
+    return index;
+}
+
 } // namespace anndatapp::backed_detail
 
 namespace anndatapp {
@@ -776,13 +788,8 @@ BackedTable::BackedTable(std::shared_ptr<detail::BackedNode> node)
     : node_(std::move(node)) {}
 
 std::size_t BackedTable::size() const {
-    backed_detail::check_node(node_);
-    auto index = backed_detail::table_index_node(node_);
-    const auto code = backed_detail::element_encoding(index);
-    if (code != "string-array")
-        throw Error(ErrorCode::unsupported_dtype, index->path,
-                    "AnnData table indexes currently require string-array encoding");
-    return backed_detail::table_axis(node_, index).size;
+    auto index = backed_detail::checked_table_index_node(node_);
+    return index->axes[0].size;
 }
 
 std::string BackedTable::index_name() const {

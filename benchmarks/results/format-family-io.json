@@ -1604,5 +1604,465 @@
     "Five PyHDF diagnostics failed under the interposer; uninstrumented timing cases passed. No asserted cause for symbol-scope failure.",
     "Raster amplification and remaining collection validation/preparation cost are recorded follow-ups; no extended campaign run.",
     "Source staging budgets exclude fixed acquisition headers, allocator/control-block overhead, borrowed owners and caller buffers; not RSS limits."
-  ]
+  ],
+  "collection_preparation_followup": {
+    "schema": "anndatapp.collection-preparation-fix.v1",
+    "date": "2026-11-16",
+    "baseline_commit": "9505d1f94085c985210c8268eb4068aec889fd78",
+    "candidate": "Measured source snapshot identified by the recorded candidate-inputs.json and candidate.patch hashes; builds and measurements preceded the commit.",
+    "candidate_inputs_sha256": "47cb3bcbe31588288c93cd9f84394fc2d25d3dcb7a1c8a62036c483f82c64791",
+    "candidate_patch_sha256": "d90c6453504ab2b1922241ca3bb1bc00288c5dfe79a01e10b21ba83176e081d9",
+    "fixture": {
+      "path": "build/format-family-io/fixtures-family-v3/dataset.h5ads",
+      "components": 2,
+      "source_shape": [
+        256,
+        256
+      ],
+      "selected_rows_and_columns": "0,4,...252",
+      "output_shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "oracle": "All 512 values/indices and 65 offsets checked against independent formula."
+    },
+    "window_seconds": 5.202763427994796,
+    "process_records": 40,
+    "failures": 0,
+    "validation": {
+      "debug": {
+        "passed": 38,
+        "run": 38,
+        "note": "Full suite before test-only unique fixture-path adjustment; final bounded_index rerun 1/1."
+      },
+      "sanitizers_focused": {
+        "passed": 7,
+        "run": 7,
+        "ASAN_OPTIONS": "detect_leaks=0",
+        "UBSAN_OPTIONS": "halt_on_error=1"
+      },
+      "hdf5_only_focused": {
+        "passed": 6,
+        "run": 6
+      },
+      "zarr_only_focused": {
+        "passed": 4,
+        "run": 4
+      }
+    },
+    "private_rebuild": {
+      "public_bmis_unchanged": 15,
+      "consumer_objects_unchanged": 2,
+      "hashes_and_mtimes_match": true
+    },
+    "material_flags_10_percent_and_0_1_ms": [],
+    "limits": [
+      "Single small fixture; three fresh-process observations per timing mode, normal warmed caches, CPU0 and recorded thread limits. No larger-case or Python comparison.",
+      "Interception observes libc read-family calls and cumulative C++ new requests, not physical I/O, all allocators, live memory or peak RSS.",
+      "Phase clocks add overhead; baseline/candidate use matched HDF5-only diagnostic builds, distinct from Parquet-enabled shipping prefixes. Numeric-access excludes scan-local handle destruction, which remains inside sparse-sizing total.",
+      "Native CPU sample repeats 64 warm preparations with control/profiler overhead; disjoint sampled instruction-pointer self costs have unresolved leaves and do not isolate allocator wall time.",
+      "Private source-only review plus focused checks, not a full nine-configuration interoperability requalification."
+    ],
+    "timing_medians_ns": {
+      "baseline": {
+        "dataset-prepared": {
+          "open_ns": 6358053,
+          "selection_ns": 428414,
+          "preparation_requirements_ns": 14650704,
+          "buffer_allocation_ns": 2605,
+          "operation_ns": 8262055,
+          "end_to_end_ns": 30105297
+        },
+        "dataset-preflight": {
+          "open_ns": 6365235,
+          "selection_ns": 427321,
+          "preparation_requirements_ns": 14781482,
+          "buffer_allocation_ns": 2495,
+          "operation_ns": 361282,
+          "end_to_end_ns": 21928415
+        },
+        "dataset": {
+          "open_ns": 6336506,
+          "selection_ns": 412695,
+          "preparation_requirements_ns": 14674479,
+          "buffer_allocation_ns": 2473,
+          "operation_ns": 22284666,
+          "end_to_end_ns": 43710819
+        }
+      },
+      "candidate": {
+        "dataset-prepared": {
+          "open_ns": 6010812,
+          "selection_ns": 414319,
+          "preparation_requirements_ns": 7434643,
+          "buffer_allocation_ns": 2683,
+          "operation_ns": 1347553,
+          "end_to_end_ns": 15231825
+        },
+        "dataset-preflight": {
+          "open_ns": 6082368,
+          "selection_ns": 418508,
+          "preparation_requirements_ns": 7619215,
+          "buffer_allocation_ns": 2640,
+          "operation_ns": 378654,
+          "end_to_end_ns": 14450651
+        },
+        "dataset": {
+          "open_ns": 6171192,
+          "selection_ns": 413942,
+          "preparation_requirements_ns": 7668502,
+          "buffer_allocation_ns": 2601,
+          "operation_ns": 8846473,
+          "end_to_end_ns": 23201489
+        }
+      }
+    },
+    "phases": {
+      "baseline": {
+        "selected_axis_validation": {
+          "median_ns": 6793126,
+          "diagnostic": {
+            "ns": 6710385,
+            "read_calls": 7,
+            "read_bytes": 14102,
+            "h5dread": 7,
+            "new_calls": 2624,
+            "new_bytes": 114446,
+            "h5oopen": 211,
+            "h5dget_type": 90,
+            "h5dget_space": 90,
+            "h5dget_create_plist": 83,
+            "h5aread": 428,
+            "h5gopen2": 128
+          }
+        },
+        "sparse_sizing": {
+          "median_ns": 5287085,
+          "diagnostic": {
+            "ns": 5258138,
+            "read_calls": 128,
+            "read_bytes": 295168,
+            "h5dread": 128,
+            "new_calls": 1546,
+            "new_bytes": 24192,
+            "h5oopen": 256,
+            "h5dget_type": 128,
+            "h5dget_space": 128,
+            "h5dget_create_plist": 128,
+            "h5aread": 0,
+            "h5gopen2": 128
+          }
+        },
+        "other_preparation": {
+          "median_ns": 2687961,
+          "diagnostic": {
+            "ns": 2741649,
+            "read_calls": 14,
+            "read_bytes": 16304,
+            "h5dread": 0,
+            "new_calls": 1135,
+            "new_bytes": 38360,
+            "h5oopen": 110,
+            "h5dget_type": 34,
+            "h5dget_space": 34,
+            "h5dget_create_plist": 34,
+            "h5aread": 171,
+            "h5gopen2": 76
+          }
+        },
+        "external_requirements_copy": {
+          "new_calls": 1,
+          "new_bytes": 16
+        },
+        "output_allocation": {
+          "median_ns": 2347,
+          "diagnostic": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 3,
+            "cpp_new_bytes": 4360
+          }
+        },
+        "nested_numeric_access": {
+          "inclusive_median_ns": 5213921,
+          "exclusive_median_ns": 4566605,
+          "h5dread_median_ns": 647316,
+          "diagnostic": {
+            "ns": 5169714,
+            "read_calls": 128,
+            "read_bytes": 295168,
+            "h5dread": 128,
+            "new_calls": 1024,
+            "new_bytes": 12288,
+            "h5oopen": 256,
+            "h5dget_type": 128,
+            "h5dget_space": 128,
+            "h5dget_create_plist": 128,
+            "h5aread": 0,
+            "h5gopen2": 128
+          }
+        },
+        "prepare": {
+          "median_ns": 14731686,
+          "diagnostic": {
+            "v1_io_slots": [
+              149,
+              325574,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              3,
+              135,
+              0
+            ],
+            "cpp_new_calls": 5306,
+            "cpp_new_bytes": 177014
+          }
+        }
+      },
+      "candidate": {
+        "selected_axis_validation": {
+          "median_ns": 4304792,
+          "diagnostic": {
+            "ns": 4394226,
+            "read_calls": 7,
+            "read_bytes": 14102,
+            "h5dread": 7,
+            "new_calls": 1530,
+            "new_bytes": 72244,
+            "h5oopen": 126,
+            "h5dget_type": 56,
+            "h5dget_space": 56,
+            "h5dget_create_plist": 49,
+            "h5aread": 254,
+            "h5gopen2": 77
+          }
+        },
+        "sparse_sizing": {
+          "median_ns": 478844,
+          "diagnostic": {
+            "ns": 501359,
+            "read_calls": 4,
+            "read_bytes": 9224,
+            "h5dread": 128,
+            "new_calls": 314,
+            "new_bytes": 11996,
+            "h5oopen": 8,
+            "h5dget_type": 4,
+            "h5dget_space": 4,
+            "h5dget_create_plist": 4,
+            "h5aread": 0,
+            "h5gopen2": 4
+          }
+        },
+        "other_preparation": {
+          "median_ns": 2709196,
+          "diagnostic": {
+            "ns": 2699643,
+            "read_calls": 14,
+            "read_bytes": 16304,
+            "h5dread": 0,
+            "new_calls": 1135,
+            "new_bytes": 38360,
+            "h5oopen": 110,
+            "h5dget_type": 34,
+            "h5dget_space": 34,
+            "h5dget_create_plist": 34,
+            "h5aread": 171,
+            "h5gopen2": 76
+          }
+        },
+        "external_requirements_copy": {
+          "new_calls": 1,
+          "new_bytes": 16
+        },
+        "output_allocation": {
+          "median_ns": 2298,
+          "diagnostic": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 3,
+            "cpp_new_bytes": 4360
+          }
+        },
+        "nested_numeric_access": {
+          "inclusive_median_ns": 414685,
+          "exclusive_median_ns": 226223,
+          "h5dread_median_ns": 195199,
+          "diagnostic": {
+            "ns": 439297,
+            "read_calls": 4,
+            "read_bytes": 9224,
+            "h5dread": 128,
+            "new_calls": 44,
+            "new_bytes": 2108,
+            "h5oopen": 8,
+            "h5dget_type": 4,
+            "h5dget_space": 4,
+            "h5dget_create_plist": 4,
+            "h5aread": 0,
+            "h5gopen2": 4
+          }
+        },
+        "prepare": {
+          "median_ns": 7452621,
+          "diagnostic": {
+            "v1_io_slots": [
+              25,
+              39630,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              3,
+              135,
+              0
+            ],
+            "cpp_new_calls": 2980,
+            "cpp_new_bytes": 122616
+          }
+        }
+      }
+    },
+    "hook_calibration": {
+      "baseline": {
+        "disabled_hooks_median_ns": 14363131,
+        "active_hooks_median_ns": 14731686,
+        "active_vs_disabled_percent": 2.565979520760475
+      },
+      "candidate": {
+        "disabled_hooks_median_ns": 7615191,
+        "active_hooks_median_ns": 7452621,
+        "active_vs_disabled_percent": -2.1348118517316217
+      }
+    },
+    "native_cpu_sampling": {
+      "baseline": {
+        "samples": 935,
+        "period": 935935935,
+        "groups": {
+          "libc_allocator_self": {
+            "samples": 31,
+            "period": 31031031,
+            "percent": 3.3155080213903743
+          },
+          "cpp_new_delete_self": {
+            "samples": 2,
+            "period": 2002002,
+            "percent": 0.21390374331550802
+          },
+          "hdf_memory_management_self": {
+            "samples": 74,
+            "period": 74074074,
+            "percent": 7.9144385026737964
+          },
+          "unresolved_leaf": {
+            "samples": 154,
+            "period": 154154154,
+            "percent": 16.470588235294116
+          }
+        },
+        "sampled_open_h5ads_frames": 0,
+        "sampled_read_into_frames": 0,
+        "lost_samples_header": [
+          "# Total Lost Samples: 0"
+        ]
+      },
+      "candidate": {
+        "samples": 538,
+        "period": 538538538,
+        "groups": {
+          "libc_allocator_self": {
+            "samples": 20,
+            "period": 20020020,
+            "percent": 3.717472118959108
+          },
+          "cpp_new_delete_self": {
+            "samples": 3,
+            "period": 3003003,
+            "percent": 0.5576208178438662
+          },
+          "hdf_memory_management_self": {
+            "samples": 35,
+            "period": 35035035,
+            "percent": 6.5055762081784385
+          },
+          "unresolved_leaf": {
+            "samples": 93,
+            "period": 93093093,
+            "percent": 17.286245353159853
+          }
+        },
+        "sampled_open_h5ads_frames": 0,
+        "sampled_read_into_frames": 0,
+        "lost_samples_header": [
+          "# Total Lost Samples: 0"
+        ]
+      }
+    },
+    "raw_receipts": {
+      "measurement-plan.json": "d02358bcdff5e91a6f834f13d2e1664c276b976dd5d7586313e920139e145fb3",
+      "measurement-results.jsonl": "db3344a19f5913211753d29ba392794ce0cdc80f37b6a187c2f106f03d4f07a2",
+      "candidate-inputs.json": "47cb3bcbe31588288c93cd9f84394fc2d25d3dcb7a1c8a62036c483f82c64791",
+      "candidate.patch": "d90c6453504ab2b1922241ca3bb1bc00288c5dfe79a01e10b21ba83176e081d9",
+      "baseline-source.json": "58525ba8fc20842ea9796942a5727502b024e6df44c0fdb707500a4a5084ddb3",
+      "shipping-artifact-identities.json": "28fcbb9321e856d2fc53a33ee88f90ada6af07c4db93da6710869e5960aea53b",
+      "allocation-sampling-summary.json": "9fca98285c32b3052880e0bf43e47a3734c09e8cb0127ca3d8010be917391e41",
+      "public-artifacts-before.json": "230951512893e7be642ac76267364032e76d6441bceba629565d8c3faaf1adfb",
+      "public-artifacts-after.json": "230951512893e7be642ac76267364032e76d6441bceba629565d8c3faaf1adfb",
+      "debug-required.json": "51916e1bbad39406ab6ab6a2bdcdba27ae1423e6c876812edf3537cc22c95a52",
+      "config-focused.json": "26e6816f5ce619410bf3810d10fdf2b84aa2f43101dca4f939747c453eabb702",
+      "sanitizers-focused.json": "c8ffcde8952af6019bf2d26706b6c360232b4ecfde6d41234cd85b38f3d4e5c3",
+      "debug-bounded-index-final.json": "a7cd7e03b5ac17f036f78fc04812162d2675ddcb3eea28444487eb6be00fbafb"
+    },
+    "evidence_root": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-preparation-2026-11-16"
+  }
 }
