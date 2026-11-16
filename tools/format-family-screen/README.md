@@ -35,3 +35,36 @@ python3 tools/format-family-screen/run.py \
 ```
 
 The runner enforces 30 seconds across all process launches, including setup and timeout time, with a default 3-second cap per case and one sample per case; `--samples` permits at most three if a future separately authorized window is justified. It prioritizes 100k, starts alternate pairs with opposite versions, then tries 10k. A slow setup may prevent a case from producing a sample; the explicit timeouts and partial JSONL are evidence of incomplete coverage, not throughput. Compare checksums, shape and correctness before latency; inspect the partial result for completed pairs and stop for interpretation.
+
+## Raster selectivity diagnostics
+
+The small family fixture also has a direct rectangle control.
+
+~~~sh
+screen_build=build/raster-selectivity-2026-11-16/probe-candidate-build
+arrow="$PWD/build/reference/current/lib/python3.12/site-packages/pyarrow"
+cmake -S tools/format-family-screen -B "$screen_build" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++-18 \
+  -DANNDATAPP_ARROW_ROOT="$arrow" \
+  -DCMAKE_PREFIX_PATH="$PWD/build/raster-selectivity-2026-11-16/candidate-prefix"
+cmake --build "$screen_build" --target family-screen -j2
+~~~
+
+ Build the raster interposer once, after the v1 observers and the family-screen consumer are ready:
+
+~~~sh
+mkdir -p build/raster-selectivity-2026-11-16
+cc -shared -fPIC -O2 tools/format-family-screen/raster_observer.c -o build/raster-selectivity-2026-11-16/libraster_observer.so -ldl -lzstd
+~~~
+
+After a separate diagnostic window is authorized, invoke each case in its own process:
+
+~~~sh
+fixture=build/format-family-io/fixtures-family-v3/spatialdata.zarr
+screen=build/raster-selectivity-2026-11-16/probe-candidate-build/family-screen
+preload="$PWD/build/raster-selectivity-2026-11-16/libraster_observer.so:$PWD/build/format-family-io/screen/libv1_io.so:$PWD/build/format-family-io/screen/libv1_alloc.so"
+LD_PRELOAD="$preload" "$screen" spatialdata-raster "$fixture" --diagnostic
+LD_PRELOAD="$preload" "$screen" spatialdata-raster-aligned "$fixture" --diagnostic
+~~~
+
+The original raster case keeps its decimated selection: all channels, rows 16:80 by 2, columns 32:96 by 2. The aligned control requests all channels, rows 16:48 by 1, columns 32:64 by 1. Both write 1×32×32 uint16 outputs and check each value against the independent source-coordinate formula. The aligned case reports open, selection, allocation, and transfer counters separately. The interposer emits one stderr record per observed phase, in the same order as the JSON phase objects. Its records include the 16 v1 I/O slots, per-fd reads for the exact image chunk and level metadata paths, and Zstd stream calls, input/output bytes, and frame ends. These are intercepted-call diagnostics, not physical disk traffic; never use instrumented durations as timing evidence. The original case retains one open-through-transfer diagnostic scope.

@@ -28,6 +28,7 @@ std::vector<std::ptrdiff_t> positions() {
     for (int i=0; i<256; i+=4) out.push_back(i);
     return out;
 }
+struct Observation { std::uint64_t io[16]{}, alloc[2]{}; };
 struct Observer {
     using Begin=void(*)(); using End=void(*)(std::uint64_t*);
     Begin io_begin=nullptr, alloc_begin=nullptr; End io_end=nullptr, alloc_end=nullptr;
@@ -42,15 +43,56 @@ struct Observer {
     }
     void start() { if (enabled) { io_begin(); alloc_begin(); } }
     void stop() { if (enabled) { alloc_end(alloc); io_end(io); } }
+    Observation stop_phase() {
+        Observation out{};
+        if (enabled) { alloc_end(out.alloc); io_end(out.io); }
+        return out;
+    }
 };
 Observer* observer=nullptr;
+void add(Observation& to,const Observation& from) {
+    for (int i=0;i<16;++i) to.io[i]+=from.io[i];
+    for (int i=0;i<2;++i) to.alloc[i]+=from.alloc[i];
+}
+void print_observation(const Observation& x) {
+    std::cout << "{\"v1_io_slots\":[";
+    for (int i=0;i<16;++i) std::cout << (i ? "," : "") << x.io[i];
+    std::cout << "],\"cpp_new_calls\":" << x.alloc[0] << ",\"cpp_new_bytes\":" << x.alloc[1] << "}";
+}
+void print_diagnostics(std::string_view scope,const Observation& total,
+                       const Observation& open,const Observation& selection,
+                       const Observation& preparation,const Observation& allocation,
+                       const Observation& transfer,std::string_view final_phase="transfer",
+                       const Observation& preflight={},bool include_preparation=true) {
+    std::cout << ",\"diagnostic\":{\"scope\":\"" << scope
+        << "\",\"intercepted_read_calls\":" << total.io[0]
+        << ",\"intercepted_read_bytes\":" << total.io[1]
+        << ",\"intercepted_write_calls\":" << total.io[2]
+        << ",\"intercepted_write_bytes\":" << total.io[3]
+        << ",\"h5dread_calls\":" << total.io[14]
+        << ",\"h5dwrite_calls\":" << total.io[15]
+        << ",\"cpp_new_calls\":" << total.alloc[0]
+        << ",\"cpp_new_bytes\":" << total.alloc[1]
+        << ",\"v1_io_slots\":[";
+    for (int i=0;i<16;++i) std::cout << (i ? "," : "") << total.io[i];
+    std::cout << "],\"phases\":{\"open\":"; print_observation(open);
+    std::cout << ",\"selection\":"; print_observation(selection);
+    if (include_preparation) { std::cout << ",\"preparation_requirements\":"; print_observation(preparation); }
+    std::cout << ",\"buffer_allocation\":"; print_observation(allocation);
+    if (final_phase=="preflight") {
+        std::cout << ",\"preflight\":"; print_observation(preflight);
+    } else {
+        std::cout << ",\"transfer\":"; print_observation(transfer);
+    }
+    std::cout << "}}";
+}
 std::size_t words(std::size_t count, std::size_t width) { return (count*width+7)/8; }
 struct Buffers {
     std::vector<std::uint64_t> values, indices, offsets;
     SparseBuffer dst;
-    explicit Buffers(const ReadRequirements& r)
-        : values(words(r.nnz,dtype_size(r.dtype))), indices(words(r.nnz,dtype_size(r.index_dtype))),
-          offsets(words(r.shape.at(0)+1,dtype_size(r.offset_dtype))),
+    explicit Buffers(const ReadRequirements& r,std::uint64_t fill=0)
+        : values(words(r.nnz,dtype_size(r.dtype)),fill), indices(words(r.nnz,dtype_size(r.index_dtype)),fill),
+          offsets(words(r.shape.at(0)+1,dtype_size(r.offset_dtype)),fill),
           dst{values.data(),indices.data(),offsets.data(),r.dtype,r.index_dtype,r.offset_dtype,
               r.nnz,r.nnz,r.shape.at(0)+1} {}
 };
@@ -66,9 +108,12 @@ std::uint64_t integer(const std::vector<std::uint64_t>& b, DType type, std::size
     default: throw std::runtime_error("unexpected sparse integer dtype");
     }
 }
-void verify(const Buffers& b,const ReadRequirements& r) {
+void verify_requirements(const ReadRequirements& r) {
     require(r.layout==Layout::csr && r.dtype==DType::float32,"expected float32 CSR");
     require(r.shape==std::vector<std::size_t>{64,64} && r.nnz==512,"incorrect shape or nnz");
+}
+void verify(const Buffers& b,const ReadRequirements& r) {
+    verify_requirements(r);
     for(std::size_t i=0;i<64;++i) {
         require(integer(b.offsets,r.offset_dtype,i)==8*i,"incorrect row offset");
         for(std::size_t k=0;k<8;++k) {
@@ -85,6 +130,45 @@ const char* integer_name(DType t) {
     case DType::int64: return "int64"; case DType::uint64: return "uint64";
     default: return "other";
     }
+}
+struct DatasetPhases {
+    Observation open{}, selection{}, preparation{}, allocation{}, transfer{}, preflight{};
+};
+Observation dataset_total(const DatasetPhases& p,bool preflight) {
+    Observation total{};
+    add(total,p.open); add(total,p.selection); add(total,p.preparation); add(total,p.allocation);
+    add(total,preflight ? p.preflight : p.transfer);
+    return total;
+}
+void report_dataset(std::string_view name,const ReadRequirements& req,Time start,Time opened,
+                    Time selected,Time prepared,Time allocated,Time finished,
+                    const DatasetPhases& phases,bool explicit_preparation,bool preflight_only) {
+    const auto total=dataset_total(phases,preflight_only);
+    std::cout << "{\"case\":\"" << name << "\",\"api\":\""
+        << (preflight_only ? "standalone_preflight" : explicit_preparation ? "retained_prepare_x" : "convenience_requirements_and_read_x_into")
+        << "\",\"selector\":\"rows_and_columns_0_4_252\",\"shape\":[64,64],\"nnz\":512,\"value_dtype\":\"float32\","
+        << "\"canonical_index_dtype\":\"uint32\",\"canonical_offset_dtype\":\"uint64\",\"actual_index_dtype\":\"" << integer_name(req.index_dtype)
+        << "\",\"actual_offset_dtype\":\"" << integer_name(req.offset_dtype) << "\",";
+    if (preflight_only) {
+        std::cout << "\"golden\":\"not-applicable\",\"requirements_golden\":\"pass\",\"output\":\"sparse_caller_buffer_preflight_only\",";
+    } else {
+        std::cout << "\"sha256\":\"a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15\","
+            << "\"hash_source\":\"formula_after_cellwise_verification\",\"golden\":\"pass\",\"output\":\"eager_csr_caller_buffer\",";
+    }
+    std::cout << "\"open_ns\":" << ns(start,opened)
+        << ",\"selection_ns\":" << ns(opened,selected)
+        << ",\"preparation_requirements_ns\":" << ns(selected,prepared)
+        << ",\"buffer_allocation_ns\":" << ns(prepared,allocated)
+        << ",\"prepare_and_allocate_ns\":" << ns(opened,allocated)
+        << ",\"operation_ns\":" << ns(allocated,finished);
+    if (preflight_only) std::cout << ",\"preflight_ns\":" << ns(allocated,finished);
+    else std::cout << ",\"transfer_ns\":" << ns(allocated,finished);
+    std::cout << ",\"end_to_end_ns\":" << ns(start,finished);
+    if (observer->enabled)
+        print_diagnostics(preflight_only ? "open_through_preflight" : "open_through_transfer",total,
+            phases.open,phases.selection,phases.preparation,phases.allocation,phases.transfer,
+            preflight_only ? "preflight" : "transfer",phases.preflight);
+    std::cout << "}\n";
 }
 void report(std::string_view family, const ReadRequirements& req, Time start, Time opened, Time ready, Time finished) {
     // Hash is the independently computed formula hash, emitted only after every cell,
@@ -104,6 +188,16 @@ void report(std::string_view family, const ReadRequirements& req, Time start, Ti
         << ",\"cpp_new_bytes\":" << observer->alloc[1] << "}";
     std::cout << "}\n";
 }
+BackedArray raster_window(const BackedSpatialData& data,std::ptrdiff_t y0,std::ptrdiff_t y1,std::ptrdiff_t ys,
+                          std::ptrdiff_t x0,std::ptrdiff_t x1,std::ptrdiff_t xs) {
+    return data.raster("image").select({all,range{y0,y1,ys},range{x0,x1,xs}});
+}
+void verify_raster(const std::vector<std::uint16_t>& values,std::size_t y0,std::size_t ys,
+                   std::size_t x0,std::size_t xs) {
+    require(values.size()==1024,"incorrect raster output size");
+    for(std::size_t y=0;y<32;++y) for(std::size_t x=0;x<32;++x)
+        require(values[y*32+x]==std::uint16_t(256*(y0+ys*y)+x0+xs*x),"incorrect raster value");
+}
 template<class Factory> void read_array(std::string_view name, Time start, Time opened, Factory&& source) {
     auto pos=positions();
     auto array=source(pos);
@@ -120,7 +214,7 @@ template<class Factory> void read_array(std::string_view name, Time start, Time 
 }
 int main(int argc,char** argv) {
     try {
-        require(argc==3 || (argc==4 && std::string_view(argv[3])=="--diagnostic"),"usage: family-screen <anndata|mudata|treedata|dataset|spatialdata|mudata-map|treedata-tree|spatialdata-raster|spatialdata-points> <path> [--diagnostic]");
+        require(argc==3 || (argc==4 && std::string_view(argv[3])=="--diagnostic"),"usage: family-screen <anndata|mudata|treedata|dataset|dataset-prepared|dataset-preflight|spatialdata|mudata-map|treedata-tree|spatialdata-raster|spatialdata-raster-aligned|spatialdata-points> <path> [--diagnostic]");
         Observer metrics(argc==4); observer=&metrics; metrics.start();
         const std::string_view name(argv[1]);
         const auto start=Clock::now();
@@ -170,17 +264,34 @@ int main(int argc,char** argv) {
             std::cout << "}\n";
         } else if(name=="spatialdata-raster") {
             auto data=open_spatialdata(argv[2]); const auto opened=Clock::now();
-            auto array=data.raster("image").select({all,range{16,80,2},range{32,96,2}});
+            auto array=raster_window(data,16,80,2,32,96,2); const auto selected=Clock::now();
             std::vector<std::uint16_t> values(1024); const auto ready=Clock::now();
             array.read_into(DenseBuffer::from(values.data(),{1,32,32})); const auto finished=Clock::now();
             observer->stop();
-            for(std::size_t y=0;y<32;++y) for(std::size_t x=0;x<32;++x)
-                require(values[y*32+x]==256*(16+2*y)+32+2*x,"incorrect raster value");
+            verify_raster(values,16,2,32,2);
             std::cout << "{\"case\":\"spatialdata-raster\",\"golden\":\"pass\",\"output\":\"eager_dense_caller_buffer\",\"shape\":[1,32,32],\"open_ns\":" << ns(start,opened)
+                << ",\"selection_ns\":" << ns(opened,selected) << ",\"buffer_allocation_ns\":" << ns(selected,ready)
                 << ",\"prepare_and_allocate_ns\":" << ns(opened,ready) << ",\"operation_ns\":" << ns(ready,finished)
                 << ",\"end_to_end_ns\":" << ns(start,finished);
             if(observer->enabled) std::cout << ",\"diagnostic\":{\"scope\":\"open_through_transfer\",\"intercepted_read_calls\":" << observer->io[0]
                 << ",\"intercepted_read_bytes\":" << observer->io[1] << ",\"cpp_new_calls\":" << observer->alloc[0] << ",\"cpp_new_bytes\":" << observer->alloc[1] << "}";
+            std::cout << "}\n";
+        } else if(name=="spatialdata-raster-aligned") {
+            DatasetPhases phases;
+            auto data=open_spatialdata(argv[2]); const auto opened=Clock::now(); phases.open=observer->stop_phase();
+            observer->start();
+            auto array=raster_window(data,16,48,1,32,64,1); const auto selected=Clock::now(); phases.selection=observer->stop_phase();
+            observer->start();
+            std::vector<std::uint16_t> values(1024); const auto ready=Clock::now(); phases.allocation=observer->stop_phase();
+            observer->start();
+            array.read_into(DenseBuffer::from(values.data(),{1,32,32})); const auto finished=Clock::now(); phases.transfer=observer->stop_phase();
+            verify_raster(values,16,1,32,1);
+            auto total=dataset_total(phases,false);
+            std::cout << "{\"case\":\"spatialdata-raster-aligned\",\"golden\":\"pass\",\"output\":\"eager_dense_caller_buffer\",\"shape\":[1,32,32],\"selector\":\"channels_all_rows_16_47_cols_32_63\",\"open_ns\":" << ns(start,opened)
+                << ",\"selection_ns\":" << ns(opened,selected) << ",\"buffer_allocation_ns\":" << ns(selected,ready)
+                << ",\"prepare_and_allocate_ns\":" << ns(opened,ready) << ",\"operation_ns\":" << ns(ready,finished)
+                << ",\"end_to_end_ns\":" << ns(start,finished);
+            if(observer->enabled) print_diagnostics("open_through_transfer",total,phases.open,phases.selection,{},phases.allocation,phases.transfer,"transfer",{},false);
             std::cout << "}\n";
         } else if(name=="spatialdata-points") {
             auto data=open_spatialdata(argv[2]); const auto opened=Clock::now();
@@ -215,12 +326,41 @@ int main(int argc,char** argv) {
             auto data=open_spatialdata(argv[2]); const auto opened=Clock::now();
             read_array(name,start,opened,[&](const auto& p){return data.table("table").slice(indices(p),indices(p)).x();});
         } else if(name=="dataset") {
-            auto data=open_h5ads(argv[2]); const auto opened=Clock::now();
-            auto p=positions(); auto view=data.slice(indices(p),indices(p));
-            auto req=view.requirements(); Buffers b(req); const auto ready=Clock::now();
-            view.read_x_into(b.dst); const auto finished=Clock::now();
-            observer->stop();
-            verify(b,req); report(name,req,start,opened,ready,finished);
+            DatasetPhases phases;
+            auto data=open_h5ads(argv[2]); const auto opened=Clock::now(); phases.open=observer->stop_phase();
+            observer->start();
+            auto p=positions(); auto view=data.slice(indices(p),indices(p)); const auto selected=Clock::now();
+            phases.selection=observer->stop_phase(); observer->start();
+            auto req=view.requirements(); const auto prepared=Clock::now(); phases.preparation=observer->stop_phase();
+            observer->start();
+            Buffers b(req); const auto allocated=Clock::now(); phases.allocation=observer->stop_phase();
+            observer->start();
+            view.read_x_into(b.dst); const auto finished=Clock::now(); phases.transfer=observer->stop_phase();
+            verify(b,req);
+            report_dataset(name,req,start,opened,selected,prepared,allocated,finished,phases,false,false);
+        } else if(name=="dataset-prepared" || name=="dataset-preflight") {
+            const bool preflight_only=name=="dataset-preflight";
+            DatasetPhases phases;
+            auto data=open_h5ads(argv[2]); const auto opened=Clock::now(); phases.open=observer->stop_phase();
+            observer->start();
+            auto p=positions(); auto view=data.slice(indices(p),indices(p)); const auto selected=Clock::now();
+            phases.selection=observer->stop_phase(); observer->start();
+            auto prepared=view.prepare_x(); auto req=prepared.requirements(); const auto preparation_done=Clock::now();
+            phases.preparation=observer->stop_phase(); observer->start();
+            constexpr std::uint64_t sentinel=0x9e3779b97f4a7c15ULL;
+            Buffers b(req,preflight_only ? sentinel : 0); const auto allocated=Clock::now();
+            phases.allocation=observer->stop_phase(); observer->start();
+            if(preflight_only) {
+                prepared.preflight(b.dst); const auto finished=Clock::now(); phases.preflight=observer->stop_phase();
+                verify_requirements(req);
+                const auto unchanged=[&](const auto& v){ return std::all_of(v.begin(),v.end(),[sentinel](auto x){return x==sentinel;}); };
+                require(unchanged(b.values) && unchanged(b.indices) && unchanged(b.offsets),"preflight modified destination");
+                report_dataset(name,req,start,opened,selected,preparation_done,allocated,finished,phases,true,true);
+            } else {
+                prepared.read_into(b.dst); const auto finished=Clock::now(); phases.transfer=observer->stop_phase();
+                verify(b,req);
+                report_dataset(name,req,start,opened,selected,preparation_done,allocated,finished,phases,true,false);
+            }
         } else throw std::runtime_error("unknown case");
     } catch(const std::exception& e) { std::cerr << "family-screen: " << e.what() << '\n'; return 1; }
 }

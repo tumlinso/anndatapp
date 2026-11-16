@@ -71,3 +71,37 @@ for mode in timing diagnostic; do
 After the root grants a quiet timing window for the format, run e.g. `python3 tools/format-family-screen/window.py --plan build/format-family-io/screen/family-plans/mudata-timing-plan.json --output build/format-family-io/screen/mudata-timing.jsonl`. Each format has a separate 30-second window. Diagnostics use a separate approved window and `*-diagnostic-plan.json`; no diagnostic runtime is a timing sample. Plan generation validates every fixture file against its inventory. All variants must return the same explicitly requested result and independently pass their golden check before timing comparisons. Compare end-to-end requested outputs, not separate phase ratios, when a Python reader eagerly loads data that a backed C++ path acquires lazily; disclose those extra operations. Python import time is reported separately but its process startup still consumes the window. The common matrix and additional domain cases are separate, not aggregate claims about whole formats.
 
 Python timing and diagnostic plans set `ANNDATAPP_INTEROP_ZARR_WAKEUP=0` and use the ordinary event loop. Root runs the bounded window outside the syscall-restricted sandbox. The `=1` test-only policy is used only for fixture generation and readback. If a normal-event-loop process stalls, retain its timeout; do not automatically rerun with another policy.
+
+## Small common-matrix cases
+
+Use the existing small fixture and installed candidate family-screen binary:
+
+~~~sh
+screen_build=build/raster-selectivity-2026-11-16/probe-candidate-build
+arrow="$PWD/build/reference/current/lib/python3.12/site-packages/pyarrow"
+cmake -S tools/format-family-screen -B "$screen_build" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++-18 \
+  -DANNDATAPP_ARROW_ROOT="$arrow" \
+  -DCMAKE_PREFIX_PATH="$PWD/build/raster-selectivity-2026-11-16/candidate-prefix"
+cmake --build "$screen_build" --target family-screen -j2
+~~~
+
+
+
+~~~sh
+fixture=build/format-family-io/fixtures-family-v3/dataset.h5ads
+screen=build/raster-selectivity-2026-11-16/probe-candidate-build/family-screen
+"$screen" dataset "$fixture"
+"$screen" dataset-prepared "$fixture"
+"$screen" dataset-preflight "$fixture"
+~~~
+
+Each command is a separate process. Run the first two as the compared end-to-end paths; run dataset-preflight as its own operation and keep it out of that comparison. Do not run any case until the root authorizes the relevant timing or diagnostic window. For diagnostics, inject the existing v1 observers and add the --diagnostic argument to each invocation.
+
+All cases use rows and columns 0, 4, …, 252 and the same 64×64 CSR output with 512 float32 values. The independent formula oracle checks every value, column index, and row offset for dataset and dataset-prepared. The convenience path calls requirements() then read_x_into(); the retained path calls one prepare_x(), then its requirements(), caller-buffer allocation, and read_into(). Both keep automatic destination preflight inside the read operation. The retained path does not move selected-axis validation or sparse planning out of preparation.
+
+The JSON keeps the existing open_ns, prepare_and_allocate_ns, operation_ns, and end_to_end_ns fields with their prior meanings, and adds selection_ns, preparation_requirements_ns, buffer_allocation_ns, and transfer_ns. The convenience path's transfer includes its internal repeated preparation. The retained path's transfer includes automatic destination preflight. Do not attribute selected-axis validation or sparse planning to subphases inside preparation.
+
+dataset-preflight opens and selects the same fixture, prepares one retained read, allocates a sentinel-filled destination, and calls only PreparedAnnDataSetRead::preflight. Its output reports a requirements golden and verifies the buffer stayed unchanged; payload golden is not applicable because this case does not transfer matrix values. It reports preflight_ns and has a separate open_through_preflight diagnostic scope. It is not included in the compared end-to-end paths.
+
+In diagnostic JSON, the aggregate counters cover the named open-through-transfer or open-through-preflight scope, and phases carries the same v1 slots and C++ new totals for each phase. The driver stops counters before formula/oracle validation and JSON reporting. Counts are intercepted calls; they do not measure physical I/O or all allocator activity. Never treat instrumented duration as performance evidence.

@@ -1,0 +1,818 @@
+{
+  "schema": "anndatapp.raster-selectivity-qualification.v1",
+  "base_commit": "3de0d4580900868e13c5691dc9064e896933e057",
+  "qualified_before_implementation": "c0fefced2793e0edbf96567cbb99bac361b7070a",
+  "branch": "codex/raster-selectivity",
+  "public_api_changed": false,
+  "fixture": {
+    "shape": [
+      1,
+      256,
+      256
+    ],
+    "dtype": "uint16",
+    "chunk_shape": [
+      1,
+      256,
+      256
+    ],
+    "codecs": [
+      "bytes little endian",
+      "zstd"
+    ],
+    "sharded": false,
+    "selection": "all,16:80:2,32:96:2",
+    "output_shape": [
+      1,
+      32,
+      32
+    ],
+    "output_bytes": 2048,
+    "chunk_file_bytes": 131084,
+    "decoded_chunk_bytes": 131072
+  },
+  "raster_timing": {
+    "before": {
+      "case": "spatialdata-raster",
+      "golden": "pass",
+      "output": "eager_dense_caller_buffer",
+      "shape": [
+        1,
+        32,
+        32
+      ],
+      "open_ns": 4686837,
+      "selection_ns": 135281,
+      "buffer_allocation_ns": 2165,
+      "prepare_and_allocate_ns": 137446,
+      "operation_ns": 381017534,
+      "end_to_end_ns": 385841817
+    },
+    "candidate": {
+      "case": "spatialdata-raster",
+      "golden": "pass",
+      "output": "eager_dense_caller_buffer",
+      "shape": [
+        1,
+        32,
+        32
+      ],
+      "open_ns": 4157346,
+      "selection_ns": 138340,
+      "buffer_allocation_ns": 2254,
+      "prepare_and_allocate_ns": 140594,
+      "operation_ns": 646362,
+      "end_to_end_ns": 4944302
+    }
+  },
+  "raster_diagnostic": {
+    "before": {
+      "scope": "open_through_transfer",
+      "intercepted_read_calls": 3156,
+      "intercepted_read_bytes": 135239456,
+      "cpp_new_calls": 309937,
+      "cpp_new_bytes": 578069719
+    },
+    "candidate": {
+      "scope": "open_through_transfer",
+      "intercepted_read_calls": 87,
+      "intercepted_read_bytes": 412148,
+      "cpp_new_calls": 20434,
+      "cpp_new_bytes": 2189580
+    },
+    "before_counter_provenance": "Reused hash-matched shipping diagnostic from primary build/raster-selectivity-investigation-2026-11-16; timings are fresh.",
+    "codec_before": {
+      "stream_calls": 2048,
+      "input_bytes": 134230016,
+      "output_bytes": 134217728,
+      "completed_frames": 1024,
+      "chunk_read_calls": 1024,
+      "chunk_read_bytes": 134230016,
+      "level_metadata_read_calls": 2060,
+      "level_metadata_read_bytes": 733360
+    },
+    "codec_candidate": {
+      "stream_calls": 2,
+      "input_bytes": 131084,
+      "output_bytes": 131072,
+      "completed_frames": 1,
+      "chunk_read_calls": 1,
+      "chunk_read_bytes": 131084,
+      "level_metadata_read_calls": 14,
+      "level_metadata_read_bytes": 4984
+    }
+  },
+  "controls": {
+    "aligned_initial": {
+      "before": {
+        "case": "spatialdata-raster-aligned",
+        "golden": "pass",
+        "output": "eager_dense_caller_buffer",
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "selector": "channels_all_rows_16_47_cols_32_63",
+        "open_ns": 4272661,
+        "selection_ns": 137587,
+        "buffer_allocation_ns": 2280,
+        "prepare_and_allocate_ns": 139867,
+        "operation_ns": 484053,
+        "end_to_end_ns": 4896581
+      },
+      "candidate": {
+        "case": "spatialdata-raster-aligned",
+        "golden": "pass",
+        "output": "eager_dense_caller_buffer",
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "selector": "channels_all_rows_16_47_cols_32_63",
+        "open_ns": 4860961,
+        "selection_ns": 136986,
+        "buffer_allocation_ns": 2209,
+        "prepare_and_allocate_ns": 139195,
+        "operation_ns": 519051,
+        "end_to_end_ns": 5519207
+      }
+    },
+    "aligned_three_sample_medians": {
+      "before": {
+        "open_ns": 4272661,
+        "operation_ns": 515463,
+        "end_to_end_ns": 4896581
+      },
+      "candidate": {
+        "open_ns": 4543707,
+        "operation_ns": 519051,
+        "end_to_end_ns": 5244310
+      }
+    },
+    "aligned_initial_flag": true,
+    "aligned_flag_after_confirmations": false,
+    "hdf5_sparse_single_sample": {
+      "before": {
+        "case": "anndata",
+        "selector": "rows_and_columns_0_4_252",
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 512,
+        "value_dtype": "float32",
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "actual_index_dtype": "int32",
+        "actual_offset_dtype": "int32",
+        "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+        "hash_source": "formula_after_cellwise_verification",
+        "golden": "pass",
+        "output": "eager_csr_caller_buffer",
+        "open_ns": 1552692,
+        "prepare_and_allocate_ns": 5771082,
+        "operation_ns": 7501603,
+        "end_to_end_ns": 14825377
+      },
+      "candidate": {
+        "case": "anndata",
+        "selector": "rows_and_columns_0_4_252",
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 512,
+        "value_dtype": "float32",
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "actual_index_dtype": "int32",
+        "actual_offset_dtype": "int32",
+        "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+        "hash_source": "formula_after_cellwise_verification",
+        "golden": "pass",
+        "output": "eager_csr_caller_buffer",
+        "open_ns": 2072556,
+        "prepare_and_allocate_ns": 6605489,
+        "operation_ns": 7490870,
+        "end_to_end_ns": 16168915
+      }
+    },
+    "screen_rule": "candidate exceeds before by both 10 percent and 0.1 ms; bounded observations only"
+  },
+  "collection": {
+    "library_implementation_changed": false,
+    "fixture": "existing small common-matrix family fixture; same selected64x64 CSR512nnz",
+    "timing": {
+      "convenience": {
+        "case": "dataset",
+        "api": "convenience_requirements_and_read_x_into",
+        "selector": "rows_and_columns_0_4_252",
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 512,
+        "value_dtype": "float32",
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "actual_index_dtype": "int32",
+        "actual_offset_dtype": "int32",
+        "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+        "hash_source": "formula_after_cellwise_verification",
+        "golden": "pass",
+        "output": "eager_csr_caller_buffer",
+        "open_ns": 6860237,
+        "selection_ns": 403270,
+        "preparation_requirements_ns": 14188898,
+        "buffer_allocation_ns": 2531,
+        "prepare_and_allocate_ns": 14594699,
+        "operation_ns": 21568754,
+        "transfer_ns": 21568754,
+        "end_to_end_ns": 43023690
+      },
+      "prepared": {
+        "case": "dataset-prepared",
+        "api": "retained_prepare_x",
+        "selector": "rows_and_columns_0_4_252",
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 512,
+        "value_dtype": "float32",
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "actual_index_dtype": "int32",
+        "actual_offset_dtype": "int32",
+        "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+        "hash_source": "formula_after_cellwise_verification",
+        "golden": "pass",
+        "output": "eager_csr_caller_buffer",
+        "open_ns": 6089379,
+        "selection_ns": 410105,
+        "preparation_requirements_ns": 13952813,
+        "buffer_allocation_ns": 2556,
+        "prepare_and_allocate_ns": 14365474,
+        "operation_ns": 8093734,
+        "transfer_ns": 8093734,
+        "end_to_end_ns": 28548587
+      }
+    },
+    "diagnostics": {
+      "convenience": {
+        "scope": "open_through_transfer",
+        "intercepted_read_calls": 584,
+        "intercepted_read_bytes": 1274849,
+        "intercepted_write_calls": 0,
+        "intercepted_write_bytes": 0,
+        "h5dread_calls": 466,
+        "h5dwrite_calls": 0,
+        "cpp_new_calls": 14772,
+        "cpp_new_bytes": 466924,
+        "v1_io_slots": [
+          584,
+          1274849,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          0,
+          6,
+          466,
+          0
+        ],
+        "phases": {
+          "open": {
+            "v1_io_slots": [
+              108,
+              82693,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              4,
+              0
+            ],
+            "cpp_new_calls": 1489,
+            "cpp_new_bytes": 59880
+          },
+          "selection": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 201,
+            "cpp_new_bytes": 10880
+          },
+          "preparation_requirements": {
+            "v1_io_slots": [
+              149,
+              325574,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              3,
+              135,
+              0
+            ],
+            "cpp_new_calls": 5306,
+            "cpp_new_bytes": 177014
+          },
+          "buffer_allocation": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 3,
+            "cpp_new_bytes": 4360
+          },
+          "transfer": {
+            "v1_io_slots": [
+              327,
+              866582,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              3,
+              327,
+              0
+            ],
+            "cpp_new_calls": 7773,
+            "cpp_new_bytes": 214790
+          }
+        }
+      },
+      "prepared": {
+        "scope": "open_through_transfer",
+        "intercepted_read_calls": 449,
+        "intercepted_read_bytes": 965579,
+        "intercepted_write_calls": 0,
+        "intercepted_write_bytes": 0,
+        "h5dread_calls": 331,
+        "h5dwrite_calls": 0,
+        "cpp_new_calls": 9487,
+        "cpp_new_bytes": 291126,
+        "v1_io_slots": [
+          449,
+          965579,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          3,
+          331,
+          0
+        ],
+        "phases": {
+          "open": {
+            "v1_io_slots": [
+              108,
+              82693,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              4,
+              0
+            ],
+            "cpp_new_calls": 1489,
+            "cpp_new_bytes": 59880
+          },
+          "selection": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 201,
+            "cpp_new_bytes": 10880
+          },
+          "preparation_requirements": {
+            "v1_io_slots": [
+              149,
+              325574,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              3,
+              135,
+              0
+            ],
+            "cpp_new_calls": 5306,
+            "cpp_new_bytes": 177014
+          },
+          "buffer_allocation": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 3,
+            "cpp_new_bytes": 4360
+          },
+          "transfer": {
+            "v1_io_slots": [
+              192,
+              557312,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              192,
+              0
+            ],
+            "cpp_new_calls": 2488,
+            "cpp_new_bytes": 38992
+          }
+        }
+      }
+    },
+    "standalone_preflight_timing": {
+      "case": "dataset-preflight",
+      "api": "standalone_preflight",
+      "selector": "rows_and_columns_0_4_252",
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "canonical_index_dtype": "uint32",
+      "canonical_offset_dtype": "uint64",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int32",
+      "golden": "not-applicable",
+      "requirements_golden": "pass",
+      "output": "sparse_caller_buffer_preflight_only",
+      "open_ns": 6108560,
+      "selection_ns": 406345,
+      "preparation_requirements_ns": 13906748,
+      "buffer_allocation_ns": 2384,
+      "prepare_and_allocate_ns": 14315477,
+      "operation_ns": 346457,
+      "preflight_ns": 346457,
+      "end_to_end_ns": 20770494
+    },
+    "standalone_preflight_diagnostic": {
+      "scope": "open_through_preflight",
+      "intercepted_read_calls": 257,
+      "intercepted_read_bytes": 408267,
+      "intercepted_write_calls": 0,
+      "intercepted_write_bytes": 0,
+      "h5dread_calls": 139,
+      "h5dwrite_calls": 0,
+      "cpp_new_calls": 7149,
+      "cpp_new_bytes": 255918,
+      "v1_io_slots": [
+        257,
+        408267,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        3,
+        139,
+        0
+      ],
+      "phases": {
+        "open": {
+          "v1_io_slots": [
+            108,
+            82693,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          "cpp_new_calls": 1489,
+          "cpp_new_bytes": 59880
+        },
+        "selection": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 201,
+          "cpp_new_bytes": 10880
+        },
+        "preparation_requirements": {
+          "v1_io_slots": [
+            149,
+            325574,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            3,
+            135,
+            0
+          ],
+          "cpp_new_calls": 5306,
+          "cpp_new_bytes": 177014
+        },
+        "buffer_allocation": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 4360
+        },
+        "preflight": {
+          "v1_io_slots": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "cpp_new_calls": 150,
+          "cpp_new_bytes": 3784
+        }
+      }
+    },
+    "interpretation": "Explicit preparation removes repeated setup. Its read still includes automatic preflight. Name validation and sparse requirement planning remain combined within preparation; output-buffer allocation is separately timed."
+  },
+  "qualification": {
+    "debug": {
+      "passed": 38,
+      "run": 38,
+      "failed": 0,
+      "log": "debug-tests-guard.log"
+    },
+    "sanitizers": {
+      "passed": 39,
+      "run": 39,
+      "failed": 0,
+      "log": "qualification-sanitizers-final-ctest.log"
+    },
+    "core-only": {
+      "passed": 22,
+      "run": 22,
+      "failed": 0,
+      "log": "qualification-core-only-ctest.log"
+    },
+    "hdf5-only": {
+      "passed": 32,
+      "run": 32,
+      "failed": 0,
+      "log": "qualification-hdf5-only-ctest.log"
+    },
+    "zarr-only": {
+      "passed": 29,
+      "run": 29,
+      "failed": 0,
+      "log": "qualification-zarr-only-ctest.log"
+    },
+    "shared": {
+      "passed": 39,
+      "run": 39,
+      "failed": 0,
+      "log": "qualification-shared-ctest.log"
+    },
+    "targeted-tsan": {
+      "passed": 4,
+      "run": 4,
+      "failed": 0,
+      "log": "qualification-thread-sanitizers-ctest.log"
+    }
+  },
+  "private_rebuild": {
+    "public_bmis_unchanged": 15,
+    "consumer_objects_unchanged": 2,
+    "hashes_and_timestamps_unchanged": true
+  },
+  "mmap_installed_consumer": "passed actual read-only mappings and retained lifetimes for H5MU dense and physical H5AD CSR buffers",
+  "measurement_settings": {
+    "cpu": 0,
+    "thread_limits": "OMP,OPENBLAS,MKL,NUMEXPR,NUMBA,BLOSC all1",
+    "cache": "normal; fixture/source/dependency hashing can warm caches; no eviction",
+    "samples": "one fresh final paired raster/HDF timing observation; aligned control three paired observations; one final collection observation per API/mode",
+    "timing_interposed": false,
+    "diagnostics_in_separate_processes": true,
+    "raster_seconds_including_superseded": 1.2110459649957193,
+    "collection_seconds_including_superseded": 0.5541988279983343
+  },
+  "limitations": [
+    "Intercepted reads are not physical device traffic; C++ new counters are cumulative requests, not all allocations or live memory.",
+    "No Python performance run or full54-check Python interoperability campaign repeated.",
+    "ASan used detect_leaks=0; no leak qualification.",
+    "No decoded cache across calls; grouping/fallback and metadata setup remain bounded per operation.",
+    "Superseded harness receipts and pre-guard test logs preserved but excluded from final results.",
+    "No merge or push performed."
+  ],
+  "raw_receipts": {
+    "raster-plan-final.json": {
+      "sha256": "cb1a2c67a4ce2b3f43e12cea70e75ecbe81b81d3b11327e82d532f666e0bb7e7"
+    },
+    "collection-plan-final.json": {
+      "sha256": "89a8563a067ec579093b9df52a04a6bff4424d4d5f968ba50677b7187e6a0501"
+    },
+    "aligned-confirmation-plan.json": {
+      "sha256": "c4b08d328304eb01f111a666c1ec20a9ffefc4f0d590c2d48411ce922df2b49b"
+    },
+    "raster-results-final.jsonl": {
+      "sha256": "826cea001760b3184329327d83acaa4cbb18d1abe8be978c20f15b35f694bb6f"
+    },
+    "collection-results-final.jsonl": {
+      "sha256": "7a3e28010b38c790505fd1684bce73c97efb211daf081203821feef7f7ab3a52"
+    },
+    "aligned-confirmation-results.jsonl": {
+      "sha256": "b84476b39208bd718cc98a8f4e06b4abec1e660108964cd76d88e46cc00b960e"
+    },
+    "source-inputs-final.json": {
+      "sha256": "9123d8afc22fd7697629dfbd07f737c65072c4daf865b102f57135dbd753e856"
+    },
+    "environment-final.json": {
+      "sha256": "6b2ec60911ee1a82ad91af1cbd0b63637b7b22d9565d02216b1a6d1ca2bdb720"
+    },
+    "public-artifacts-final.json": {
+      "sha256": "6da7fe399247cc7e6845e87fbdaba8534b4abcd40053e227fd47561190be6ad8"
+    },
+    "mmap-check.log": {
+      "sha256": "866ea1e553f5b3a8b9e8c535301e4ee65fc78fb9327b904ceb199ddf367197e9"
+    }
+  },
+  "final_ctest_executions": 203,
+  "qualification_used_uncommitted_sources": true
+}

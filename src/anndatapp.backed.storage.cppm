@@ -42,6 +42,7 @@ struct NodeInfo {
     // or rectangle-friendly storage. A shard can contain several such units.
     std::vector<std::size_t> codec_tile_shape;
     bool sharded_payload = false;
+    bool prefer_chunk_grouping = false;
 };
 struct NumericTransferStats {
     std::size_t read_calls = 0, write_calls = 0, read_bytes = 0, write_bytes = 0;

@@ -289,10 +289,12 @@ public:
             info.byte_order=node.array.endian=='<'?ByteOrder::little:node.array.endian=='>'?ByteOrder::big:ByteOrder::native;
             if(!info.strings) {
                 info.codec_tile_shape=node.array.chunks;
+                info.prefer_chunk_grouping=true;
                 const auto& codecs=node.array.codecs;
                 if(codecs.is_array() && !codecs.empty() && codecs.front().is_object() &&
                    codecs.front().value("name",std::string())=="sharding_indexed") {
                     info.sharded_payload=true;
+                    info.prefer_chunk_grouping=false;
                     info.physical.organization=StorageOrganization::sharded;
                     info.codec_tile_shape=codecs.front().at("configuration").at("chunk_shape").get<std::vector<std::size_t>>();
                     info.physical.inner_chunks=info.codec_tile_shape;

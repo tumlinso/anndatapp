@@ -157,6 +157,7 @@ public:
     explicit BorrowedBackend(std::shared_ptr<Session> retained):retained_(std::move(retained)){}
     std::string location()const override{return retained_->backend->location();}
     std::string identity()const override{return retained_->backend->identity();}
+    std::size_t retained_scratch_bytes()const override{retained_->check_open();return retained_->backend->retained_scratch_bytes();}
     std::size_t numeric_workspace_bytes(const NodeInfo& info,bool writing)override{
         retained_->check_open();return retained_->backend->numeric_workspace_bytes(info,writing);
     }

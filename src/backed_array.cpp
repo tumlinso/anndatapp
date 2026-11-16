@@ -241,13 +241,15 @@ bool disjoint_dense(const std::vector<std::size_t>& shape,const std::vector<std:
 // Group only the independently selected axes; never construct their Cartesian
 // product or scan unselected chunk coordinates. Each touched codec tile is
 // read once, then scattered to its distinct logical destinations.
-bool grouped_shard_read(const NodePtr& node,const Descriptor& d,const std::vector<std::size_t>& start,
+bool grouped_chunk_read(const NodePtr& node,const Descriptor& d,const std::vector<std::size_t>& start,
                         const std::vector<std::size_t>& count,const std::vector<std::ptrdiff_t>& strides,
-                        std::byte* output,backed_detail::NumericTransfer& source,
+                        std::byte* output,backed_detail::NumericTransfer* source,
                         std::vector<std::byte>& tile,std::size_t available,std::size_t& tile_allocations) {
     const auto rank=count.size(),width=dtype_size(d.data.dtype);
     const auto& unit=d.data.codec_tile_shape;
-    if(!rank || !d.data.sharded_payload || unit.size()!=rank || available<4096 || rank>(available-4096)/256)return false;
+    if(!rank || !(d.data.sharded_payload || d.data.prefer_chunk_grouping) || unit.size()!=rank || available<4096 || rank>(available-4096)/256)return false;
+    const auto control=4096+rank*256;
+    if(tile.capacity()>available-control)return false;
     if(!disjoint_dense(count,strides,width))return false;
     std::size_t mapped=0;
     for(std::size_t i=0;i<rank;++i) {
@@ -259,17 +261,28 @@ bool grouped_shard_read(const NodePtr& node,const Descriptor& d,const std::vecto
     }
     if(mapped>available/sizeof(ReadPoint))return false;
     const auto map_bytes=mapped*sizeof(ReadPoint);
-    if(rank>(std::numeric_limits<std::size_t>::max()-4096)/256)return false;
-    const auto control=4096+rank*256;
     if(map_bytes>available || control>available-map_bytes)return false;
     const auto tile_bytes=multiply(elements(unit,node),width,node),limit=available-map_bytes-control;
     if(tile_bytes>limit)return false;
-    if(tile.capacity()>limit || tile.capacity()<tile_bytes) {
-        std::vector<std::byte>().swap(tile);tile.resize(tile_bytes);tile_allocations+=tile_bytes!=0;
-    }
-    else tile.resize(tile_bytes);
-
     std::vector<ReadAxis> axes(rank);
+    std::vector<std::size_t> lo(rank),hi(rank),base(rank),extent(rank),index(rank);
+    std::size_t used=0;
+    auto charge=[&](std::size_t n,std::size_t size) {
+        if(n>(control-used)/size)return false;
+        used+=n*size;return true;
+    };
+    if(!charge(axes.capacity(),sizeof(ReadAxis)) || !charge(lo.capacity(),sizeof(std::size_t)) ||
+       !charge(hi.capacity(),sizeof(std::size_t)) || !charge(base.capacity(),sizeof(std::size_t)) ||
+       !charge(extent.capacity(),sizeof(std::size_t)) || !charge(index.capacity(),sizeof(std::size_t)))return false;
+    if(tile.capacity()>limit || tile.capacity()<tile_bytes) {
+        const auto fallback_size=tile.size();
+        std::vector<std::byte>().swap(tile);tile.resize(tile_bytes);tile_allocations+=tile_bytes!=0;
+        if(tile.capacity()>limit) {
+            std::vector<std::byte>().swap(tile);tile.resize(fallback_size);tile_allocations+=fallback_size!=0;
+            return false;
+        }
+    } else tile.resize(tile_bytes);
+
     std::unique_ptr<ReadPoint[]> points(mapped?new ReadPoint[mapped]:nullptr);
     std::size_t offset=0;
     for(std::size_t i=0;i<rank;++i) {
@@ -283,7 +296,6 @@ bool grouped_shard_read(const NodePtr& node,const Descriptor& d,const std::vecto
         }
         std::sort(a.points,a.points+a.count,[](auto a,auto b){return a.physical<b.physical || (a.physical==b.physical && a.logical<b.logical);});
     }
-    std::vector<std::size_t> lo(rank),hi(rank),base(rank),extent(rank),index(rank);
     auto end_group=[&](std::size_t axis,std::size_t first) {
         const auto b=(axes[axis].physical(first)/unit[axis])*unit[axis];
         return axes[axis].lower(b+std::min(unit[axis],d.source_shape[axis]-b));
@@ -296,7 +308,8 @@ bool grouped_shard_read(const NodePtr& node,const Descriptor& d,const std::vecto
             extent[i]=std::min(unit[i],d.source_shape[i]-base[i]);
             index[i]=lo[i];
         }
-        source.read(base,extent,tile.data());
+        if(source) source->read(base,extent,tile.data());
+        else node->session->backend->read_numeric(node->path,base,extent,tile.data());
         if(canonical)for(std::size_t i=0,n=elements(extent,node);i<n;++i)tile[i]=tile[i]==std::byte{0}?std::byte{0}:std::byte{1};
         while(true) {
             std::size_t from=0;std::ptrdiff_t to=0;
@@ -386,14 +399,16 @@ void dense_transfer(const NodePtr& n, const Descriptor& d, const DenseBuffer& b,
         return;
     }
     const bool packed = strides == contiguous_strides(d.shape, width, n);
-    if (!writing && d.data.sharded_payload && !forward_rectangle(d) && !n->code_recode) {
-        const auto workspace=std::max(backend.numeric_workspace_bytes(d.data,false),
-                                      n->writable && n->session->options.mode==AccessMode::read_write?backend.numeric_workspace_bytes(d.data,true):std::size_t{0});
-        const auto available=staging_budget(available_scratch,workspace,n);
-        auto source=backend.prepare_numeric(n->path);
-        std::vector<std::byte> tile;
-        std::size_t tile_allocations=0;
-        if(grouped_shard_read(n,d,std::vector<std::size_t>(rank,0),d.shape,strides,dest,*source,tile,available,tile_allocations))return;
+    if (!writing && (d.data.sharded_payload || d.data.prefer_chunk_grouping) && !forward_rectangle(d) && !n->code_recode) {
+        const auto workspace=std::max({backend.numeric_workspace_bytes(d.data,false),backend.retained_scratch_bytes(),
+                                      n->writable && n->session->options.mode==AccessMode::read_write?backend.numeric_workspace_bytes(d.data,true):std::size_t{0}});
+        if(workspace<=available_scratch) {
+            std::unique_ptr<backed_detail::NumericTransfer> source;
+            if(d.data.sharded_payload) source=backend.prepare_numeric(n->path);
+            std::vector<std::byte> tile;
+            std::size_t tile_allocations=0;
+            if(grouped_chunk_read(n,d,std::vector<std::size_t>(rank,0),d.shape,strides,dest,source.get(),tile,available_scratch-workspace,tile_allocations))return;
+        }
     }
     if (packed && forward_rectangle(d)) {
         std::vector<std::size_t> start(rank);
@@ -1347,11 +1362,10 @@ struct TransferContextImpl {
             auto selected=selected_write(d,start,count,budget-tile.capacity());selected.data=b.data;selected.strides=strides;
             if(data->write_selection(selected)) return;
         }
-        if(!writing && d.data.sharded_payload && !forward_rectangle(d)) {
-            const auto workspace=std::max(backend->numeric_workspace_bytes(d.data,false),
-                                          geometry.writable?backend->numeric_workspace_bytes(d.data,true):std::size_t{0});
-            const auto available=staging_budget(budget,workspace,node);
-            if(grouped_shard_read(node,d,start,count,strides,p,*data,tile,available,tile_allocations))return;
+        if(!writing && (d.data.sharded_payload || d.data.prefer_chunk_grouping) && !forward_rectangle(d)) {
+            const auto workspace=std::max({backend->numeric_workspace_bytes(d.data,false),backend->retained_scratch_bytes(),
+                                          geometry.writable?backend->numeric_workspace_bytes(d.data,true):std::size_t{0}});
+            if(workspace<=budget && grouped_chunk_read(node,d,start,count,strides,p,data.get(),tile,budget-workspace,tile_allocations))return;
         }
         const bool canonical = !writing && d.data.dtype == DType::boolean && node->session->options.validation == Validation::full;
         auto transfer = [&](const std::vector<std::size_t>& source, const std::vector<std::size_t>& ext, std::byte* q) {

@@ -95,6 +95,42 @@ Fixture fixture(const std::filesystem::path& path) {
     return f;
 }
 
+
+Fixture ordinary_fixture(const std::filesystem::path& path, ZarrFormat format, ZarrCompression compression,
+                         bool big_endian, bool transpose) {
+    Fixture f; f.root=path; f.x=sequence<float>(99,0.5f,3.0f);
+    auto d=AnnData::empty(9,11); d.set_x(array<float>({9,11},f.x));
+    for(std::size_t i=0;i<f.mask.size();++i)f.mask[i]=(i%3)==1;
+    auto mask=Array::empty<bool>({9,11});std::copy(f.mask.begin(),f.mask.end(),mask.edit().dense<bool>().data());
+    d.set_uns("mask",Element(std::move(mask)));
+    ZarrWriteOptions options;options.format=format;options.compression=compression;write_zarr(path.string(),d,options);
+    const auto metadata=path/"X"/(format==ZarrFormat::v3?"zarr.json":".zarray");
+    auto m=load_json(metadata);
+    if(format==ZarrFormat::v3) {
+        m["chunk_grid"]["configuration"]["chunk_shape"]={4,6};
+        if(big_endian)m["codecs"][0]["configuration"]["endian"]="big";
+        if(transpose)m["codecs"].insert(m["codecs"].begin(),Json{{"name","transpose"},{"configuration",{{"order",{1,0}}}}});
+    } else {
+        m["chunks"]={4,6};
+        if(big_endian)m["dtype"]=">f4";
+        if(transpose)m["order"]="F";
+    }
+    save_json(metadata,m);
+    const auto consolidated=path/(format==ZarrFormat::v3?"zarr.json":".zmetadata");
+    if(std::filesystem::exists(consolidated)) {
+        auto root=load_json(consolidated);
+        if(format==ZarrFormat::v3 && root.contains("consolidated_metadata"))root["consolidated_metadata"]["metadata"]["X"]=m;
+        if(format==ZarrFormat::v2 && root.contains("metadata"))root["metadata"]["X/.zarray"]=m;
+        save_json(consolidated,root);
+    }
+    for(const auto& e:std::filesystem::directory_iterator(path/"X")) {
+        const auto name=e.path().filename().string();
+        if(name!="zarr.json" && name!=".zarray" && name!=".zattrs")std::filesystem::remove_all(e.path());
+    }
+    anndatapp_zarr::Store store(path,true,128*1024);store.write_numeric("X",{0,0},{9,11},f.x.data());
+    return f;
+}
+
 template<class T> void typed_gather(const BackedArray& a, const T* source, std::size_t width) {
     const std::array<std::size_t,3> rows{7,1,7}; const std::array<std::size_t,4> cols{10,0,5,10};
     auto t = a.select({indices{7,1,7},indices{10,0,5,10}}).prepare_transfer(32*1024);
@@ -166,6 +202,106 @@ void gathered_x(const Fixture& f, const BackedAnnData& d) {
     for (std::size_t i = 0; i < 4; ++i) for (std::size_t j = 0; j < 4; ++j)
         check(reversed[i*4+j] == f.x[(8-2*i)*11+(10-3*j)],"reverse affine gather differs");
 }
+
+void ordinary_chunks(const std::filesystem::path& root, ZarrFormat format, ZarrCompression compression,
+                     bool big_endian=false, bool transpose=false) {
+    auto f=ordinary_fixture(root,format,compression,big_endian,transpose);
+    auto d=open_zarr(root.string());
+    gathered_x(f,d);
+    typed_gather(d.uns().at("mask").array(),f.mask.data(),11);
+    auto a=d.x().select({indices{8,0,5,8},indices{10,1,6,0,10}});
+    auto t=a.prepare_transfer(32*1024);std::array<float,20> out{};
+    const auto before=t.stats().read_calls;
+    t.read_into({0,0},{4,5},DenseBuffer::from(out.data(),{4,5}));
+    check(t.stats().read_calls-before==6,"ordinary grouped read must request each touched chunk once");
+    std::array<float,20> prepared_values{};auto prepared=a.prepare_read();
+    auto prepared_buffer=DenseBuffer::from(prepared_values.data(),{4,5});
+    prepared.preflight(prepared_buffer);prepared.read_into(prepared_buffer);
+    check(prepared_values==out,"ordinary prepared read differs");
+    for(auto mode:{StreamMode::manual,StreamMode::adaptive}) {
+        StreamOptions options;options.mode=mode;options.min_block_bytes=16;options.target_block_bytes=32;
+        options.max_block_bytes=64;options.scratch_bytes_per_worker=32*1024;
+        BlockStream stream(t.geometry(),options);std::array<float,20> streamed{};std::size_t cells=0;
+        while(auto request=stream.next()) {
+            const auto n=request->count[0]*request->count[1];std::vector<float> block(n);
+            t.read_into(request->start,request->count,DenseBuffer::from(block.data(),request->count));
+            for(std::size_t i=0;i<request->count[0];++i)for(std::size_t j=0;j<request->count[1];++j)
+                streamed[(request->start[0]+i)*5+request->start[1]+j]=block[i*request->count[1]+j];
+            cells+=n;stream.complete(*request,n*sizeof(float),0.001);
+        }
+        check(stream.finished() && cells==20 && streamed==out,"ordinary streamed selection differs");
+    }
+    auto empty=d.x().select({indices{},all}).prepare_transfer(32*1024);
+    empty.read_into({0,0},{0,11},DenseBuffer::from(static_cast<float*>(nullptr),{0,11}));
+    check(empty.stats().read_calls==0,"empty ordinary selection performs I/O");
+    // Export with a different validation mode uses a BorrowedBackend wrapper.
+    ZarrWriteOptions exported;exported.format=format;exported.validation=Validation::none;
+    const auto destination=root.parent_path()/(root.filename().string()+"-export");
+    write_zarr(destination.string(),d.slice(indices{8,0,5,8},indices{10,1,6,0,10}),exported);
+    auto copied=open_zarr(destination.string());std::array<float,20> exported_values{};
+    copied.x().read_into(DenseBuffer::from(exported_values.data(),{4,5}));
+    check(exported_values==out,"borrowed validation export differs");
+    // Remove a boundary chunk and ensure missing-chunk fill survives grouping.
+    const auto missing=format==ZarrFormat::v3?root/"X/c/2/1":root/"X/2.1";
+    check(std::filesystem::remove(missing),"expected boundary chunk is absent");
+    std::array<float,20> fill{};a.read_into(DenseBuffer::from(fill.data(),{4,5}));
+    const std::array<std::size_t,4> rows{8,0,5,8};const std::array<std::size_t,5> cols{10,1,6,0,10};
+    for(std::size_t i=0;i<4;++i)for(std::size_t j=0;j<5;++j)
+        check(fill[i*5+j]==(rows[i]>=8 && cols[j]>=6?0.0f:f.x[rows[i]*11+cols[j]]),"ordinary missing chunk fill differs");
+    if(format==ZarrFormat::v3) {
+        // The existing one-shot decoder does not parse codecs for absent chunks.
+        const auto file=root/"X/zarr.json";auto m=load_json(file);
+        m["codecs"].push_back(Json{{"name","unsupported-test-codec"},{"configuration",Json::object()}});save_json(file,m);
+        auto root_metadata=load_json(root/"zarr.json");
+        if(root_metadata.contains("consolidated_metadata"))root_metadata["consolidated_metadata"]["metadata"]["X"]=m;
+        save_json(root/"zarr.json",root_metadata);
+        auto missing_store=open_zarr(root.string());
+        auto missing_array=missing_store.x().select({indices{8,8},indices{10,9}});
+        std::array<float,4> values{1,1,1,1};auto buffer=DenseBuffer::from(values.data(),{2,2});
+        missing_array.read_into(buffer);
+        check(values==std::array<float,4>{0,0,0,0},"missing chunk one-shot parsed unsupported codec");
+        values.fill(1);auto read=missing_array.prepare_read();read.preflight(buffer);read.read_into(buffer);
+        check(values==std::array<float,4>{0,0,0,0},"missing chunk prepared read parsed unsupported codec");
+        bool rejected=false;try{auto context=missing_array.prepare_transfer(32*1024);(void)context;}
+        catch(const Error&){rejected=true;}
+        check(rejected,"transfer context did not preserve eager codec validation");
+    }
+}
+
+
+void tight_scratch_fallback(const std::filesystem::path& root) {
+    auto d=AnnData::empty(2,4096);auto values=Array::empty<float>({2,4096});
+    std::fill_n(values.edit().dense<float>().data(),8192,0.0f);d.set_x(std::move(values));
+    ZarrWriteOptions options;options.compression=ZarrCompression::none;write_zarr(root.string(),d,options);
+    const auto file=root/"X/zarr.json";auto m=load_json(file);
+    m["chunk_grid"]["configuration"]["chunk_shape"]={1,4};save_json(file,m);
+    auto meta=load_json(root/"zarr.json");
+    if(meta.contains("consolidated_metadata"))meta["consolidated_metadata"]["metadata"]["X"]=m;
+    save_json(root/"zarr.json",meta);std::filesystem::remove_all(root/"X/c");
+    anndatapp_zarr::Store store(root,true,32*1024);const std::array<float,4> first{7,8,9,10};
+    store.write_numeric("X",{0,0},{1,4},first.data());
+    auto backed=open_zarr(root.string());auto a=backed.x().select({all,range{0,4096,2}});
+    auto t=a.prepare_transfer(32*1024);
+    check(t.stats().scratch_bytes==8192,"tight context did not retain its full packing tile");
+    std::vector<float> out(8192,-1.0f);
+    t.read_into({0,0},{2,2048},DenseBuffer::from(out.data(),{2,2048},{16384,8}));
+    check(t.stats().read_calls==4096,"tight context should use ordered element fallback");
+    for(std::size_t i=0;i<2;++i)for(std::size_t j=0;j<2048;++j) {
+        const auto expected=i==0 && j==0?7.0f:i==0 && j==1?9.0f:0.0f;
+        check(out[i*4096+j*2]==expected && out[i*4096+j*2+1]==-1.0f,"tight nonpacked fallback differs");
+    }
+}
+void writable_roundtrip(const std::filesystem::path& root) {
+    BackedOptions options;options.mode=AccessMode::read_write;
+    auto d=open_zarr(root.string(),options);
+    auto a=d.x().select({indices{8,0,5},indices{10,1,6,0}});auto t=a.prepare_transfer(64*1024);
+    std::array<float,12> values{};for(std::size_t i=0;i<values.size();++i)values[i]=float(1000+i);
+    t.write_from({0,0},{3,4},DenseBuffer::from(values.data(),{3,4}));
+    std::array<float,12> out{};t.read_into({0,0},{3,4},DenseBuffer::from(out.data(),{3,4}));
+    check(out==values,"writable context read after write differs");
+    check(t.stats().scratch_bytes<=64*1024,"writable context retained scratch exceeds budget");
+}
+
 void higher_ranks_and_dtypes(const Fixture& f, const BackedAnnData& d) {
     typed_gather(d.uns().at("weights").array(),f.weights.data(),11);
     typed_gather(d.uns().at("counts").array(),f.counts.data(),11);
@@ -197,6 +333,12 @@ int main(int argc, char** argv) {
         root /= "run-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
         auto f = fixture(root); auto d = open_zarr(root.string());
         gathered_x(f,d); higher_ranks_and_dtypes(f,d); sparse_huge_and_fill(d);
-        std::cout << "gathered sharded transfers passed\n";
+        d.close();writable_roundtrip(root);
+        tight_scratch_fallback(root.parent_path()/(root.filename().string()+"-tight-scratch"));
+        ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v2-raw"),ZarrFormat::v2,ZarrCompression::none);
+        ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v2-zstd-fortran"),ZarrFormat::v2,ZarrCompression::zstd,true,true);
+        ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v3-raw-transpose"),ZarrFormat::v3,ZarrCompression::none,false,true);
+        ordinary_chunks(root.parent_path()/(root.filename().string()+"-ordinary-v3-zstd-big"),ZarrFormat::v3,ZarrCompression::zstd,true,false);
+        std::cout << "gathered sharded and ordinary chunk transfers passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
