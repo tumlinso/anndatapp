@@ -1,0 +1,1612 @@
+{
+  "schema": "anndatapp.release11-python-performance.v1",
+  "library_commit": "180c440ad4115306ede27bc2e86f927bee4acf94",
+  "scope": "performance comparison only; release decision remains with user",
+  "windows": {
+    "raster": {
+      "seconds": 25.590603195996664,
+      "process_records": 24,
+      "settings": {
+        "cpu": 0,
+        "thread_limits": {
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "1",
+          "BLOSC_NTHREADS": "1"
+        },
+        "plan_sha256": "a972bedc3db39825a4e50aa24edfc0f653b4686c3bde1bfc0692129abce54403",
+        "runner_sha256": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9",
+        "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+        "window_seconds": 30,
+        "case_timeout_seconds": 10.0,
+        "cache": "normal OS/HDF5 caches, no eviction",
+        "execution": "serial; version order reversed on alternate cases/samples"
+      }
+    },
+    "collection": {
+      "seconds": 24.162452525000845,
+      "process_records": 18,
+      "settings": {
+        "cpu": 0,
+        "thread_limits": {
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "1",
+          "BLOSC_NTHREADS": "1"
+        },
+        "plan_sha256": "09dcbcf9fb198ab75410cf5569a598222f49396fc12dde9bd8caa5650d4a8046",
+        "runner_sha256": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9",
+        "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+        "window_seconds": 30,
+        "case_timeout_seconds": 10.0,
+        "cache": "normal OS/HDF5 caches, no eviction",
+        "execution": "serial; version order reversed on alternate cases/samples"
+      }
+    },
+    "diagnostic": {
+      "seconds": 17.78355904199998,
+      "process_records": 18,
+      "settings": {
+        "cpu": 0,
+        "thread_limits": {
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "1",
+          "BLOSC_NTHREADS": "1"
+        },
+        "plan_sha256": "e14ed9793d3e775fcd223cfb1796adee95926ed8000497c4fa933f137896274d",
+        "runner_sha256": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9",
+        "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+        "window_seconds": 30,
+        "case_timeout_seconds": 10.0,
+        "cache": "normal OS/HDF5 caches, no eviction",
+        "execution": "serial; version order reversed on alternate cases/samples"
+      }
+    }
+  },
+  "total_window_seconds": 67.53661476299749,
+  "first_start_to_final_finish_seconds": 92.590864,
+  "process_records": 60,
+  "failures": 0,
+  "output_fnv1a64": {
+    "raster-decimated": "2f0e3f27f6e86025",
+    "raster-aligned": "3108c472cd48e9a5",
+    "raster-multichunk": "41c6d04f152d3125",
+    "dataset-small": "bb7805bcc25ffdde",
+    "dataset-10k": "54073d4a0e9be58f"
+  },
+  "timings": {
+    "raster-decimated/cpp": {
+      "samples": 3,
+      "median_ns": {
+        "open_ns": 4375829,
+        "selection_ns": 244722,
+        "allocation_ns": 2077,
+        "transfer_ns": 798665,
+        "end_to_end_ns": 5447200
+      },
+      "samples_ns": [
+        {
+          "open_ns": 4375829,
+          "selection_ns": 305916,
+          "allocation_ns": 2245,
+          "transfer_ns": 841783,
+          "end_to_end_ns": 5525773
+        },
+        {
+          "open_ns": 4300411,
+          "selection_ns": 244722,
+          "allocation_ns": 2077,
+          "transfer_ns": 673967,
+          "end_to_end_ns": 5221177
+        },
+        {
+          "open_ns": 4408591,
+          "selection_ns": 237869,
+          "allocation_ns": 2075,
+          "transfer_ns": 798665,
+          "end_to_end_ns": 5447200
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "dtype": "uint16"
+      }
+    },
+    "raster-decimated/python": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 290482162,
+        "open_ns": 153681748,
+        "operation_ns": 136796087,
+        "python_imports_ns": 2029653935,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 293882303,
+          "open_ns": 154585566,
+          "operation_ns": 139292434,
+          "python_imports_ns": 2029653935,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 280708121,
+          "open_ns": 150144669,
+          "operation_ns": 130559523,
+          "python_imports_ns": 2032675138,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 290482162,
+          "open_ns": 153681748,
+          "operation_ns": 136796087,
+          "python_imports_ns": 2023605901,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "contiguous": true,
+        "dtype": "uint16",
+        "output_fnv1a64": "2f0e3f27f6e86025",
+        "sha256": "e6b6f09bbff577bb1f14539dd23ef2cd679818c0a0d83e2a11129edf19e64241",
+        "shape": [
+          1,
+          32,
+          32
+        ]
+      }
+    },
+    "raster-aligned/python": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 292119846,
+        "open_ns": 155634026,
+        "operation_ns": 137071682,
+        "python_imports_ns": 2005126849,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 290267628,
+          "open_ns": 158122187,
+          "operation_ns": 132141320,
+          "python_imports_ns": 1998504817,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 293807550,
+          "open_ns": 155634026,
+          "operation_ns": 138168982,
+          "python_imports_ns": 2005126849,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 292119846,
+          "open_ns": 155043540,
+          "operation_ns": 137071682,
+          "python_imports_ns": 2027406306,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "contiguous": true,
+        "dtype": "uint16",
+        "output_fnv1a64": "3108c472cd48e9a5",
+        "sha256": "781e5d72fe5cb01754bd5784803a34ff908a9ee32e7539666f51d6f758522177",
+        "shape": [
+          1,
+          32,
+          32
+        ]
+      }
+    },
+    "raster-aligned/cpp": {
+      "samples": 3,
+      "median_ns": {
+        "open_ns": 4486716,
+        "selection_ns": 281331,
+        "allocation_ns": 2164,
+        "transfer_ns": 672596,
+        "end_to_end_ns": 5418053
+      },
+      "samples_ns": [
+        {
+          "open_ns": 5013181,
+          "selection_ns": 287254,
+          "allocation_ns": 2287,
+          "transfer_ns": 680569,
+          "end_to_end_ns": 5983291
+        },
+        {
+          "open_ns": 4486716,
+          "selection_ns": 256715,
+          "allocation_ns": 2026,
+          "transfer_ns": 672596,
+          "end_to_end_ns": 5418053
+        },
+        {
+          "open_ns": 4243622,
+          "selection_ns": 281331,
+          "allocation_ns": 2164,
+          "transfer_ns": 502209,
+          "end_to_end_ns": 5029326
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "dtype": "uint16"
+      }
+    },
+    "raster-multichunk/cpp": {
+      "samples": 3,
+      "median_ns": {
+        "open_ns": 1123986,
+        "selection_ns": 305924,
+        "allocation_ns": 1985,
+        "transfer_ns": 777510,
+        "end_to_end_ns": 2201401
+      },
+      "samples_ns": [
+        {
+          "open_ns": 1123986,
+          "selection_ns": 305924,
+          "allocation_ns": 1985,
+          "transfer_ns": 769506,
+          "end_to_end_ns": 2201401
+        },
+        {
+          "open_ns": 1087162,
+          "selection_ns": 252017,
+          "allocation_ns": 1903,
+          "transfer_ns": 819436,
+          "end_to_end_ns": 2160518
+        },
+        {
+          "open_ns": 1171615,
+          "selection_ns": 316743,
+          "allocation_ns": 2024,
+          "transfer_ns": 777510,
+          "end_to_end_ns": 2267892
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "dtype": "uint16"
+      }
+    },
+    "raster-multichunk/python": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 280299240,
+        "open_ns": 66185133,
+        "operation_ns": 214110730,
+        "python_imports_ns": 2025807092,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 280193672,
+          "open_ns": 67349667,
+          "operation_ns": 212841019,
+          "python_imports_ns": 2025807092,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 280933497,
+          "open_ns": 65793912,
+          "operation_ns": 215136714,
+          "python_imports_ns": 2014915385,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 280299240,
+          "open_ns": 66185133,
+          "operation_ns": 214110730,
+          "python_imports_ns": 2034337991,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "contiguous": true,
+        "dtype": "uint16",
+        "output_fnv1a64": "41c6d04f152d3125",
+        "sha256": "7cd43668943c70261ea161e9a67d6744249d9646ce6f629e75a8aa00b4fd28d7",
+        "shape": [
+          1,
+          32,
+          32
+        ]
+      }
+    },
+    "raster-decimated-raw/python": {
+      "samples": 1,
+      "median_ns": {
+        "end_to_end_ns": 3421192,
+        "open_ns": 2268579,
+        "operation_ns": 1149893,
+        "python_imports_ns": 372193141,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 3421192,
+          "open_ns": 2268579,
+          "operation_ns": 1149893,
+          "python_imports_ns": 372193141,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "contiguous": true,
+        "dtype": "uint16",
+        "output_fnv1a64": "2f0e3f27f6e86025",
+        "sha256": "e6b6f09bbff577bb1f14539dd23ef2cd679818c0a0d83e2a11129edf19e64241",
+        "shape": [
+          1,
+          32,
+          32
+        ]
+      }
+    },
+    "raster-decimated-raw/cpp": {
+      "samples": 1,
+      "median_ns": {
+        "open_ns": 1034815,
+        "selection_ns": 334858,
+        "allocation_ns": 2091,
+        "transfer_ns": 721953,
+        "end_to_end_ns": 2093717
+      },
+      "samples_ns": [
+        {
+          "open_ns": 1034815,
+          "selection_ns": 334858,
+          "allocation_ns": 2091,
+          "transfer_ns": 721953,
+          "end_to_end_ns": 2093717
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "dtype": "uint16"
+      }
+    },
+    "raster-aligned-raw/cpp": {
+      "samples": 1,
+      "median_ns": {
+        "open_ns": 945695,
+        "selection_ns": 311406,
+        "allocation_ns": 2339,
+        "transfer_ns": 513472,
+        "end_to_end_ns": 1772912
+      },
+      "samples_ns": [
+        {
+          "open_ns": 945695,
+          "selection_ns": 311406,
+          "allocation_ns": 2339,
+          "transfer_ns": 513472,
+          "end_to_end_ns": 1772912
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "dtype": "uint16"
+      }
+    },
+    "raster-aligned-raw/python": {
+      "samples": 1,
+      "median_ns": {
+        "end_to_end_ns": 3704531,
+        "open_ns": 2566387,
+        "operation_ns": 1135522,
+        "python_imports_ns": 364620329,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 3704531,
+          "open_ns": 2566387,
+          "operation_ns": 1135522,
+          "python_imports_ns": 364620329,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "contiguous": true,
+        "dtype": "uint16",
+        "output_fnv1a64": "3108c472cd48e9a5",
+        "sha256": "781e5d72fe5cb01754bd5784803a34ff908a9ee32e7539666f51d6f758522177",
+        "shape": [
+          1,
+          32,
+          32
+        ]
+      }
+    },
+    "raster-multichunk-raw/python": {
+      "samples": 1,
+      "median_ns": {
+        "end_to_end_ns": 4634507,
+        "open_ns": 2234337,
+        "operation_ns": 2397645,
+        "python_imports_ns": 366093726,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 4634507,
+          "open_ns": 2234337,
+          "operation_ns": 2397645,
+          "python_imports_ns": 366093726,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "contiguous": true,
+        "dtype": "uint16",
+        "output_fnv1a64": "41c6d04f152d3125",
+        "sha256": "7cd43668943c70261ea161e9a67d6744249d9646ce6f629e75a8aa00b4fd28d7",
+        "shape": [
+          1,
+          32,
+          32
+        ]
+      }
+    },
+    "raster-multichunk-raw/cpp": {
+      "samples": 1,
+      "median_ns": {
+        "open_ns": 324027,
+        "selection_ns": 294241,
+        "allocation_ns": 2070,
+        "transfer_ns": 779265,
+        "end_to_end_ns": 1399603
+      },
+      "samples_ns": [
+        {
+          "open_ns": 324027,
+          "selection_ns": 294241,
+          "allocation_ns": 2070,
+          "transfer_ns": 779265,
+          "end_to_end_ns": 1399603
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          1,
+          32,
+          32
+        ],
+        "dtype": "uint16"
+      }
+    },
+    "dataset-small/cpp": {
+      "samples": 3,
+      "median_ns": {
+        "open_ns": 6558995,
+        "selection_ns": 450763,
+        "preparation_requirements_ns": 7543332,
+        "buffer_allocation_ns": 2439,
+        "transfer_ns": 1327312,
+        "end_to_end_ns": 15946485
+      },
+      "samples_ns": [
+        {
+          "open_ns": 6864059,
+          "selection_ns": 418164,
+          "preparation_requirements_ns": 7351542,
+          "buffer_allocation_ns": 2690,
+          "transfer_ns": 1321441,
+          "end_to_end_ns": 15957896
+        },
+        {
+          "open_ns": 6392493,
+          "selection_ns": 452936,
+          "preparation_requirements_ns": 7730993,
+          "buffer_allocation_ns": 2439,
+          "transfer_ns": 1367624,
+          "end_to_end_ns": 15946485
+        },
+        {
+          "open_ns": 6558995,
+          "selection_ns": 450763,
+          "preparation_requirements_ns": 7543332,
+          "buffer_allocation_ns": 2335,
+          "transfer_ns": 1327312,
+          "end_to_end_ns": 15882737
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 512,
+        "value_dtype": "float32",
+        "actual_index_dtype": "int32",
+        "actual_offset_dtype": "int32"
+      }
+    },
+    "dataset-small/python": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 5934430,
+        "open_ns": 4849202,
+        "operation_ns": 1081806,
+        "python_imports_ns": 1709126193,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 5914838,
+          "open_ns": 4827886,
+          "operation_ns": 1081806,
+          "python_imports_ns": 1738195271,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 6263097,
+          "open_ns": 5101534,
+          "operation_ns": 1156283,
+          "python_imports_ns": 1709126193,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 5934430,
+          "open_ns": 4849202,
+          "operation_ns": 1079686,
+          "python_imports_ns": 1702177999,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "golden": "pass",
+        "hash_source": "canonical CSR output checked elementwise against formula",
+        "native_dtypes": {
+          "data": "float32",
+          "indices": "int32",
+          "indptr": "int32"
+        },
+        "nnz": 512,
+        "output_fnv1a64": "bb7805bcc25ffdde",
+        "participating_components": null,
+        "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+        "shape": [
+          64,
+          64
+        ],
+        "value_dtype": "float32"
+      }
+    },
+    "dataset-small/python-selected-axis-checks": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 14785629,
+        "open_ns": 4873169,
+        "operation_ns": 1017146,
+        "python_imports_ns": 1716266585,
+        "validation_ns": 8876157
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 14530953,
+          "open_ns": 4797117,
+          "operation_ns": 1008804,
+          "python_imports_ns": 1716266585,
+          "validation_ns": 8716850
+        },
+        {
+          "end_to_end_ns": 14785629,
+          "open_ns": 4873169,
+          "operation_ns": 1019989,
+          "python_imports_ns": 1736688475,
+          "validation_ns": 8884473
+        },
+        {
+          "end_to_end_ns": 14884278,
+          "open_ns": 4967144,
+          "operation_ns": 1017146,
+          "python_imports_ns": 1715982500,
+          "validation_ns": 8876157
+        }
+      ],
+      "output_metadata": {
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "golden": "pass",
+        "hash_source": "canonical CSR output checked elementwise against formula",
+        "native_dtypes": {
+          "data": "float32",
+          "indices": "int32",
+          "indptr": "int32"
+        },
+        "nnz": 512,
+        "output_fnv1a64": "bb7805bcc25ffdde",
+        "participating_components": 2,
+        "sha256": "a8da79bc30f9c6f829175701edb00016bae0650b9cc7083b05e9248466dabb15",
+        "shape": [
+          64,
+          64
+        ],
+        "value_dtype": "float32"
+      }
+    },
+    "dataset-10k/python-selected-axis-checks": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 67995649,
+        "open_ns": 31739539,
+        "operation_ns": 6484456,
+        "python_imports_ns": 1728265954,
+        "validation_ns": 29683409
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 64378275,
+          "open_ns": 30254602,
+          "operation_ns": 6132474,
+          "python_imports_ns": 1728719831,
+          "validation_ns": 27982594
+        },
+        {
+          "end_to_end_ns": 67995649,
+          "open_ns": 31817816,
+          "operation_ns": 6484456,
+          "python_imports_ns": 1728265954,
+          "validation_ns": 29683409
+        },
+        {
+          "end_to_end_ns": 68076298,
+          "open_ns": 31739539,
+          "operation_ns": 6492900,
+          "python_imports_ns": 1712106960,
+          "validation_ns": 29833917
+        }
+      ],
+      "output_metadata": {
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "golden": "pass",
+        "hash_source": "canonical CSR output checked elementwise against formula",
+        "native_dtypes": {
+          "data": "float32",
+          "indices": "int32",
+          "indptr": "int32"
+        },
+        "nnz": 17,
+        "output_fnv1a64": "54073d4a0e9be58f",
+        "participating_components": 8,
+        "sha256": "c55dd2cccb65a1da0138fb40591cd8012a02153d6b4b018d4618246d02f52252",
+        "shape": [
+          64,
+          64
+        ],
+        "value_dtype": "float32"
+      }
+    },
+    "dataset-10k/python": {
+      "samples": 3,
+      "median_ns": {
+        "end_to_end_ns": 39009116,
+        "open_ns": 32462644,
+        "operation_ns": 6554234,
+        "python_imports_ns": 1726705603,
+        "validation_ns": 0
+      },
+      "samples_ns": [
+        {
+          "end_to_end_ns": 39839594,
+          "open_ns": 33174113,
+          "operation_ns": 6658051,
+          "python_imports_ns": 1694186641,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 38315485,
+          "open_ns": 31754544,
+          "operation_ns": 6554234,
+          "python_imports_ns": 1726705603,
+          "validation_ns": 0
+        },
+        {
+          "end_to_end_ns": 39009116,
+          "open_ns": 32462644,
+          "operation_ns": 6539741,
+          "python_imports_ns": 1729005574,
+          "validation_ns": 0
+        }
+      ],
+      "output_metadata": {
+        "canonical_index_dtype": "uint32",
+        "canonical_offset_dtype": "uint64",
+        "golden": "pass",
+        "hash_source": "canonical CSR output checked elementwise against formula",
+        "native_dtypes": {
+          "data": "float32",
+          "indices": "int32",
+          "indptr": "int32"
+        },
+        "nnz": 17,
+        "output_fnv1a64": "54073d4a0e9be58f",
+        "participating_components": null,
+        "sha256": "c55dd2cccb65a1da0138fb40591cd8012a02153d6b4b018d4618246d02f52252",
+        "shape": [
+          64,
+          64
+        ],
+        "value_dtype": "float32"
+      }
+    },
+    "dataset-10k/cpp": {
+      "samples": 3,
+      "median_ns": {
+        "open_ns": 15147635,
+        "selection_ns": 383769,
+        "preparation_requirements_ns": 39347241,
+        "buffer_allocation_ns": 365,
+        "transfer_ns": 5605981,
+        "end_to_end_ns": 60489185
+      },
+      "samples_ns": [
+        {
+          "open_ns": 15214751,
+          "selection_ns": 383769,
+          "preparation_requirements_ns": 40184610,
+          "buffer_allocation_ns": 378,
+          "transfer_ns": 5666004,
+          "end_to_end_ns": 61449512
+        },
+        {
+          "open_ns": 15114442,
+          "selection_ns": 382357,
+          "preparation_requirements_ns": 39320712,
+          "buffer_allocation_ns": 365,
+          "transfer_ns": 5581285,
+          "end_to_end_ns": 60399161
+        },
+        {
+          "open_ns": 15147635,
+          "selection_ns": 387968,
+          "preparation_requirements_ns": 39347241,
+          "buffer_allocation_ns": 360,
+          "transfer_ns": 5605981,
+          "end_to_end_ns": 60489185
+        }
+      ],
+      "output_metadata": {
+        "shape": [
+          64,
+          64
+        ],
+        "nnz": 17,
+        "value_dtype": "float32",
+        "actual_index_dtype": "int32",
+        "actual_offset_dtype": "int64"
+      }
+    }
+  },
+  "comparisons": {
+    "dataset-10k/python": {
+      "cpp_over_python": 1.5506422908942616,
+      "cpp_minus_python_ns": 21480069,
+      "material_by_screen_threshold": true,
+      "classification": "slower",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "dataset-10k/python-selected-axis-checks": {
+      "cpp_over_python": 0.8896037597935127,
+      "cpp_minus_python_ns": -7506464,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "dataset-small/python": {
+      "cpp_over_python": 2.6871131684087604,
+      "cpp_minus_python_ns": 10012055,
+      "material_by_screen_threshold": true,
+      "classification": "slower",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "dataset-small/python-selected-axis-checks": {
+      "cpp_over_python": 1.078512452868931,
+      "cpp_minus_python_ns": 1160856,
+      "material_by_screen_threshold": false,
+      "classification": "comparable",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "raster-aligned/python": {
+      "cpp_over_python": 0.018547363605004776,
+      "cpp_minus_python_ns": -286701793,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "raster-aligned-raw/python": {
+      "cpp_over_python": 0.47857933973288386,
+      "cpp_minus_python_ns": -1931619,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "one paired observation only"
+    },
+    "raster-decimated/python": {
+      "cpp_over_python": 0.018752270234066903,
+      "cpp_minus_python_ns": -285034962,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "raster-decimated-raw/python": {
+      "cpp_over_python": 0.6119846533021239,
+      "cpp_minus_python_ns": -1327475,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "one paired observation only"
+    },
+    "raster-multichunk/python": {
+      "cpp_over_python": 0.0078537530105326,
+      "cpp_minus_python_ns": -278097839,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "three fresh-process paired observations"
+    },
+    "raster-multichunk-raw/python": {
+      "cpp_over_python": 0.30199609149365836,
+      "cpp_minus_python_ns": -3234904,
+      "material_by_screen_threshold": true,
+      "classification": "faster",
+      "timing_evidence": "one paired observation only"
+    }
+  },
+  "diagnostics": {
+    "raster-decimated/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 76,
+          "read_bytes": 277504,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 19188,
+          "requested_cpp_new_bytes": 1391950
+        },
+        "selection": {
+          "read_calls": 12,
+          "read_bytes": 4272,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1423,
+          "requested_cpp_new_bytes": 151265
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2,
+          "requested_cpp_new_bytes": 2072
+        },
+        "transfer": {
+          "read_calls": 5,
+          "read_bytes": 132508,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 534,
+          "requested_cpp_new_bytes": 719605
+        }
+      },
+      "read_calls": 93,
+      "read_bytes": 414284,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-decimated/python": {
+      "phases": {
+        "open": {
+          "read_calls": 228,
+          "read_bytes": 2455310,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 372,
+          "read_bytes": 4454986,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 600,
+      "read_bytes": 6910296,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-decimated-raw/python": {
+      "phases": {
+        "open": {
+          "read_calls": 2,
+          "read_bytes": 712,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 2,
+          "read_bytes": 131084,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 4,
+      "read_bytes": 131796,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-decimated-raw/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 10,
+          "read_bytes": 65178,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 3772,
+          "requested_cpp_new_bytes": 231336
+        },
+        "selection": {
+          "read_calls": 12,
+          "read_bytes": 4272,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1425,
+          "requested_cpp_new_bytes": 151371
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2,
+          "requested_cpp_new_bytes": 2072
+        },
+        "transfer": {
+          "read_calls": 5,
+          "read_bytes": 132508,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 534,
+          "requested_cpp_new_bytes": 719605
+        }
+      },
+      "read_calls": 27,
+      "read_bytes": 201958,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-aligned/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 76,
+          "read_bytes": 277504,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 19188,
+          "requested_cpp_new_bytes": 1391950
+        },
+        "selection": {
+          "read_calls": 12,
+          "read_bytes": 4272,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1423,
+          "requested_cpp_new_bytes": 151265
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2,
+          "requested_cpp_new_bytes": 2072
+        },
+        "transfer": {
+          "read_calls": 5,
+          "read_bytes": 132508,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 526,
+          "requested_cpp_new_bytes": 588293
+        }
+      },
+      "read_calls": 93,
+      "read_bytes": 414284,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-aligned/python": {
+      "phases": {
+        "open": {
+          "read_calls": 228,
+          "read_bytes": 2455310,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 372,
+          "read_bytes": 4454986,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 600,
+      "read_bytes": 6910296,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-aligned-raw/python": {
+      "phases": {
+        "open": {
+          "read_calls": 2,
+          "read_bytes": 712,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 2,
+          "read_bytes": 131084,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 4,
+      "read_bytes": 131796,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-aligned-raw/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 10,
+          "read_bytes": 65178,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 3772,
+          "requested_cpp_new_bytes": 231336
+        },
+        "selection": {
+          "read_calls": 12,
+          "read_bytes": 4272,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1425,
+          "requested_cpp_new_bytes": 151371
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2,
+          "requested_cpp_new_bytes": 2072
+        },
+        "transfer": {
+          "read_calls": 5,
+          "read_bytes": 132508,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 526,
+          "requested_cpp_new_bytes": 588293
+        }
+      },
+      "read_calls": 27,
+      "read_bytes": 201958,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 131084
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-multichunk/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 26,
+          "read_bytes": 43974,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 3805,
+          "requested_cpp_new_bytes": 403251
+        },
+        "selection": {
+          "read_calls": 12,
+          "read_bytes": 4272,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1387,
+          "requested_cpp_new_bytes": 151175
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2,
+          "requested_cpp_new_bytes": 2072
+        },
+        "transfer": {
+          "read_calls": 14,
+          "read_bytes": 134672,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1333,
+          "requested_cpp_new_bytes": 868561
+        }
+      },
+      "read_calls": 52,
+      "read_bytes": 182918,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/0/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-multichunk/python": {
+      "phases": {
+        "open": {
+          "read_calls": 224,
+          "read_bytes": 2425492,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 378,
+          "read_bytes": 4455014,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 602,
+      "read_bytes": 6880506,
+      "chunk_reads": {
+        "/images/image/s0/c/0/1/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/0/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-multichunk-raw/python": {
+      "phases": {
+        "open": {
+          "read_calls": 2,
+          "read_bytes": 712,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 8,
+          "read_bytes": 131112,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 10,
+      "read_bytes": 131824,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/0/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "raster-multichunk-raw/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 4,
+          "read_bytes": 9428,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 612,
+          "requested_cpp_new_bytes": 60815
+        },
+        "selection": {
+          "read_calls": 12,
+          "read_bytes": 4272,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1389,
+          "requested_cpp_new_bytes": 151281
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2,
+          "requested_cpp_new_bytes": 2072
+        },
+        "transfer": {
+          "read_calls": 14,
+          "read_bytes": 134672,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1333,
+          "requested_cpp_new_bytes": 868561
+        }
+      },
+      "read_calls": 30,
+      "read_bytes": 148372,
+      "chunk_reads": {
+        "/images/image/s0/c/0/0/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/0/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/0": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        },
+        "/images/image/s0/c/0/1/1": {
+          "read_calls": 1,
+          "read_bytes": 32778
+        }
+      },
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "dataset-small/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 108,
+          "read_bytes": 82693,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 1377,
+          "requested_cpp_new_bytes": 55908
+        },
+        "selection": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 203,
+          "requested_cpp_new_bytes": 11408
+        },
+        "preparation_requirements": {
+          "read_calls": 25,
+          "read_bytes": 39630,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2980,
+          "requested_cpp_new_bytes": 122616
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 3,
+          "requested_cpp_new_bytes": 4360
+        },
+        "transfer": {
+          "read_calls": 6,
+          "read_bytes": 17416,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 638,
+          "requested_cpp_new_bytes": 20682
+        }
+      },
+      "read_calls": 139,
+      "read_bytes": 139739,
+      "chunk_reads": {},
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "dataset-small/python": {
+      "phases": {
+        "open": {
+          "read_calls": 108,
+          "read_bytes": 87321,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 16,
+          "read_bytes": 32040,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 124,
+      "read_bytes": 119361,
+      "chunk_reads": {},
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "dataset-small/python-selected-axis-checks": {
+      "phases": {
+        "open": {
+          "read_calls": 108,
+          "read_bytes": 87321,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 16,
+          "read_bytes": 32040,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "validation": {
+          "read_calls": 98,
+          "read_bytes": 89641,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 222,
+      "read_bytes": 209002,
+      "chunk_reads": {},
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "dataset-10k/python-selected-axis-checks": {
+      "phases": {
+        "open": {
+          "read_calls": 357,
+          "read_bytes": 2547024,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 56,
+          "read_bytes": 8089664,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "validation": {
+          "read_calls": 509,
+          "read_bytes": 9778056,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 922,
+      "read_bytes": 20414744,
+      "chunk_reads": {},
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "dataset-10k/python": {
+      "phases": {
+        "open": {
+          "read_calls": 357,
+          "read_bytes": 2547024,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        },
+        "operation": {
+          "read_calls": 56,
+          "read_bytes": 8089664,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 0,
+          "requested_cpp_new_bytes": 0
+        }
+      },
+      "read_calls": 413,
+      "read_bytes": 10636688,
+      "chunk_reads": {},
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    },
+    "dataset-10k/cpp": {
+      "phases": {
+        "open": {
+          "read_calls": 319,
+          "read_bytes": 1050544,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2598,
+          "requested_cpp_new_bytes": 131538
+        },
+        "selection": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 185,
+          "requested_cpp_new_bytes": 11672
+        },
+        "preparation_requirements": {
+          "read_calls": 327,
+          "read_bytes": 11214392,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 9786,
+          "requested_cpp_new_bytes": 400448
+        },
+        "buffer_allocation": {
+          "read_calls": 0,
+          "read_bytes": 0,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 3,
+          "requested_cpp_new_bytes": 664
+        },
+        "transfer": {
+          "read_calls": 72,
+          "read_bytes": 4266904,
+          "write_calls": 0,
+          "write_bytes": 0,
+          "observed_cpp_new_calls": 2792,
+          "requested_cpp_new_bytes": 103664
+        }
+      },
+      "read_calls": 718,
+      "read_bytes": 16531840,
+      "chunk_reads": {},
+      "cpp_new_scope": "Observed C++ operator new only; excludes Python/NumPy/Rust allocators. Not a cross-language allocation comparison."
+    }
+  },
+  "raw_receipts_sha256": {
+    "raster-plan.json": "a972bedc3db39825a4e50aa24edfc0f653b4686c3bde1bfc0692129abce54403",
+    "raster-results.jsonl": "053477ed2c5bc3edb3c5b855ecbebdbb2077fe149149d3826e7788f71a83c728",
+    "collection-plan.json": "09dcbcf9fb198ab75410cf5569a598222f49396fc12dde9bd8caa5650d4a8046",
+    "collection-results.jsonl": "4ea32122f73779cfa1105c2bbe58e534b82a9b1b5d4867e2ac649aa61c4d2f89",
+    "diagnostic-plan.json": "e14ed9793d3e775fcd223cfb1796adee95926ed8000497c4fa933f137896274d",
+    "diagnostic-results.jsonl": "a73145cf42324b7a4880ad619ee71ceb146bda25d7604062a24d0baea81a9176"
+  },
+  "input_identities_sha256": "4a331a378b5fc86e9dedae4e535c15b8638d0c804e6ea443facda0793d88229c",
+  "evidence_root": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/release11-performance-2026-11-16",
+  "limits": [
+    "Normal caches; hashing and prior work may warm them. No cold-cache or scaling claim.",
+    "First-call public API includes lazy setup after imports. Raw controls bypass domain metadata.",
+    "Python axis-check adapter reopens HDF5 resources and is auxiliary, not the upstream native API or full C++ validation contract.",
+    "C++ 10k offsets are int64; Python returns int32. Canonical output digest conversion is outside timing.",
+    "Intercepted libc calls/bytes are not physical-device I/O. HDF5 logical calls and decoder frame counts are unavailable in this observer.",
+    "One/four chunk reads prove observed fetch selectivity, not a universal decode-count or memory bound.",
+    "Allocation counts omit other allocators and are cumulative requests, not live memory.",
+    "No production changes, dependency upgrades, broader qualification or publication."
+  ]
+}
