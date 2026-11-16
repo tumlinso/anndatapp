@@ -485,22 +485,39 @@ public:
     explicit IndexCursor(const BackedTable& table,std::size_t budget):budget_(budget){
         index_=checked_table_index_node(detail::BackedAccess::get(table));
     }
+    explicit IndexCursor(std::shared_ptr<detail::BackedNode> index,std::size_t budget)
+        : index_(std::move(index)), budget_(budget) {}
     std::size_t size() const { return index_->axes[0].size; }
     const std::vector<std::string>& batch(std::size_t i, std::size_t maximum) {
         const auto& axis = index_->axes[0];
-        if (i >= axis.size || !maximum) fail(ErrorCode::out_of_bounds,index_->path,"table row is out of bounds");
+        return mapped_batch(i, maximum, axis.size, [&](std::size_t j) { return axis.at(j); }, SIZE_MAX);
+    }
+    template<class Position>
+    const std::vector<std::string>& mapped_batch(std::size_t i, std::size_t maximum,
+                                                std::size_t size, Position position,
+                                                std::size_t selector_budget) {
+        if (i >= size || !maximum) fail(ErrorCode::out_of_bounds,index_->path,"table row is out of bounds");
         std::vector<std::string>().swap(values_);
         constexpr auto base = sizeof(std::vector<std::size_t>);
         // A coordinate list may not fit although the original one-string run does.
         const auto cap=std::max<std::size_t>(1,budget_>base ? (budget_-base)/(2*sizeof(std::string)+sizeof(std::size_t)) : 0);
-        const auto n = std::min({std::size_t(8192), cap, axis.size-i, maximum});
-        const auto first = axis.at(i);
+        auto n = std::min({std::size_t(8192), cap, size-i, maximum});
+        const auto first = position(i);
         std::size_t run=1;
-        while (run<n && first<=SIZE_MAX-run && axis.at(i+run)==first+run) ++run;
+        while (run<n && first<=SIZE_MAX-run && position(i+run)==first+run) ++run;
+        if (run<n && selector_budget/sizeof(std::size_t)>0 && n>selector_budget/sizeof(std::size_t)) {
+            n=selector_budget/sizeof(std::size_t);
+            run=1;
+            while (run<n && first<=SIZE_MAX-run && position(i+run)==first+run) ++run;
+        }
         if (run==n) values_=index_->session->backend->read_strings_bounded(index_->path,{first},{n},budget_);
         else try {
+            if (n > selector_budget / sizeof(std::size_t))
+                fail(ErrorCode::invalid_argument,index_->path,"index coordinates exceed selector budget");
             std::vector<std::size_t> positions(n);
-            for (std::size_t j=0;j<n;++j) positions[j]=axis.at(i+j);
+            if (positions.capacity() > selector_budget / sizeof(std::size_t))
+                fail(ErrorCode::invalid_argument,index_->path,"index coordinates exceed selector budget");
+            for (std::size_t j=0;j<n;++j) positions[j]=position(i+j);
             const auto charge=base+positions.capacity()*sizeof(std::size_t);
             values_=index_->session->backend->read_strings_gather_bounded(index_->path,positions.data(),n,budget_-charge);
         } catch (const Error& e) {
@@ -526,24 +543,22 @@ private:
 };
 }
 namespace {
-template<class Peer> void compare_index_batches(const BackedTable& left,std::size_t count,std::size_t budget,Peer peer) {
-    const auto& a=detail::BackedAccess::get(left);
-    IndexCursor first(left,budget);
+template<class Peer> void compare_index_batches(IndexCursor& first,std::string_view path,std::size_t count,Peer peer) {
     const auto size=first.size();
     // Empty reference axes still require every peer's metadata and length check.
     if (!size) for (std::size_t k=0;k<count;++k) {
-        IndexCursor second(peer(k),budget);
+        auto second=peer(k);
         if (second.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
     }
     for (std::size_t i=0;i<size;) {
         const auto& values=first.batch(i,size-i);
         for (std::size_t k=0;k<count;++k) {
-            IndexCursor second(peer(k),budget);
+            auto second=peer(k);
             if (second.size()!=size) fail(ErrorCode::shape_mismatch,"dataframe","aligned table length differs from its axis");
             for (std::size_t j=0;j<values.size();) {
                 const auto& batch=second.batch(i+j,values.size()-j);
                 for (std::size_t p=0;p<batch.size();++p)
-                    if (values[j+p]!=batch[p]) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
+                    if (values[j+p]!=batch[p]) fail(ErrorCode::shape_mismatch,path,"dataframe index differs from its aligned axis");
                 j+=batch.size();
             }
         }
@@ -568,7 +583,8 @@ void compare_table_indexes(const BackedTable& left,const BackedTable* others,std
             if (first.at(i)!=second.at(i)) fail(ErrorCode::shape_mismatch,a->path,"dataframe index differs from its aligned axis");
         return;
     }
-    compare_index_batches(left,count,budget,[&](std::size_t k) { return others[k]; });
+    IndexCursor first(left,budget);
+    compare_index_batches(first,a->path,count,[&](std::size_t k) { return IndexCursor(others[k],budget); });
 }
 void compare_table_indexes(const BackedTable& left,const BackedTable& right) {
     compare_table_indexes(left,&right,1);
@@ -584,7 +600,82 @@ void compare_component_indexes(const BackedTable& left,const BackedAnnData* file
         (void)files[ids[k]].n_vars();
         budget=std::min(budget,detail::BackedAccess::get(files[ids[k]])->session->options.scratch_bytes);
     }
-    compare_index_batches(left,count,budget/2,[&](std::size_t k) { return files[ids[k]].var().select(columns); });
+    budget/=2;
+    IndexCursor first(left,budget);
+    compare_index_batches(first,a->path,count,[&](std::size_t k) { return IndexCursor(files[ids[k]].var().select(columns),budget); });
+}
+void compare_component_indexes(const BackedAnnData& manifest,const BackedAnnData* files,std::size_t file_count,
+                               const std::size_t* ids,std::size_t count,const ::anndatapp::Selection& columns) {
+    if (!count) return;
+    if (!files || !ids) fail(ErrorCode::invalid_argument,"dataframe","null component index batch");
+    auto reference=bind_dataset_axis_index(manifest,false,columns,true);
+    auto budget=reference.index->session->options.scratch_bytes;
+    for (std::size_t k=0;k<count;++k) {
+        if (ids[k]>=file_count) fail(ErrorCode::out_of_bounds,reference.index->path,"component index is out of bounds");
+        if (!files[ids[k]].is_open()) fail(ErrorCode::invalid_argument,"AnnDataSet/components","component is closed");
+        budget=std::min(budget,detail::BackedAccess::get(files[ids[k]])->session->options.scratch_bytes);
+    }
+    budget/=2;
+    IndexCursor first(reference.index,budget);
+    compare_index_batches(first,reference.index->path,count,[&](std::size_t k) {
+        auto binding=bind_dataset_axis_index(files[ids[k]],false,columns,true);
+        return IndexCursor(std::move(binding.index),budget);
+    });
+}
+
+void compare_observation_indexes(const BackedAnnData& manifest,const BackedAnnData* files,std::size_t file_count,
+                                 const std::size_t* offsets,const ::anndatapp::Axis& rows,std::size_t selector_bytes) {
+    if (!files || !offsets || !file_count) fail(ErrorCode::invalid_argument,"AnnDataSet/components","null component index batch");
+    const auto total=offsets[file_count];
+    const auto count=rows.extent(total);
+    if (!count) return;
+    auto reference=bind_dataset_axis_index(manifest,true,all,true);
+    if (reference.index->axes[0].size!=total)
+        fail(ErrorCode::shape_mismatch,"AnnDataSet/obs","manifest observation length differs from components");
+    auto component_at = [&](std::size_t logical) {
+        const auto row=rows.index(logical);
+        if (row>=total) fail(ErrorCode::out_of_bounds,"AnnDataSet/obs","observation position is out of range");
+        return std::size_t(std::upper_bound(offsets,offsets+file_count+1,row)-offsets-1);
+    };
+    auto budget=reference.index->session->options.scratch_bytes;
+    for (std::size_t i=0;i<count;) {
+        const auto k=component_at(i);
+        if (!files[k].is_open()) fail(ErrorCode::invalid_argument,"AnnDataSet/components","component is closed");
+        budget=std::min(budget,detail::BackedAccess::get(files[k])->session->options.scratch_bytes);
+        do { ++i; } while (i<count && rows.index(i)>=offsets[k] && rows.index(i)<offsets[k+1]);
+    }
+    budget/=2;
+    IndexCursor first(reference.index,budget);
+    for (std::size_t i=0;i<count;) {
+        const auto& values=first.mapped_batch(i,count-i,count,[&](std::size_t j) {
+            return reference.index->axes[0].at(rows.index(j));
+        },selector_bytes);
+        for (std::size_t j=0;j<values.size();) {
+            const auto start=i+j;
+            const auto k=component_at(start);
+            std::size_t end=j+1;
+            while (end<values.size()) {
+                const auto row=rows.index(i+end);
+                if (row<offsets[k] || row>=offsets[k+1]) break;
+                ++end;
+            }
+            auto binding=bind_dataset_axis_index(files[k],true,all,true);
+            if (binding.index->axes[0].size!=offsets[k+1]-offsets[k])
+                fail(ErrorCode::shape_mismatch,"AnnDataSet/obs","component observation length differs from manifest");
+            IndexCursor peer(binding.index,budget);
+            for (std::size_t p=j;p<end;) {
+                const auto& batch=peer.mapped_batch(i+p,end-p,count,[&](std::size_t q) {
+                    return binding.index->axes[0].at(rows.index(q)-offsets[k]);
+                },selector_bytes);
+                for (std::size_t q=0;q<batch.size();++q)
+                    if (values[p+q]!=batch[q])
+                        fail(ErrorCode::shape_mismatch,"AnnDataSet/obs","component observation names differ from manifest");
+                p+=batch.size();
+            }
+            j=end;
+        }
+        i+=values.size();
+    }
 }
 void compare_table_indexes(const BackedTable& left,const TableView& right){
     const auto& a=detail::BackedAccess::get(left);check_node(a);
@@ -606,6 +697,15 @@ void compare_backed_table_indexes(const BackedTable& left, const BackedTable* ot
 void compare_backed_component_indexes(const BackedTable& left,const BackedAnnData* files,std::size_t file_count,
                                     const std::size_t* ids,std::size_t count,const ::anndatapp::Selection& columns) {
     backed_detail::compare_component_indexes(left,files,file_count,ids,count,columns);
+}
+
+void compare_backed_component_indexes(const BackedAnnData& manifest,const BackedAnnData* files,std::size_t file_count,
+                                    const std::size_t* ids,std::size_t count,const ::anndatapp::Selection& columns) {
+    backed_detail::compare_component_indexes(manifest,files,file_count,ids,count,columns);
+}
+void compare_backed_observation_indexes(const BackedAnnData& manifest,const BackedAnnData* files,std::size_t file_count,
+                                        const std::size_t* offsets,const ::anndatapp::Axis& rows,std::size_t selector_bytes) {
+    backed_detail::compare_observation_indexes(manifest,files,file_count,offsets,rows,selector_bytes);
 }
 
 }

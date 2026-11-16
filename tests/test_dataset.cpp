@@ -338,6 +338,52 @@ void check_multi_batch_indexes(const fs::path& root) {
             "late multi-batch index mismatch modified output");
 }
 
+void check_streamed_observation_indexes(const fs::path& root) {
+    auto dir = root / "streamed-observation-indexes";
+    fs::create_directories(dir);
+    std::vector<std::string> last_names;
+    for (std::size_t k = 0; k < 3; ++k) {
+        std::vector<std::string> names;
+        for (std::size_t j = 0; j < 48; ++j)
+            names.push_back("observation-" + std::to_string(k) + "-" + std::to_string(j) + std::string(75, 'x'));
+        auto a = AnnData::empty(names.size(), 1);
+        a.set_obs(Table::with_index(names));
+        a.set_var(Table::with_index({"variable"}));
+        auto x = Array::empty<float>({names.size(), 1});
+        for (std::size_t j = 0; j < names.size(); ++j) x.edit().dense<float>().data()[j] = float(k * 48 + j);
+        a.set_x(std::move(x));
+        write_h5ad((dir / (std::to_string(k) + ".h5ad")).string(), a);
+        if (k == 2) last_names = std::move(names);
+    }
+    auto manifest = dir / "data.h5ads";
+    auto created = create_h5ads(manifest.string(), {{"a", "0.h5ad"}, {"b", "1.h5ad"}, {"c", "2.h5ad"}});
+    created.close();
+    DatasetOptions options; options.backed.scratch_bytes = 4096;
+    auto data = open_h5ads(manifest.string(), options);
+    std::vector<std::ptrdiff_t> positions;
+    for (std::ptrdiff_t j = 47; j >= 0; --j) {
+        positions.push_back(96 + j); positions.push_back(j); positions.push_back(48 + j);
+        if (j % 7 == 0) positions.push_back(96 + j);
+    }
+    auto view = data.slice(indices(positions), all);
+    std::vector<float> output(positions.size(), -1);
+    view.read_x_into(DenseBuffer::from(output.data(), {positions.size(), 1}));
+    for (std::size_t j = 0; j < positions.size(); ++j)
+        require(output[j] == float(positions[j]), "streamed mixed observation selection differs");
+    data.close();
+
+    BackedOptions writable; writable.mode = AccessMode::read_write;
+    auto last = open_h5ad((dir / "2.h5ad").string(), writable);
+    last_names[0] = "changed-observation";
+    auto edit = last.edit_structure(); edit.set_obs(Table::with_index(last_names)); edit.apply(); last.close();
+    auto changed = open_h5ads(manifest.string(), options);
+    auto invalid = changed.slice(indices(positions), all);
+    std::fill(output.begin(), output.end(), -1);
+    expect_error(ErrorCode::shape_mismatch, [&] { invalid.read_x_into(DenseBuffer::from(output.data(), {positions.size(), 1})); });
+    require(std::all_of(output.begin(), output.end(), [](float x) { return x == -1; }),
+            "late streamed observation mismatch modified output");
+}
+
 void check_many_components(const fs::path& root) {
     std::vector<DatasetComponent> components;
     for (std::size_t i = 0; i < 256; ++i)
@@ -413,6 +459,7 @@ int main(int argc, char** argv) {
             check_collection(root, Layout::csc);
             check_many_components(root);
             check_multi_batch_indexes(root);
+            check_streamed_observation_indexes(root);
             check_batched_then_gathered(root);
             check_narrow_widths(root, Layout::csr);
             check_narrow_widths(root, Layout::csc);

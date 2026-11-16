@@ -15,15 +15,15 @@ template<class F> void rejects(F&& f) {
     try { f(); } catch (const Error&) { return; }
     throw std::runtime_error("expected index rejection");
 }
-void replace_index(const std::string& path,const std::vector<std::string>& names,bool fixed,std::size_t width=48) {
-    auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
-    require(file>=0,"open raw string fixture");
-    require(H5Ldelete(file,"/obs/_index",H5P_DEFAULT)>=0,"replace raw string fixture");
+void replace_index(hid_t file,const std::vector<std::string>& names,bool fixed,
+                   std::size_t width=48,const char* table="/obs") {
+    const auto index=std::string(table)+"/_index";
+    require(H5Ldelete(file,index.c_str(),H5P_DEFAULT)>=0,"replace raw string fixture");
     auto type=H5Tcopy(H5T_C_S1);
     require(H5Tset_size(type,fixed?width:H5T_VARIABLE)>=0,"set string width");
     require(H5Tset_cset(type,H5T_CSET_UTF8)>=0,"set string encoding");
     hsize_t n=names.size();auto space=H5Screate_simple(1,&n,nullptr);
-    auto data=H5Dcreate2(file,"/obs/_index",type,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+    auto data=H5Dcreate2(file,index.c_str(),type,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
     require(data>=0,"create raw string fixture");
     const char* keys[]{"encoding-type","encoding-version"};
     const std::string values[]{"string-array","0.2.0"};
@@ -44,7 +44,13 @@ void replace_index(const std::string& path,const std::vector<std::string>& names
         for (const auto& name:names) values.push_back(name.c_str());
         require(H5Dwrite(data,type,H5S_ALL,H5S_ALL,H5P_DEFAULT,values.data())>=0,"write variable strings");
     }
-    H5Dclose(data);H5Sclose(space);H5Tclose(type);H5Fclose(file);
+    H5Dclose(data);H5Sclose(space);H5Tclose(type);
+}
+void replace_index(const std::string& path,const std::vector<std::string>& names,bool fixed,std::size_t width=48) {
+    auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(file>=0,"open raw string fixture");
+    replace_index(file,names,fixed,width);
+    require(H5Fclose(file)>=0,"close raw string fixture");
 }
 void corrupt_var_index_version(const std::string& path) {
     auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
@@ -89,11 +95,42 @@ void empty_dataset_invalid_peer(const std::filesystem::path& root) {
     require(sentinel==-1,"empty selected variables changed output sentinel");
     data.close();H5Fclose(writable);
 }
+void shorter_var_index_after_snapshot(const std::filesystem::path& root) {
+    const auto dir=root/"short-var-index";
+    std::filesystem::create_directories(dir);
+    const auto manifest_path=(dir/"manifest.h5ad").string();
+    const auto component_path=(dir/"component.h5ad").string();
+    const std::vector<std::string> names{"gene-0","gene-1","gene-2"};
+    auto data=AnnData::empty(0,names.size());
+    data.set_var(Table::with_index(names));
+    write_h5ad(manifest_path,data);write_h5ad(component_path,data);
+
+    // Keep a writer open before the read-only backed snapshots are created.
+    auto writable=H5Fopen(component_path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(writable>=0,"open writable component before backed snapshot");
+    auto manifest=open_h5ad(manifest_path);
+    BackedAnnData files[]{open_h5ad(component_path)};
+
+    // The replacement remains a valid string-array 0.2 index, but its stored
+    // length no longer matches the already-open component's var axis.
+    replace_index(writable,{"gene-0","gene-1"},false,48,"/var");
+    require(H5Fflush(writable,H5F_SCOPE_GLOBAL)>=0,"flush shortened component index");
+    const std::size_t ids[]{0};
+    try {
+        detail::compare_backed_component_indexes(manifest,files,1,ids,1,range{0,0});
+        throw std::runtime_error("empty variable selection accepted a shortened component index");
+    } catch (const Error& e) {
+        require(e.code()==ErrorCode::shape_mismatch,"shortened component index lost its shape error");
+    }
+    files[0].close();manifest.close();
+    require(H5Fclose(writable)>=0,"close writable component");
+}
 int main(int argc,char** argv) {
     try {
         if (argc!=2) throw std::runtime_error("output directory required");
         std::filesystem::create_directories(argv[1]);
         empty_dataset_invalid_peer(argv[1]);
+        shorter_var_index_after_snapshot(argv[1]);
         const auto path=(std::filesystem::path(argv[1])/"index.h5ad").string();
         auto a=AnnData::empty(128,0);
         std::vector<std::string> names;
@@ -127,6 +164,13 @@ int main(int argc,char** argv) {
         detail::compare_backed_component_indexes(oracle.obs(),nullptr,0,nullptr,0,columns);
         detail::compare_backed_component_indexes(oracle.obs().select(range{0,0}),files,2,ids,3,range{0,0});
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs().select(range{0,0}),files,2,ids,3,indices{0}); });
+        detail::compare_backed_component_indexes(files[0],files,2,ids,3,columns);
+        detail::compare_backed_component_indexes(files[0],files,2,ids,3,range{0,0});
+        const std::size_t obs_offsets[]{0,128};
+        const std::size_t obs_positions[]{127,0,93,0,1,93,126,64,63,64};
+        BackedAnnData obs_peer[]{open_h5ad(path,options)};
+        detail::compare_backed_observation_indexes(f,obs_peer,1,obs_offsets,Axis::gather(obs_positions,10),0);
+        obs_peer[0].close();
         const std::size_t bad_id[]{2};
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,bad_id,1,columns); });
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,indices{127,0,93,0,2,93,126,64,63,64}); });
@@ -136,6 +180,12 @@ int main(int argc,char** argv) {
             throw std::runtime_error("empty reference accepted a malformed peer index");
         } catch (const Error& e) {
             require(e.code()==ErrorCode::unsupported_version,"empty reference lost peer index version error");
+        }
+        try {
+            detail::compare_backed_component_indexes(files[0],files,2,ids,3,range{0,0});
+            throw std::runtime_error("empty variable bridge accepted malformed peer index");
+        } catch (const Error& e) {
+            require(e.code()==ErrorCode::unsupported_version,"empty variable bridge lost peer version error");
         }
         files[1].close();
         rejects([&] { detail::compare_backed_component_indexes(oracle.obs(),files,2,ids,3,columns); });

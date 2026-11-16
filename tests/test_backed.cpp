@@ -1009,6 +1009,12 @@ void test_selected_index_metadata(const std::filesystem::path& root) {
                           kind == 1 ? ErrorCode::unsupported_version :
                           kind == 2 ? ErrorCode::unsupported_encoding : ErrorCode::shape_mismatch;
         expect_error(code, [&] { (void)empty.size(); }, "empty selection failed to validate index metadata");
+        if (kind == 0)
+            require(store.var().select(indices{0}).index_name() == "gene_id",
+                    "generic table selection prematurely required string-array index encoding");
+        else
+            expect_error(code, [&] { (void)empty.select(all); },
+                         "table selection skipped fresh index metadata validation");
         H5Dclose(index); H5Fclose(file); store.close();
     }
 }

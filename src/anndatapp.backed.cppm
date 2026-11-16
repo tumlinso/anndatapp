@@ -436,6 +436,11 @@ std::size_t prepared_read_retained_bytes(const PreparedRead&);
 enum class WriteBackend { hdf5, zarr };
 struct WriteBudgets { std::size_t scratch_bytes, packing_bytes; };
 WriteBudgets write_budgets(WriteBackend, std::size_t scratch_bytes);
+PreparedRead prepare_backed_x_read(const BackedAnnData&, ::anndatapp::Selection obs, ::anndatapp::Selection var);
+void compare_backed_observation_indexes(const BackedAnnData&, const BackedAnnData* files,
+    std::size_t file_count, const std::size_t* offsets, const ::anndatapp::Axis& rows, std::size_t selector_bytes);
+void compare_backed_component_indexes(const BackedAnnData&, const BackedAnnData*, std::size_t file_count,
+    const std::size_t* ids, std::size_t count, const ::anndatapp::Selection& columns);
 void compare_backed_table_indexes(const BackedTable&, const BackedTable&);
 void compare_backed_table_indexes(const BackedTable&, const BackedTable*, std::size_t count);
 void compare_backed_component_indexes(const BackedTable&, const BackedAnnData*, std::size_t file_count,

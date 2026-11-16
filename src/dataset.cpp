@@ -224,8 +224,9 @@ Selection segment_rows(const Impl& p, const Axis& rows, const Segment& s) {
         out.push_back(std::ptrdiff_t(rows.index(s.first + i) - p.offsets[s.component]));
     return indices(std::move(out));
 }
-BackedArray selected_x(const Impl& p, const Axis& rows, const Axis& cols, const Segment& s) {
-    return p.files[s.component].x().select({segment_rows(p, rows, s), axis_selection(cols, p.n_vars)});
+PreparedRead prepared_x(const Impl& p, const Axis& rows, const Axis& cols, const Segment& s) {
+    return detail::prepare_backed_x_read(p.files[s.component], segment_rows(p, rows, s),
+                                       axis_selection(cols, p.n_vars));
 }
 void compare_indexes(const BackedTable& left, const BackedTable& right,
                      std::string_view path, const char* message) {
@@ -246,30 +247,30 @@ void check_selection_indexes(const Impl& p, const Axis& rows, const Axis& cols) 
             fail(ErrorCode::invalid_argument, "AnnDataSet/X", "variable selection staging exceeds budget");
         const auto capacity = std::min({count, p.files.size(), (p.selector_bytes - selection) / sizeof(std::size_t)});
         auto columns = axis_selection(cols, p.n_vars);
-        auto vars = p.manifest.var().select(columns);
         auto components = capacity > 1 ? std::make_unique<std::size_t[]>(capacity) : nullptr;
         std::size_t used = 0;
-        auto compare = [&] {
-            if (!used) return;
-            auto* begin = components.get();
-            std::sort(begin, begin + used);
-            used = std::size_t(std::unique(begin, begin + used) - begin);
+        auto compare_ids = [&](const std::size_t* ids, std::size_t n) {
             try {
-                detail::compare_backed_component_indexes(vars, p.files.data(), p.files.size(),
-                                                          begin, used, columns);
+                detail::compare_backed_component_indexes(p.manifest, p.files.data(), p.files.size(), ids, n, columns);
             } catch (const Error& e) {
                 if (e.code() == ErrorCode::shape_mismatch)
                     fail(e.code(), "AnnDataSet/var", "component variable names differ");
                 throw;
             }
+        };
+        auto compare = [&] {
+            if (!used) return;
+            auto* begin = components.get();
+            std::sort(begin, begin + used);
+            used = std::size_t(std::unique(begin, begin + used) - begin);
+            compare_ids(begin, used);
             used = 0;
         };
         for_segments(p, rows, cols, [&](const Segment& s) {
             const auto& file = p.files[s.component];
             if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
             if (capacity < 2) {
-                compare_indexes(vars, file.var().select(columns),
-                                "AnnDataSet/var", "component variable names differ");
+                compare_ids(&s.component, 1);
             } else {
                 components[used++] = s.component;
                 if (used == capacity) compare();
@@ -279,14 +280,14 @@ void check_selection_indexes(const Impl& p, const Axis& rows, const Axis& cols) 
     }
     // Variable selections and ID storage have been released before row
     // gathers consume the full collection selector budget.
-    for_segments(p, rows, cols, [&](const Segment& s) {
-        const auto& file = p.files[s.component];
-        if (!file.is_open()) fail(ErrorCode::invalid_argument, "AnnDataSet/components", "component is closed");
-        auto selected = detail::compose_axis(rows, Axis::stride(s.first, s.count), p.n_obs);
-        compare_indexes(p.manifest.obs().select(axis_selection(selected, p.n_obs)),
-                        file.obs().select(segment_rows(p, rows, s)),
-                        "AnnDataSet/obs", "component observation names differ from manifest");
-    });
+    try {
+        detail::compare_backed_observation_indexes(p.manifest, p.files.data(), p.files.size(),
+            p.offsets.data(), rows, p.selector_bytes - selector_cost(p, cols, 0));
+    } catch (const Error& e) {
+        if (e.code() == ErrorCode::shape_mismatch)
+            fail(e.code(), "AnnDataSet/obs", "component observation names differ from manifest");
+        throw;
+    }
 }
 void checked_shape(const DenseBuffer& dst, std::size_t m, std::size_t n, DType type) {
     if (dst.dtype != type) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "destination dtype differs from X");
@@ -469,7 +470,7 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
     std::size_t charged = 0;
     for_segments(*impl_, obs_, var_, [&](const Segment& s) {
         reserve_piece_staging(*p, s, var_, false, charged);
-        auto read = selected_x(*impl_, obs_, var_, s).prepare_read();
+        auto read = prepared_x(*impl_, obs_, var_, s);
         auto r = read.requirements();
         if (r.layout != out.layout) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "component matrix layouts differ");
         if (r.dtype != out.dtype) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "component matrix dtypes differ");
@@ -493,7 +494,7 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
             if (!p->retained) return;
             reserve_piece_staging(*p, s, cols, true, charged);
             if (!p->retained) return;
-            auto read = selected_x(*impl_, obs_, cols, s).prepare_read();
+            auto read = prepared_x(*impl_, obs_, cols, s);
             nnz = plus(nnz, read.requirements().nnz);
             retain_piece(*p, s, column, std::move(read), charged);
         }, &p->retained);
@@ -565,7 +566,7 @@ template<class F> void each_prepared(const Plan& p, F&& f) {
         for (const auto& piece : p.pieces) f(piece.segment, piece.column, piece.read);
     } else {
         walk_pieces(p, [&](Segment s, const Axis& cols, std::size_t column) {
-            auto read = selected_x(*p.owner, p.obs, cols, s).prepare_read();
+            auto read = prepared_x(*p.owner, p.obs, cols, s);
             f(s, column, read);
         });
     }

@@ -40,16 +40,16 @@ bool present(Session& s, std::string_view path) {
     auto info = s.backend->inspect(path);
     return info.exists && encoding(info, path) != "null";
 }
-std::vector<Axis> aligned_axes(Session& s, std::string_view path, const Axis& first,
-                               const std::optional<Axis>& second = {}) {
-    auto shape = logical_shape(s, path);
+std::shared_ptr<detail::BackedNode> aligned_node(const std::shared_ptr<Session>& s, std::string path,
+    const Axis& first, const std::optional<Axis>& second = {}) {
+    auto shape = logical_shape(*s, path);
     if (shape.empty() || (second && shape.size() < 2))
         fail(ErrorCode::shape_mismatch, path, "aligned element has insufficient rank");
     std::vector<Axis> axes;
     for (auto n : shape) axes.push_back(Axis{n});
     axes[0] = first;
     if (second) axes[1] = *second;
-    return axes;
+    return node_with_shape(s, std::move(path), shape, std::move(axes));
 }
 std::vector<std::string> mapping_names(const std::shared_ptr<detail::BackedDataset>& d, std::string_view path) {
     require_dataset(d);
@@ -138,7 +138,10 @@ void check_node(const std::shared_ptr<detail::BackedNode>& n) {
 }
 std::vector<std::size_t> logical_shape(Session& s, std::string_view path) {
     s.check_open();
-    const auto info = s.backend->inspect(path);
+    return logical_shape(s, path, s.backend->inspect(path));
+}
+std::vector<std::size_t> logical_shape(Session& s, std::string_view path, const NodeInfo& info) {
+    s.check_open();
     if (!info.exists) fail(ErrorCode::out_of_bounds, path, "stored element does not exist");
     // Sparse components are physical arrays without element-encoding attrs.
     if (!info.attrs.contains("encoding-type")) {
@@ -171,6 +174,11 @@ std::vector<std::size_t> logical_shape(Session& s, std::string_view path) {
 std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session> s, std::string path, std::vector<Axis> axes, bool raw) {
     s->check_open();
     auto shape = raw ? s->backend->inspect(path).shape : logical_shape(*s, path);
+    return node_with_shape(std::move(s), std::move(path), shape, std::move(axes), raw);
+}
+std::shared_ptr<detail::BackedNode> node_with_shape(std::shared_ptr<Session> s, std::string path,
+    const std::vector<std::size_t>& shape, std::vector<Axis> axes, bool raw) {
+    s->check_open();
     // Alignment is a metadata invariant of the stored object, including when
     // only a subset is requested. A subset must not hide oversized slots.
     auto component_count = static_cast<std::size_t>(std::count(path.begin(), path.end(), '/'));
@@ -298,9 +306,10 @@ BackedAnnData make_store(std::unique_ptr<Backend> backend, BackedOptions options
     auto session = std::make_shared<Session>(); session->backend = std::move(backend); session->options = options;
     if (encoding(session->backend->inspect("/"), "/") != "anndata") fail(ErrorCode::unsupported_encoding, "/", "root is not AnnData");
     auto axis_shape = [&](std::string_view path) {
-        if (encoding(session->backend->inspect(path), path) != "dataframe")
+        const auto info = session->backend->inspect(path);
+        if (encoding(info, path) != "dataframe")
             fail(ErrorCode::unsupported_encoding, path, "AnnData axis must be a dataframe");
-        auto shape = logical_shape(*session, path);
+        auto shape = logical_shape(*session, path, info);
         if (shape.size() != 1) fail(ErrorCode::shape_mismatch, path, "AnnData axis must have rank one");
         return shape;
     };
@@ -337,16 +346,19 @@ std::size_t BackedAnnDataView::n_vars() const { backed_detail::require_dataset(i
 bool BackedAnnDataView::has_x() const { backed_detail::require_dataset(impl_); return backed_detail::present(*impl_->session, "/X"); }
 BackedArray BackedAnnDataView::x() const {
     backed_detail::require_dataset(impl_);
-    if (!has_x()) throw Error(ErrorCode::out_of_bounds, "/X", "dataset has no X");
-    return BackedArray(node(impl_->session, "/X", {impl_->obs, impl_->var}));
+    const auto info = impl_->session->backend->inspect("/X");
+    if (!info.exists || encoding(info, "/X") == "null")
+        throw Error(ErrorCode::out_of_bounds, "/X", "dataset has no X");
+    return BackedArray(backed_detail::node_with_shape(impl_->session, "/X",
+        logical_shape(*impl_->session, "/X", info), {impl_->obs, impl_->var}));
 }
 BackedTable BackedAnnDataView::obs() const { backed_detail::require_dataset(impl_); auto n=node(impl_->session, "/obs", {impl_->obs}); n->prune_categories=impl_->prune_categories; return BackedTable(std::move(n)); }
 BackedTable BackedAnnDataView::var() const { backed_detail::require_dataset(impl_); auto n=node(impl_->session, "/var", {impl_->var}); n->prune_categories=impl_->prune_categories; return BackedTable(std::move(n)); }
 BackedArray BackedAnnDataView::layer(std::string_view key) const { backed_detail::require_dataset(impl_); return BackedArray(node(impl_->session, child("/layers",key), {impl_->obs, impl_->var})); }
-BackedElement BackedAnnDataView::obsm(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/obsm",key); auto n=node(impl_->session,path,backed_detail::aligned_axes(*impl_->session,path,impl_->obs)); n->prune_categories=impl_->prune_categories; return BackedElement(std::move(n)); }
-BackedElement BackedAnnDataView::varm(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/varm",key); auto n=node(impl_->session,path,backed_detail::aligned_axes(*impl_->session,path,impl_->var)); n->prune_categories=impl_->prune_categories; return BackedElement(std::move(n)); }
-BackedArray BackedAnnDataView::obsp(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/obsp",key); return BackedArray(node(impl_->session,path,backed_detail::aligned_axes(*impl_->session,path,impl_->obs,impl_->obs))); }
-BackedArray BackedAnnDataView::varp(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/varp",key); return BackedArray(node(impl_->session,path,backed_detail::aligned_axes(*impl_->session,path,impl_->var,impl_->var))); }
+BackedElement BackedAnnDataView::obsm(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/obsm",key); auto n=backed_detail::aligned_node(impl_->session,path,impl_->obs); n->prune_categories=impl_->prune_categories; return BackedElement(std::move(n)); }
+BackedElement BackedAnnDataView::varm(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/varm",key); auto n=backed_detail::aligned_node(impl_->session,path,impl_->var); n->prune_categories=impl_->prune_categories; return BackedElement(std::move(n)); }
+BackedArray BackedAnnDataView::obsp(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/obsp",key); return BackedArray(backed_detail::aligned_node(impl_->session,path,impl_->obs,impl_->obs)); }
+BackedArray BackedAnnDataView::varp(std::string_view key) const { backed_detail::require_dataset(impl_); auto path=child("/varp",key); return BackedArray(backed_detail::aligned_node(impl_->session,path,impl_->var,impl_->var)); }
 std::vector<std::string> BackedAnnDataView::layer_names() const { return backed_detail::mapping_names(impl_,"/layers"); }
 std::vector<std::string> BackedAnnDataView::obsm_names() const { return backed_detail::mapping_names(impl_,"/obsm"); }
 std::vector<std::string> BackedAnnDataView::varm_names() const { return backed_detail::mapping_names(impl_,"/varm"); }

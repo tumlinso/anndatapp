@@ -68,10 +68,9 @@ struct Descriptor {
     std::vector<Axis> axes;
     std::vector<std::size_t> shape;
 };
-Descriptor describe(const NodePtr& n) {
+Descriptor describe(const NodePtr& n, NodeInfo info) {
     backed_detail::check_node(n);
     auto& s = *n->session;
-    auto info = s.backend->inspect(n->path);
     if (!info.exists) fail(ErrorCode::out_of_bounds, n, "backed array does not exist");
     auto code = n->raw_array ? std::string("array") : backed_detail::encoding(info, n->path);
     Descriptor d;
@@ -96,7 +95,7 @@ Descriptor describe(const NodePtr& n) {
         if (children != std::vector<std::string>{"data", "indices", "indptr"})
             fail(ErrorCode::unsupported_encoding, n, "sparse group has unexpected or missing children");
         d.layout = code == "csr_matrix" ? Layout::csr : Layout::csc;
-        d.source_shape = backed_detail::logical_shape(s, n->path);
+        d.source_shape = backed_detail::logical_shape(s, n->path, info);
         if (d.source_shape.size() != 2) fail(ErrorCode::shape_mismatch, n, "sparse shape must have rank two");
         d.data = s.backend->inspect(backed_detail::child(n->path, "data"));
         d.indices = s.backend->inspect(backed_detail::child(n->path, "indices"));
@@ -124,6 +123,10 @@ Descriptor describe(const NodePtr& n) {
         d.shape.push_back(d.axes[i].size);
     }
     return d;
+}
+Descriptor describe(const NodePtr& n) {
+    backed_detail::check_node(n);
+    return describe(n, n->session->backend->inspect(n->path));
 }
 std::ptrdiff_t add_stride(std::ptrdiff_t a, std::ptrdiff_t b, const NodePtr& n) {
     std::ptrdiff_t out;
@@ -960,6 +963,23 @@ struct PreparedReadImpl {
     NodePtr node;
     ReadRequirements requirements;
 };
+PreparedRead prepare_backed_x_read(const BackedAnnData& source, ::anndatapp::Selection obs, ::anndatapp::Selection var) {
+    source.n_obs();
+    const auto& data = BackedAccess::get(source);
+    auto info = data->session->backend->inspect("/X");
+    if (backed_detail::encoding(info, "/X") == "null")
+        throw Error(ErrorCode::out_of_bounds, "/X", "dataset has no X");
+    const auto shape = backed_detail::logical_shape(*data->session, "/X", info);
+    auto n = backed_detail::node_with_shape(data->session, "/X", shape, {data->obs, data->var});
+    auto d = describe(n, std::move(info));
+    d.axes[0] = backed_detail::select_axis(d.axes[0], obs);
+    d.axes[1] = backed_detail::select_axis(d.axes[1], var);
+    d.shape = {d.axes[0].size, d.axes[1].size};
+    n->axes = d.axes;
+    auto p = std::make_shared<PreparedReadImpl>();
+    p->node = std::move(n); p->requirements = ::anndatapp::requirements(p->node, d);
+    return BackedAccess::prepared(std::move(p));
+}
 std::size_t prepared_read_retained_bytes(const PreparedRead& read) {
     const auto& p = BackedAccess::get(read);
     if (!p) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
@@ -1134,7 +1154,8 @@ BackedArray BackedArray::select(std::vector<Selection> selections) const {
         selected->color_override->axis = d.axes.front();
         return BackedArray(std::move(selected));
     }
-    auto selected = backed_detail::node(node_->session, node_->path, std::move(d.axes), node_->raw_array);
+    auto selected = backed_detail::node_with_shape(node_->session, node_->path, d.source_shape,
+                                                    std::move(d.axes), node_->raw_array);
     selected->writable = node_->writable;
     selected->code_recode = node_->code_recode;
     selected->prune_categories = node_->prune_categories;

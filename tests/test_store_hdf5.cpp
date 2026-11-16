@@ -54,7 +54,7 @@ void check_sparse_scans(const std::filesystem::path& base) {
     for (bool csc : {false, true}) {
         sparse_fixture(path, csc);
         auto d = open_h5ad(path);
-        auto selected = d.x().select({indices{3, 1, 3}, indices{2, 0, 2}}).prepare_read();
+        auto selected = detail::prepare_backed_x_read(d, indices{3, 1, 3}, indices{2, 0, 2});
         const auto r = selected.requirements();
         const auto n = csc ? std::size_t{6} : std::size_t{9};
         require(r.nnz == n && r.layout == (csc ? Layout::csc : Layout::csr) &&
@@ -95,7 +95,7 @@ void check_sparse_scans(const std::filesystem::path& base) {
     replace_sparse_buffer(path, "/X/indptr", H5T_NATIVE_INT64, bad_offsets);
     {
         auto d = open_h5ad(path); bool rejected = false;
-        try { (void)d.x().select({indices{2}, indices{0}}).prepare_read(); }
+        try { (void)detail::prepare_backed_x_read(d, indices{2}, indices{0}); }
         catch (const Error& e) { rejected = e.code() == ErrorCode::invalid_sparse_structure; }
         require(rejected, "nonmonotonic interior offsets were not checked");
     }
@@ -104,10 +104,63 @@ void check_sparse_scans(const std::filesystem::path& base) {
     replace_sparse_buffer(path, "/X/indices", H5T_NATIVE_INT32, bad_indices);
     {
         auto d = open_h5ad(path); bool rejected = false;
-        try { (void)d.x().select({indices{1}, indices{0}}).prepare_read(); }
+        try { (void)detail::prepare_backed_x_read(d, indices{1}, indices{0}); }
         catch (const Error& e) { rejected = e.code() == ErrorCode::invalid_sparse_structure; }
         require(rejected, "invalid filtered-out sparse index was not checked");
     }
+}
+template<class F> void expect_error(ErrorCode code, F operation, const char* message) {
+    try { operation(); } catch (const Error& e) { require(e.code() == code, message); return; }
+    throw std::runtime_error(message);
+}
+void check_acquisition_boundaries(const std::filesystem::path& base) {
+    auto store = create_hdf5_store(base.string() + ".acquisition");
+    auto source = AnnData::empty(4, 3);
+    auto x = Array::empty<float>({4, 3}); auto p = x.edit().dense<float>().data();
+    for (std::size_t i = 0; i < 12; ++i) p[i] = float(i);
+    source.set_x(std::move(x));
+    store.write_anndata("/left", source.view());
+    auto other = AnnData::empty(4, 3);
+    auto y = Array::empty<float>({4, 3}); y.edit().dense<float>().data()[0] = 99;
+    other.set_x(std::move(y)); store.write_anndata("/right", other.view());
+    auto left = store.anndata("/left"), right = store.anndata("/right");
+    auto selected = detail::prepare_backed_x_read(left, range{3, 0, -1}, mask{1, 0, 1});
+    std::array<float, 6> values{};
+    selected.read_into(DenseBuffer::from(values.data(), {3, 2}));
+    require(values == std::array<float, 6>{9, 11, 6, 8, 3, 5},
+            "fused X selection changed range/mask order");
+    expect_error(ErrorCode::out_of_bounds,
+        [&] { (void)detail::prepare_backed_x_read(left, indices{4}, all); },
+        "fused X acquisition accepted an out-of-bounds selector");
+    expect_error(ErrorCode::shape_mismatch,
+        [&] { (void)detail::prepare_backed_x_read(left, all, mask{1}); },
+        "fused X acquisition accepted a malformed mask");
+    auto sibling = detail::prepare_backed_x_read(right, indices{0}, indices{0});
+    store.write_element("/left/X", Element(Array::empty<float>({5, 3})).view());
+    expect_error(ErrorCode::invalid_argument, [&] { (void)selected.requirements(); },
+                 "replacement did not invalidate the prepared X node");
+    float value = 0; sibling.read_into(DenseBuffer::from(&value, {1, 1}));
+    require(value == 99, "same logical X path in another root reused or invalidated metadata");
+    auto malformed = store.anndata("/left");
+    expect_error(ErrorCode::shape_mismatch,
+        [&] { (void)detail::prepare_backed_x_read(malformed, indices{0}, indices{0}); },
+        "selected X hid an oversized stored axis");
+    store.write_element("/left/X", Element(Array::empty<float>({4, 3, 1})).view());
+    malformed = store.anndata("/left");
+    expect_error(ErrorCode::shape_mismatch,
+        [&] { (void)detail::prepare_backed_x_read(malformed, indices{0}, indices{0}); },
+        "selected X hid a malformed stored rank");
+    store.write_element("/left/obsm/oversized", Element(Array::empty<float>({5, 2})).view());
+    store.write_element("/left/varm/oversized", Element(Array::empty<float>({4, 2})).view());
+    malformed = store.anndata("/left");
+    auto view = malformed.slice(indices{0}, indices{0});
+    expect_error(ErrorCode::shape_mismatch, [&] { (void)view.obsm("oversized"); },
+                 "selected obsm hid an oversized stored observation axis");
+    expect_error(ErrorCode::shape_mismatch, [&] { (void)view.varm("oversized"); },
+                 "selected varm hid an oversized stored variable axis");
+    store.close();
+    expect_error(ErrorCode::invalid_argument, [&] { (void)sibling.requirements(); },
+                 "closed rooted store left a prepared X node valid");
 }
 void run(const std::filesystem::path& path) {
     auto store = create_hdf5_store(path.string(), {}, 512);
@@ -168,5 +221,6 @@ int main(int argc, char** argv) {
         if (argc != 2) throw std::runtime_error("expected temporary HDF5 path");
         run(argv[1]);
         check_sparse_scans(argv[1]);
+        check_acquisition_boundaries(argv[1]);
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

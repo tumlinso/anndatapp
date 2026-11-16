@@ -250,6 +250,18 @@ std::shared_ptr<detail::BackedNode> checked_table_index_node(const std::shared_p
 std::string string_attr(const NodeInfo&, std::string_view key, std::string_view path);
 std::vector<std::string> strings_attr(const NodeInfo&, std::string_view key, std::string_view path);
 std::vector<std::size_t> logical_shape(Session&, std::string_view path);
+// info must be freshly inspected from this session and path within this operation.
+std::vector<std::size_t> logical_shape(Session&, std::string_view path, const NodeInfo& info);
+struct TableIndexBinding {
+    std::shared_ptr<detail::BackedNode> table, index;
+    NodeInfo index_info;
+    std::vector<std::size_t> shape;
+};
+TableIndexBinding bind_table_index(const std::shared_ptr<detail::BackedNode>&, bool require_strings = false);
+TableIndexBinding bind_table_index(std::shared_ptr<Session>, std::string path,
+                                  std::vector<Axis> axes = {}, bool require_strings = false);
+TableIndexBinding bind_dataset_axis_index(const BackedAnnData&, bool observations,
+                                         const Selection&, bool require_strings = true);
 Array read_array(const std::shared_ptr<detail::BackedNode>&);
 Element read_record_field(const std::shared_ptr<detail::BackedNode>&, const NodeInfo&, std::string_view);
 RecordArray read_record(const std::shared_ptr<detail::BackedNode>&, const NodeInfo&);
@@ -272,6 +284,10 @@ void copy_promoted_color(Backend&, std::string_view path, const std::shared_ptr<
 
 void check_node(const std::shared_ptr<detail::BackedNode>&);
 std::shared_ptr<detail::BackedNode> node(std::shared_ptr<Session>, std::string path, std::vector<Axis> axes = {}, bool raw = false);
+// The full logical shape is decoded from fresh metadata for this session/path.
+// Alignment and revision initialization remain identical to node().
+std::shared_ptr<detail::BackedNode> node_with_shape(std::shared_ptr<Session>, std::string path,
+    const std::vector<std::size_t>& shape, std::vector<Axis> axes = {}, bool raw = false);
 Axis select_axis(const Axis& parent, const Selection& selection, const std::shared_ptr<detail::BackedNode>& labels = {});
 BackedAnnDataView root_view(const std::shared_ptr<detail::BackedDataset>&);
 } // namespace backed_detail
@@ -293,6 +309,7 @@ struct BackedNode {
 };
 struct BackedAccess {
     static const std::shared_ptr<PreparedReadImpl>& get(const PreparedRead& v) { return v.impl_; }
+    static PreparedRead prepared(std::shared_ptr<PreparedReadImpl> value) { return PreparedRead(std::move(value)); }
     static BackedAnnData owner(std::shared_ptr<BackedDataset> value) { return BackedAnnData(std::move(value)); }
     static BackedElement element(std::shared_ptr<BackedNode> value) { return BackedElement(std::move(value)); }
     static BackedArray array(std::shared_ptr<BackedNode> value) { return BackedArray(std::move(value)); }

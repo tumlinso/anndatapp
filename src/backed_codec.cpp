@@ -328,26 +328,9 @@ std::string table_index_key(const std::shared_ptr<detail::BackedNode>& value,
 
 std::shared_ptr<detail::BackedNode> table_index_node(
     const std::shared_ptr<detail::BackedNode>& value, bool selected = true) {
-    const auto info = inspect_node(value);
-    const auto key = table_index_key(value, &info);
-    const auto index_path = child(value->path, key);
-    if (!selected || value->axes.empty()) return node(value->session, index_path);
-    if (value->axes.size() != 1)
-        codec_fail(ErrorCode::shape_mismatch, value->path,
-                   "dataframe selection must contain exactly one row axis");
-    return node(value->session, index_path, {value->axes.front()});
-}
-
-Axis table_axis(const std::shared_ptr<detail::BackedNode>& value,
-                const std::shared_ptr<detail::BackedNode>& index) {
-    const auto index_shape = base_shape(index);
-    if (index_shape.size() != 1)
-        codec_fail(ErrorCode::shape_mismatch, index->path, "table index must be one-dimensional");
-    if (value->axes.empty()) return Axis{index_shape.front(), 0, 1, {}};
-    if (value->axes.size() != 1)
-        codec_fail(ErrorCode::shape_mismatch, value->path,
-                   "dataframe selection must contain exactly one row axis");
-    return value->axes.front();
+    auto binding = bind_table_index(value);
+    if (!selected) binding.index->axes = {Axis{binding.shape.front()}};
+    return std::move(binding.index);
 }
 
 std::size_t column_length(const std::shared_ptr<detail::BackedNode>& value,
@@ -559,16 +542,47 @@ Element read_element(const std::shared_ptr<detail::BackedNode>& value) {
 
 } // namespace
 
-std::shared_ptr<detail::BackedNode> checked_table_index_node(const std::shared_ptr<detail::BackedNode>& value) {
-    check_node(value);
-    auto index = table_index_node(value);
-    const auto info = inspect_node(index);
-    if (encoding(info, index->path) != "string-array")
-        codec_fail(ErrorCode::unsupported_dtype, index->path,
+TableIndexBinding bind_table_index(std::shared_ptr<Session> session, std::string path,
+                                  std::vector<Axis> axes, bool require_strings) {
+    session->check_open();
+    const auto info = session->backend->inspect(path);
+    if (encoding(info, path) != "dataframe")
+        codec_fail(ErrorCode::unsupported_encoding, path, "expected dataframe encoding");
+    auto index_path = child(path, string_attr(info, "_index", path));
+    auto index_info = session->backend->inspect(index_path);
+    const auto index_code = encoding(index_info, index_path);
+    const auto shape = logical_shape(*session, index_path, index_info);
+    if (shape.size() != 1)
+        codec_fail(ErrorCode::shape_mismatch, index_path, "table index must be one-dimensional");
+    if (require_strings && index_code != "string-array")
+        codec_fail(ErrorCode::unsupported_dtype, index_path,
                    "AnnData table indexes currently require string-array encoding");
-    if (info.shape.size() != 1)
-        codec_fail(ErrorCode::shape_mismatch, index->path, "table index must be one-dimensional");
-    return index;
+    if (require_strings && index_info.shape.size() != 1)
+        codec_fail(ErrorCode::shape_mismatch, index_path, "table index must be one-dimensional");
+    auto table = node_with_shape(session, std::move(path), shape, std::move(axes));
+    auto index = node_with_shape(std::move(session), std::move(index_path), shape, table->axes);
+    return {std::move(table), std::move(index), std::move(index_info), shape};
+}
+TableIndexBinding bind_table_index(const std::shared_ptr<detail::BackedNode>& value, bool require_strings) {
+    check_node(value);
+    return bind_table_index(value->session, value->path, value->axes, require_strings);
+}
+TableIndexBinding bind_dataset_axis_index(const BackedAnnData& source, bool observations,
+                                         const Selection& selection, bool require_strings) {
+    // n_obs performs the dataset session and structural-revision check.
+    source.n_obs();
+    const auto& data = detail::BackedAccess::get(source);
+    auto binding = bind_table_index(data->session, observations ? "/obs" : "/var",
+                                   {observations ? data->obs : data->var}, require_strings);
+    if (binding.shape[0] != (observations ? data->obs.size : data->var.size))
+        codec_fail(ErrorCode::shape_mismatch, binding.table->path,
+                   "stored table length differs from its AnnData axis");
+    binding.index->axes[0] = select_axis(binding.index->axes[0], selection, binding.index);
+    binding.table->axes = binding.index->axes;
+    return binding;
+}
+std::shared_ptr<detail::BackedNode> checked_table_index_node(const std::shared_ptr<detail::BackedNode>& value) {
+    return bind_table_index(value, true).index;
 }
 
 } // namespace anndatapp::backed_detail
@@ -853,14 +867,11 @@ BackedColumn BackedTable::column(std::string_view column_name) const {
 }
 
 BackedTable BackedTable::select(Selection rows) const {
-    backed_detail::check_node(node_);
-    auto index = backed_detail::table_index_node(node_, false);
-    const auto parent = backed_detail::table_axis(node_, index);
-    auto result = backed_detail::node(node_->session, node_->path,
-        {backed_detail::select_axis(parent, rows, index)});
-    result->writable = node_->writable;
-    result->prune_categories = true;
-    return BackedTable(std::move(result));
+    auto binding = backed_detail::bind_table_index(node_);
+    binding.table->axes[0] = backed_detail::select_axis(binding.table->axes[0], rows, binding.index);
+    binding.table->writable = node_->writable;
+    binding.table->prune_categories = true;
+    return BackedTable(std::move(binding.table));
 }
 
 Table BackedTable::read() const {
