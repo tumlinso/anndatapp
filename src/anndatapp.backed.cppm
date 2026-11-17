@@ -113,6 +113,7 @@ private:
     std::unique_ptr<detail::TransferContextImpl> impl_;
     explicit TransferContext(std::unique_ptr<detail::TransferContextImpl>);
     friend class BackedArray;
+    friend struct detail::BackedAccess;
 };
 // Retained read-only file bytes. Typed interpretation is an explicit Linux/Clang
 // extension contract; it does not establish C++ object lifetime in file storage.
@@ -438,6 +439,14 @@ struct WriteBudgets { std::size_t scratch_bytes, packing_bytes; };
 WriteBudgets write_budgets(WriteBackend, std::size_t scratch_bytes);
 PreparedRead prepare_backed_x_read(const BackedAnnData&, ::anndatapp::Selection obs, ::anndatapp::Selection var);
 ReadRequirements backed_x_metadata(const BackedAnnData&);
+// Serialized collection execution; ordinary worker contexts retain private backends.
+// False leaves a valid checked piece but admits no optimized execution for it.
+bool prepare_backed_x_read(const BackedAnnData&, ::anndatapp::Selection obs, ::anndatapp::Selection var,
+    TransferContext&, std::size_t retained_budget, PreparedRead&);
+std::size_t backed_read_context_bytes(const TransferContext&);
+void refresh_backed_read_context(TransferContext&);
+void preflight_backed_read(TransferContext&, const PreparedRead&, const SparseBuffer&);
+void read_preflighted_backed(TransferContext&, const PreparedRead&, const SparseBuffer&);
 void compare_backed_observation_indexes(const BackedAnnData&, const BackedAnnData* files,
     std::size_t file_count, const std::size_t* offsets, const ::anndatapp::Axis& rows, std::size_t selector_bytes);
 void compare_backed_component_indexes(const BackedAnnData&, const BackedAnnData*, std::size_t file_count,

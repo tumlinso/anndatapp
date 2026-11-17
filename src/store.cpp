@@ -71,7 +71,9 @@ public:
         return std::make_unique<RootBackend>(std::move(fork), root_, projection_, unversioned_);
     }
     bool reuse_numeric_reads() const override { return base().reuse_numeric_reads(); }
+    std::size_t numeric_retained_bytes(const NodeInfo& info,std::string_view p) const override { return base().numeric_retained_bytes(info,path(p)); }
     std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view p) override { return base().prepare_numeric(path(p)); }
+    std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view p,const NodeInfo& info) override { return base().prepare_numeric(path(p),info); }
     std::size_t retained_scratch_bytes() const override { return base().retained_scratch_bytes(); }
     std::size_t scratch_allocations() const override { return base().scratch_allocations(); }
     NodeInfo inspect(std::string_view p) override {

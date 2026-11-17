@@ -298,6 +298,229 @@ void check_collection(const fs::path& root, Layout layout) {
         (void)open_h5ads(manifest.string(), std::move(missing));
     });
 }
+struct ReuseSparseFixture {
+    std::vector<float> values;
+    std::vector<std::int64_t> indices;
+    std::vector<std::int64_t> offsets;
+};
+ReuseSparseFixture reuse_sparse_fixture(Layout layout, bool second) {
+    if (layout == Layout::csr) {
+        if (second) return {{20, 21, 22, 23, 24, 25, 26}, {0, 3, 1, 1, 2, 0, 2}, {0, 2, 5, 7}};
+        return {{0, 11, 10, 12, 13, 0, 14}, {1, 1, 3, 0, 2, 2, 3}, {0, 3, 5, 7}};
+    }
+    if (second) return {{20, 25, 22, 23, 24, 26, 21}, {0, 2, 1, 1, 1, 2, 0}, {0, 2, 4, 6, 7}};
+    return {{12, 0, 11, 13, 0, 10, 14}, {1, 0, 0, 1, 2, 0, 2}, {0, 1, 3, 5, 7}};
+}
+template<class I, class O>
+void set_reuse_sparse_x(AnnData& a, Layout layout, const ReuseSparseFixture& source) {
+    auto x = layout == Layout::csr ? Array::csr<float, I, O>(3, 4, source.values.size())
+                                   : Array::csc<float, I, O>(3, 4, source.values.size());
+    auto v = layout == Layout::csr ? x.edit().template csr<float, I, O>()
+                                   : x.edit().template csc<float, I, O>();
+    for (std::size_t i = 0; i < source.values.size(); ++i) {
+        v.values()[i] = source.values[i];
+        v.unsafe_indices()[i] = static_cast<I>(source.indices[i]);
+    }
+    for (std::size_t i = 0; i < source.offsets.size(); ++i)
+        v.unsafe_offsets()[i] = static_cast<O>(source.offsets[i]);
+    a.set_x(std::move(x));
+}
+void write_reuse_component(const fs::path& path, Layout layout, bool second) {
+    auto a = AnnData::empty(3, 4);
+    if (layout == Layout::dense) {
+        const float first[]{0, 11, 0, 10, 12, 0, 13, 0, 0, 0, 0, 14};
+        const float last[]{20, 0, 0, 21, 0, 45, 24, 0, 25, 0, 26, 0};
+        auto x = Array::empty<float>({3, 4});
+        std::copy_n(second ? last : first, 12, x.edit().dense<float>().data());
+        a.set_x(std::move(x));
+    } else if (second) {
+        auto source = reuse_sparse_fixture(layout, true);
+        set_reuse_sparse_x<std::int64_t, std::int64_t>(a, layout, source);
+    } else {
+        auto source = reuse_sparse_fixture(layout, false);
+        set_reuse_sparse_x<std::int32_t, std::int32_t>(a, layout, source);
+    }
+    const auto prefix = std::string(second ? "right-" : "left-");
+    a.set_obs(Table::with_index({prefix + "0", prefix + "1", prefix + "2"}));
+    a.set_var(Table::with_index({"v0", "v1", "v2", "v3"}));
+    write_h5ad(path.string(), a);
+}
+void write_large_reuse_component(const fs::path& path) {
+    constexpr std::size_t tail = 10000;
+    auto a = AnnData::empty(3, 4);
+    auto x = Array::csr<float, std::int64_t, std::int64_t>(3, 4, tail + 5);
+    auto v = x.edit().csr<float, std::int64_t, std::int64_t>();
+    const auto source = reuse_sparse_fixture(Layout::csr, true);
+    for (std::size_t i = 0; i < 5; ++i) {
+        v.values()[i] = source.values[i]; v.unsafe_indices()[i] = source.indices[i];
+    }
+    for (std::size_t i = 5; i < tail + 5; ++i) {
+        v.values()[i] = float(i % 7); v.unsafe_indices()[i] = std::int64_t(i % 4);
+    }
+    v.unsafe_offsets()[0] = 0; v.unsafe_offsets()[1] = 2;
+    v.unsafe_offsets()[2] = 5; v.unsafe_offsets()[3] = tail + 5;
+    a.set_x(std::move(x));
+    a.set_obs(Table::with_index({"right-0", "right-1", "right-2"}));
+    a.set_var(Table::with_index({"v0", "v1", "v2", "v3"}));
+    write_h5ad(path.string(), a);
+}
+struct ReuseSparseOutput {
+    std::vector<float> values;
+    std::vector<std::int64_t> indices, offsets;
+};
+ReuseSparseOutput expected_reuse_sparse(Layout layout, const std::vector<std::ptrdiff_t>& rows,
+                                        const std::vector<std::ptrdiff_t>& columns) {
+    ReuseSparseOutput out;
+    out.offsets.push_back(0);
+    if (layout == Layout::csr) {
+        for (auto selected_row : rows) {
+            const auto component = selected_row / 3;
+            const auto local_row = selected_row % 3;
+            const auto source = reuse_sparse_fixture(layout, component != 0);
+            for (auto i = source.offsets[local_row]; i < source.offsets[local_row + 1]; ++i)
+                for (std::size_t j = 0; j < columns.size(); ++j)
+                    if (source.indices[std::size_t(i)] == columns[j]) {
+                        out.values.push_back(source.values[std::size_t(i)]);
+                        out.indices.push_back(std::int64_t(j));
+                    }
+            out.offsets.push_back(std::int64_t(out.values.size()));
+        }
+        return out;
+    }
+    for (auto selected_column : columns) {
+        for (std::size_t first = 0; first < rows.size();) {
+            const auto component = rows[first] / 3;
+            auto end = first + 1;
+            while (end < rows.size() && rows[end] / 3 == component) ++end;
+            const auto source = reuse_sparse_fixture(layout, component != 0);
+            for (auto i = source.offsets[std::size_t(selected_column)];
+                 i < source.offsets[std::size_t(selected_column) + 1]; ++i)
+                for (auto j = first; j < end; ++j)
+                    if (source.indices[std::size_t(i)] == rows[j] % 3) {
+                        out.values.push_back(source.values[std::size_t(i)]);
+                        out.indices.push_back(std::int64_t(j));
+                    }
+            first = end;
+        }
+        out.offsets.push_back(std::int64_t(out.values.size()));
+    }
+    return out;
+}
+void check_reused_sparse_plan(const PreparedAnnDataSetRead& plan, const ReadRequirements& requirements,
+                             const ReuseSparseOutput& expected, ReuseSparseOutput& output) {
+    require(requirements.nnz == expected.values.size(), "reused sparse requirements differ");
+    require(requirements.index_dtype == DType::int64 && requirements.offset_dtype == DType::int64,
+            "reused sparse component widths were not promoted");
+    SparseBuffer destination{output.values.data(), output.indices.data(), output.offsets.data(),
+                             requirements.dtype, requirements.index_dtype, requirements.offset_dtype,
+                             output.values.size(), output.indices.size(), output.offsets.size()};
+    plan.read_into(destination);
+    require(output.values == expected.values && output.indices == expected.indices && output.offsets == expected.offsets,
+            "reused sparse component binding changed raw output");
+}
+void check_closed_sparse_plan(const PreparedAnnDataSetRead& plan, const ReadRequirements& requirements,
+                              ReuseSparseOutput& output) {
+    std::fill(output.values.begin(), output.values.end(), -37);
+    std::fill(output.indices.begin(), output.indices.end(), -37);
+    std::fill(output.offsets.begin(), output.offsets.end(), -37);
+    SparseBuffer destination{output.values.data(), output.indices.data(), output.offsets.data(),
+                             requirements.dtype, requirements.index_dtype, requirements.offset_dtype,
+                             output.values.size(), output.indices.size(), output.offsets.size()};
+    expect_error(ErrorCode::invalid_argument, [&] { plan.read_into(destination); });
+    require(std::all_of(output.values.begin(), output.values.end(), [](float x) { return x == -37; }) &&
+            std::all_of(output.indices.begin(), output.indices.end(), [](std::int64_t x) { return x == -37; }) &&
+            std::all_of(output.offsets.begin(), output.offsets.end(), [](std::int64_t x) { return x == -37; }),
+            "closed prepared read modified sparse output");
+}
+void check_execution_resource_reuse(const fs::path& root, Layout layout) {
+    auto dir = root / (layout == Layout::csr ? "reuse-csr" : "reuse-csc");
+    fs::create_directories(dir);
+    write_reuse_component(dir / "left.h5ad", layout, false);
+    write_reuse_component(dir / "right.h5ad", layout, true);
+    DatasetOptions options;
+    // This forces the CSC plan to regenerate pieces when its selected columns
+    // and interleaved component visits exceed the retained-descriptor budget.
+    if (layout == Layout::csc) options.backed.scratch_bytes = 512;
+    auto data = create_h5ads((dir / "data.h5ads").string(),
+                             {{"left", "left.h5ad"}, {"right", "right.h5ad"}}, "sample", options);
+    const std::vector<std::ptrdiff_t> rows{0, 3, 1, 4, 2, 5, 0, 4};
+    const std::vector<std::ptrdiff_t> columns_a{3, 1, 3}, columns_b{2, 0};
+    auto a = data.slice(indices(rows), indices(columns_a)).prepare_x();
+    auto b = data.slice(indices(rows), indices(columns_b)).prepare_x();
+    const auto ar = a.requirements(), br = b.requirements();
+    require(ar.layout == layout && br.layout == layout && ar.shape == std::vector<std::size_t>({8, 3}) &&
+            br.shape == std::vector<std::size_t>({8, 2}), "reused plan requirements differ");
+    auto expected_a = expected_reuse_sparse(layout, rows, columns_a);
+    auto expected_b = expected_reuse_sparse(layout, rows, columns_b);
+    ReuseSparseOutput out_a{std::vector<float>(ar.nnz, -1), std::vector<std::int64_t>(ar.nnz, -1),
+                            std::vector<std::int64_t>((layout == Layout::csr ? ar.shape[0] : ar.shape[1]) + 1, -1)};
+    ReuseSparseOutput out_b{std::vector<float>(br.nnz, -1), std::vector<std::int64_t>(br.nnz, -1),
+                            std::vector<std::int64_t>((layout == Layout::csr ? br.shape[0] : br.shape[1]) + 1, -1)};
+    for (int repeat = 0; repeat < 4; ++repeat) {
+        check_reused_sparse_plan(a, ar, expected_a, out_a);
+        check_reused_sparse_plan(b, br, expected_b, out_b);
+    }
+    if (layout == Layout::csr) {
+        // Unlink a non-head plan while other live plans still own contexts.
+        auto first = data.slice(indices(rows), indices(columns_a)).prepare_x();
+        auto second = data.slice(indices(rows), indices(columns_b)).prepare_x();
+        first = PreparedAnnDataSetRead{};
+        check_reused_sparse_plan(second, second.requirements(), expected_b, out_b);
+        // Destroying a collection handle does not close a retained plan.
+        PreparedAnnDataSetRead retained;
+        {
+            auto temporary = open_h5ads((dir / "data.h5ads").string());
+            retained = temporary.slice(indices(rows), indices(columns_a)).prepare_x();
+        }
+        check_reused_sparse_plan(retained, retained.requirements(), expected_a, out_a);
+    }
+    if (layout == Layout::csr)
+        require(std::find(expected_a.values.begin(), expected_a.values.end(), 0.0f) != expected_a.values.end() &&
+                std::count(expected_a.indices.begin(), expected_a.indices.end(), 1) > 1,
+                "CSR regression fixture lost explicit zeros or duplicate selected entries");
+    data.close();
+    BackedOptions writable; writable.mode = AccessMode::read_write;
+    auto left = open_h5ad((dir / "left.h5ad").string(), writable);
+    auto right = open_h5ad((dir / "right.h5ad").string(), writable);
+    left.close(); right.close();
+    check_closed_sparse_plan(a, ar, out_a);
+    check_closed_sparse_plan(b, br, out_b);
+}
+void check_context_budgets(const fs::path& root) {
+    const auto dir = root / "reuse-budgets";
+    fs::create_directories(dir);
+    write_reuse_component(dir / "left.h5ad", Layout::csr, false);
+    write_large_reuse_component(dir / "right.h5ad");
+    const auto manifest = dir / "data.h5ads";
+    auto created = create_h5ads(manifest.string(), {{"left", "left.h5ad"}, {"right", "right.h5ad"}});
+    created.close();
+    // The large component's unselected final row makes its retained physical
+    // owner exceed the larger planning allowance; its selected rows stay small.
+    // Tiny budgets also exercise the original fully streamed fallback.
+    const std::vector<std::ptrdiff_t> rows{0, 3, 1, 4, 0, 3};
+    const std::vector<std::ptrdiff_t> columns{3, 1, 3};
+    const auto expected = expected_reuse_sparse(Layout::csr, rows, columns);
+    for (const auto scratch : {std::size_t{512}, std::size_t{8192}, std::size_t{65536}}) {
+        DatasetOptions options; options.backed.scratch_bytes = scratch;
+        auto data = open_h5ads(manifest.string(), options);
+        auto plan = data.slice(indices(rows), indices(columns)).prepare_x();
+        const auto requirements = plan.requirements();
+        ReuseSparseOutput out{std::vector<float>(requirements.nnz, -1),
+                              std::vector<std::int64_t>(requirements.nnz, -1),
+                              std::vector<std::int64_t>(rows.size() + 1, -1)};
+        SparseBuffer bad{out.values.data(), out.indices.data(), out.offsets.data(), requirements.dtype,
+                         requirements.index_dtype, requirements.offset_dtype,
+                         out.values.size(), out.indices.size(), out.offsets.size() - 1};
+        expect_error(ErrorCode::shape_mismatch, [&] { plan.read_into(bad); });
+        require(std::all_of(out.values.begin(), out.values.end(), [](float x) { return x == -1; }) &&
+                std::all_of(out.indices.begin(), out.indices.end(), [](std::int64_t x) { return x == -1; }) &&
+                std::all_of(out.offsets.begin(), out.offsets.end(), [](std::int64_t x) { return x == -1; }),
+                "budgeted preflight modified a destination");
+        for (int repeat = 0; repeat < 3; ++repeat)
+            check_reused_sparse_plan(plan, requirements, expected, out);
+        data.close();
+    }
+}
 void check_narrow_widths(const fs::path& root, Layout layout) {
     auto dir = root / (layout == Layout::csr ? "narrow-csr" : "narrow-csc");
     fs::create_directories(dir);
@@ -580,6 +803,9 @@ int main(int argc, char** argv) {
             check_collection(root, Layout::dense);
             check_collection(root, Layout::csr);
             check_collection(root, Layout::csc);
+            check_execution_resource_reuse(root, Layout::csr);
+            check_execution_resource_reuse(root, Layout::csc);
+            check_context_budgets(root);
             check_many_components(root);
             check_multi_batch_indexes(root);
             check_streamed_observation_indexes(root);

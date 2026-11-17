@@ -70,6 +70,7 @@ public:
     virtual bool write_selection(const NumericWrite&) { return false; }
     virtual NumericTransferStats stats() const = 0;
     virtual std::size_t scratch_capacity() const = 0;
+    virtual std::size_t retained_bytes() const { return scratch_capacity(); }
 };
 // Native-endian packed rectangles. start/count have the array rank; scalar
 // transfers use empty vectors. The caller supplies sufficient final storage.
@@ -88,8 +89,12 @@ public:
     virtual std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view path) {
         throw Error(ErrorCode::unsupported_layout, std::string(path), "backend cannot prepare numerical transfer");
     }
+    virtual std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view path,const NodeInfo&) {
+        return prepare_numeric(path);
+    }
     // Automatic scan-local reuse is opt-in; preparation may change fallback semantics.
     virtual bool reuse_numeric_reads() const { return false; }
+    virtual std::size_t numeric_retained_bytes(const NodeInfo&, std::string_view) const { return 0; }
     virtual std::size_t retained_scratch_bytes() const { return 0; }
     virtual std::size_t scratch_allocations() const { return 0; }
     virtual NodeInfo inspect(std::string_view path) = 0;
@@ -308,6 +313,8 @@ struct BackedNode {
     std::shared_ptr<backed_detail::ColorOverride> color_override;
 };
 struct BackedAccess {
+    static const std::unique_ptr<TransferContextImpl>& get(const TransferContext& v) { return v.impl_; }
+    static TransferContext context(std::unique_ptr<TransferContextImpl> value);
     static const std::shared_ptr<PreparedReadImpl>& get(const PreparedRead& v) { return v.impl_; }
     static PreparedRead prepared(std::shared_ptr<PreparedReadImpl> value) { return PreparedRead(std::move(value)); }
     static BackedAnnData owner(std::shared_ptr<BackedDataset> value) { return BackedAnnData(std::move(value)); }

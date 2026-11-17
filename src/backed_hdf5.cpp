@@ -820,15 +820,15 @@ std::vector<std::string> read_planned_strings(const H5Context& c, hid_t dataset,
 
 class Hdf5Numeric final : public NumericTransfer {
 public:
-    Hdf5Numeric(H5Context c, std::string path, H5Handle dataset, bool writable)
-        : c_(std::move(c)), path_(std::move(path)), dataset_(std::move(dataset)), writable_(writable) {
+    Hdf5Numeric(H5Context c, std::string path, H5Handle dataset, bool writable, std::size_t cache_bytes = 0)
+        : c_(std::move(c)), path_(std::move(path)), dataset_(std::move(dataset)), writable_(writable), cache_bytes_(cache_bytes) {
         type_ = H5Handle(c_.id(H5Dget_type(dataset_), path_, "inspect numerical datatype"), H5Tclose);
         dtype_ = dtype_of_h5(c_, type_, path_);
         file_space_ = H5Handle(c_.id(H5Dget_space(dataset_), path_, "inspect transfer dataspace"), H5Sclose);
         if (H5Sget_simple_extent_type(file_space_) == H5S_NULL)
             c_.fail(ErrorCode::unsupported_encoding, path_, "null dataspace has no transferable values");
         shape_ = shape_of(c_, file_space_, path_);
-        begin_.resize(shape_.size()); size_.resize(shape_.size());
+        begin_.resize(shape_.size()); size_.resize(shape_.size()); memory_shape_.reserve(shape_.size());
         check_filters(c_, dataset_, path_);
     }
     void read(const std::vector<std::size_t>& start, const std::vector<std::size_t>& count, void* out) override {
@@ -851,6 +851,11 @@ public:
     }
     NumericTransferStats stats() const override { return stats_; }
     std::size_t scratch_capacity() const override { return 0; }
+    std::size_t retained_bytes() const override {
+        return sizeof(*this) + cache_bytes_ + c_.filename.capacity() + path_.capacity() + 2 +
+            (shape_.capacity() + memory_shape_.capacity()) * sizeof(std::size_t) +
+            (begin_.capacity() + size_.capacity()) * sizeof(hsize_t);
+    }
 private:
     std::size_t select(const std::vector<std::size_t>& start, const std::vector<std::size_t>& count) {
         if (start.size() != shape_.size() || count.size() != shape_.size())
@@ -877,6 +882,7 @@ private:
     DType dtype_ = DType::float64;
     bool writable_ = false, write_checked_ = false;
     NumericTransferStats stats_;
+    std::size_t cache_bytes_ = 0;
 };
 
 class Hdf5Backend final : public Backend {
@@ -891,6 +897,8 @@ public:
         H5Handle access(c_.id(H5Pcreate(H5P_FILE_ACCESS), "/", "create file properties"), H5Pclose);
         c_.check(H5Pset_fapl_sec2(access), "/", "select local POSIX file driver");
         const auto cache_bytes = std::min<std::size_t>(options.scratch_bytes, 1024u * 1024u);
+        raw_chunk_cache_bytes_ = cache_bytes;
+        c_.check(H5Pget_sieve_buf_size(access, &sieve_cache_bytes_), "/", "inspect sieve cache bound");
         c_.check(H5Pset_cache(access, 0, 521, cache_bytes, 0.75), "/", "bound raw chunk cache");
         if (userblock_bytes && (userblock_bytes < 512 || (userblock_bytes & (userblock_bytes - 1))))
             c_.fail(ErrorCode::invalid_argument, "/", "user block must be zero or a power of two of at least 512 bytes");
@@ -922,9 +930,17 @@ public:
         return std::make_unique<Hdf5Backend>(c_.filename, options);
     }
     bool reuse_numeric_reads() const override { return true; }
+    std::size_t numeric_retained_bytes(const NodeInfo& info,std::string_view path) const override {
+        return sizeof(Hdf5Numeric)+2*(c_.filename.capacity()+path.size()+32)+
+            4*info.shape.size()*sizeof(std::size_t)+numeric_cache_bytes(info);
+    }
     std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view path) override {
         ensure_open();
         return std::make_unique<Hdf5Numeric>(c_, std::string(path), numeric_dataset(path), writable_);
+    }
+    std::unique_ptr<NumericTransfer> prepare_numeric(std::string_view path,const NodeInfo& info) override {
+        ensure_open();
+        return std::make_unique<Hdf5Numeric>(c_,std::string(path),numeric_dataset(path),writable_,numeric_cache_bytes(info));
     }
     bool same_file(std::string_view path) {
         ensure_open();
@@ -1483,6 +1499,27 @@ private:
     int gzip_level_;
     std::optional<ByteOrder> order_override_;
     std::size_t metadata_budget_;
+    std::size_t raw_chunk_cache_bytes_ = 0, sieve_cache_bytes_ = 0;
+    std::size_t numeric_cache_bytes(const NodeInfo& info) const {
+        const bool chunked=info.physical.organization==StorageOrganization::chunked;
+        const auto cache=chunked?raw_chunk_cache_bytes_:sieve_cache_bytes_, width=dtype_size(info.dtype);
+        const auto table=chunked?std::size_t{521}*sizeof(void*):0;
+        if (!cache) return table;
+        const auto limit=cache/width+(cache%width!=0);
+        std::size_t cells=1;
+        for (std::size_t i=0;i<info.shape.size();++i) {
+            auto n=info.shape[i];if (!n) return table;
+            if (chunked) {
+                if (info.physical.chunks.size()!=info.shape.size() || !info.physical.chunks[i]) return cache+table;
+                const auto chunk=info.physical.chunks[i], count=(n-1)/chunk+1;
+                if (count>SIZE_MAX/chunk) return cache+table;
+                n=count*chunk;
+            }
+            if (n>limit || cells>limit/n) return cache+table;
+            cells*=n;
+        }
+        return std::min(cache,cells*width)+table;
+    }
     void ensure_open() const { if (!file_.valid()) c_.fail(ErrorCode::io_error, "/", "H5AD session is closed"); }
     void ensure_writable() const { ensure_open(); if (!writable_) c_.fail(ErrorCode::invalid_argument, "/", "H5AD session is read-only"); }
     H5Handle numeric_dataset(std::string_view path) {

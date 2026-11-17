@@ -34,12 +34,18 @@ struct AnnDataSetImpl {
     bool open = true, has_x = false;
     bool check_axis_names = false;
     std::size_t selector_bytes = 0;
+    PreparedAnnDataSetReadImpl* live_context_plans = nullptr;
 };
 struct DatasetSegment { std::size_t first, count, component; };
 struct PreparedDatasetPiece {
     DatasetSegment segment;
-    std::size_t column;
+    std::size_t column, nnz, context;
     PreparedRead read;
+};
+struct PreparedDatasetContext {
+    std::size_t component, bytes = 0;
+    bool rejected = false;
+    mutable TransferContext transfer;
 };
 struct PreparedAnnDataSetReadImpl {
     std::shared_ptr<AnnDataSetImpl> owner;
@@ -47,7 +53,18 @@ struct PreparedAnnDataSetReadImpl {
     Axis obs, var;
     ReadRequirements requirements;
     std::vector<PreparedDatasetPiece> pieces;
+    std::vector<PreparedDatasetContext> contexts;
+    std::size_t context_bytes = 0;
     bool retained = false;
+    bool reuse_contexts = true;
+    PreparedAnnDataSetReadImpl *previous = nullptr, *next = nullptr;
+    bool linked = false;
+    ~PreparedAnnDataSetReadImpl() {
+        if (!linked) return;
+        if (previous) previous->next = next;
+        else owner->live_context_plans = next;
+        if (next) next->previous = previous;
+    }
 };
 }
 
@@ -367,9 +384,26 @@ void check_plan(const Plan* p) {
     (void)p->annotations.n_obs();
     for (const auto& file : p->owner->files) (void)file.n_obs();
 }
+void drop_contexts(Plan& p) {
+    std::vector<detail::PreparedDatasetContext>().swap(p.contexts);
+    p.context_bytes = 0; p.reuse_contexts = false;
+}
+void reject_context(Plan& p, std::size_t index) {
+    auto& slot = p.contexts[index];
+    if (slot.bytes > p.context_bytes)
+        fail(ErrorCode::invalid_argument, "AnnDataSet/X", "prepared context accounting is inconsistent");
+    p.context_bytes -= slot.bytes; slot.bytes = 0; slot.rejected = true;
+    slot.transfer = TransferContext{};
+}
+std::size_t context_storage(const Plan& p) {
+    if (p.contexts.capacity() > SIZE_MAX / sizeof(detail::PreparedDatasetContext))
+        fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "prepared context capacity overflows");
+    return plus(p.context_bytes, p.contexts.capacity() * sizeof(detail::PreparedDatasetContext));
+}
 // Account retained descriptor payload and leave room for selector and offset
 // staging. If descriptors do not fit, rebuild them one piece at a time.
-bool retain_piece(Plan& p, Segment s, std::size_t column, PreparedRead read, std::size_t& charged) {
+bool retain_piece(Plan& p, Segment s, std::size_t column, std::size_t nnz, std::size_t context,
+                  PreparedRead read, std::size_t& charged) {
     if (!p.retained) return false;
     const auto& owner = *p.owner;
     const auto cols = column == SIZE_MAX ? p.var : Axis::stride(p.var.index(column), 1);
@@ -384,16 +418,27 @@ bool retain_piece(Plan& p, Segment s, std::size_t column, PreparedRead read, std
     const auto vector_bytes = next * sizeof(detail::PreparedDatasetPiece);
     const auto old_bytes = next != p.pieces.capacity() ? p.pieces.capacity() * sizeof(detail::PreparedDatasetPiece) : 0;
     auto need = plus(plus(charged, bytes), plus(staging, plus(vector_bytes, old_bytes)));
+    need = plus(need, context_storage(p));
+    if (need > limit && p.reuse_contexts) {
+        drop_contexts(p); context = SIZE_MAX;
+        need = plus(plus(charged, bytes), plus(staging, plus(vector_bytes, old_bytes)));
+    }
     if (need > limit) {
-        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false; return false;
+        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false;
+        drop_contexts(p); return false;
     }
     if (next != p.pieces.capacity()) p.pieces.reserve(next);
     const auto actual = p.pieces.capacity() * sizeof(detail::PreparedDatasetPiece);
-    if (plus(plus(charged, bytes), plus(staging, actual)) > limit) {
-        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false; return false;
+    need = plus(plus(charged, bytes), plus(staging, actual));
+    need = plus(need, context_storage(p));
+    if (need > limit && p.reuse_contexts) { drop_contexts(p); context = SIZE_MAX; need = plus(plus(charged, bytes), plus(staging, actual)); }
+    if (need > limit) {
+        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false;
+        drop_contexts(p); return false;
     }
     charged += bytes;
-    p.pieces.push_back({s, column, std::move(read)});
+    if (!p.reuse_contexts) context = SIZE_MAX;
+    p.pieces.push_back({s, column, nnz, context, std::move(read)});
     return true;
 }
 void reserve_piece_staging(Plan& p, Segment s, const Axis& cols, bool csc, std::size_t charged) {
@@ -401,9 +446,69 @@ void reserve_piece_staging(Plan& p, Segment s, const Axis& cols, bool csc, std::
     const auto staging = plus(selector_cost(*p.owner, cols, p.obs.is_gather() ? s.count : 0),
                               csc ? 2 * dtype_size(p.requirements.offset_dtype) : 0);
     const auto vector_bytes = p.pieces.capacity() * sizeof(detail::PreparedDatasetPiece);
-    if (plus(charged, plus(vector_bytes, staging)) > p.owner->selector_bytes) {
-        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false;
+    auto need = plus(charged, plus(context_storage(p), plus(vector_bytes, staging)));
+    if (need > p.owner->selector_bytes && p.reuse_contexts) {
+        drop_contexts(p); need = plus(charged, plus(vector_bytes, staging));
     }
+    if (need > p.owner->selector_bytes) {
+        std::vector<detail::PreparedDatasetPiece>().swap(p.pieces); p.retained = false;
+        drop_contexts(p);
+    }
+}
+PreparedRead prepare_piece(Plan& p, Segment s, const Axis& cols, std::size_t charged,
+                           std::size_t& context) {
+    context = SIZE_MAX;
+    if (!p.retained || !p.reuse_contexts) return prepared_x(*p.owner, p.obs, cols, s);
+    const auto limit = p.owner->selector_bytes;
+    const auto staging = selector_cost(*p.owner, cols, p.obs.is_gather() ? s.count : 0);
+    const auto pieces_capacity = p.pieces.capacity();
+    const auto next_pieces = p.pieces.size() == pieces_capacity
+        ? (pieces_capacity ? plus(pieces_capacity, pieces_capacity) : 1) : pieces_capacity;
+    if (next_pieces > SIZE_MAX / sizeof(detail::PreparedDatasetPiece))
+        fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "prepared piece capacity overflows");
+    const auto piece_bytes = next_pieces * sizeof(detail::PreparedDatasetPiece);
+    const auto old_piece_bytes = next_pieces == pieces_capacity ? 0 : pieces_capacity * sizeof(detail::PreparedDatasetPiece);
+    std::size_t index = 0;
+    while (index < p.contexts.size() && p.contexts[index].component != s.component) ++index;
+    if (index == p.contexts.size()) {
+        const auto capacity = p.contexts.capacity();
+        const auto next = p.contexts.size() == capacity ? (capacity ? plus(capacity, capacity) : 1) : capacity;
+        if (next > SIZE_MAX / sizeof(detail::PreparedDatasetContext))
+            fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "prepared context capacity overflows");
+        const auto bytes = next * sizeof(detail::PreparedDatasetContext);
+        const auto old = next == capacity ? 0 : capacity * sizeof(detail::PreparedDatasetContext);
+        const auto need = plus(plus(charged, p.context_bytes),
+                               plus(staging, plus(plus(piece_bytes, old_piece_bytes), plus(bytes, old))));
+        if (need > limit) return prepared_x(*p.owner, p.obs, cols, s);
+        if (next != capacity) p.contexts.reserve(next);
+        const auto actual = p.contexts.capacity() * sizeof(detail::PreparedDatasetContext);
+        if (plus(plus(charged, p.context_bytes), plus(staging, plus(plus(piece_bytes, old_piece_bytes), actual))) > limit) {
+            return prepared_x(*p.owner, p.obs, cols, s);
+        }
+        p.contexts.push_back({s.component, 0, false, {}});
+    }
+    auto& slot = p.contexts[index];
+    if (slot.rejected) return prepared_x(*p.owner, p.obs, cols, s);
+    auto used = plus(charged, plus(context_storage(p), plus(staging, plus(piece_bytes, old_piece_bytes))));
+    if (used < slot.bytes || used - slot.bytes > limit) {
+        reject_context(p, index); return prepared_x(*p.owner, p.obs, cols, s);
+    }
+    const auto budget = limit - (used - slot.bytes);
+    PreparedRead read;
+    const bool admitted = detail::prepare_backed_x_read(p.owner->files[s.component],
+        segment_rows(*p.owner, p.obs, s), axis_selection(cols, p.owner->n_vars), slot.transfer, budget, read);
+    if (!admitted) {
+        if (read.requirements().layout != Layout::csr) drop_contexts(p);
+        else reject_context(p, index);
+        return read;
+    }
+    const auto bytes = detail::backed_read_context_bytes(slot.transfer);
+    if (bytes > budget) { reject_context(p, index); return read; }
+    if (p.context_bytes < slot.bytes)
+        fail(ErrorCode::invalid_argument, "AnnDataSet/X", "prepared context accounting is inconsistent");
+    p.context_bytes = plus(p.context_bytes - slot.bytes, bytes); slot.bytes = bytes;
+    context = index;
+    return read;
 }
 template<class F> void walk_pieces(const Plan& p, F&& f, const bool* keep = nullptr) {
     const auto& owner = *p.owner;
@@ -471,7 +576,8 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
     std::size_t charged = 0;
     for_segments(*impl_, obs_, var_, [&](const Segment& s) {
         reserve_piece_staging(*p, s, var_, false, charged);
-        auto read = prepared_x(*impl_, obs_, var_, s);
+        std::size_t context;
+        auto read = prepare_piece(*p, s, var_, charged, context);
         auto r = read.requirements();
         if (!selected) {
             out.layout = r.layout; out.dtype = r.dtype;
@@ -486,7 +592,7 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
             if (r.offset_dtype != out.offset_dtype) out.offset_dtype = DType::int64;
             out.nnz = plus(out.nnz, r.nnz);
         }
-        if (out.layout != Layout::csc) retain_piece(*p, s, SIZE_MAX, std::move(read), charged);
+        if (out.layout != Layout::csc) retain_piece(*p, s, SIZE_MAX, r.nnz, context, std::move(read), charged);
     });
     if (!reference_selected) {
         auto reference = detail::backed_x_metadata(impl_->files.front());
@@ -516,11 +622,18 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
             reserve_piece_staging(*p, s, cols, true, charged);
             if (!p->retained) return;
             auto read = prepared_x(*impl_, obs_, cols, s);
-            nnz = plus(nnz, read.requirements().nnz);
-            retain_piece(*p, s, column, std::move(read), charged);
+            const auto count = read.requirements().nnz;
+            nnz = plus(nnz, count);
+            retain_piece(*p, s, column, count, SIZE_MAX, std::move(read), charged);
         }, &p->retained);
         if (p->retained && nnz != out.nnz)
             fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component values changed during preparation");
+    }
+    for (const auto& context : p->contexts) if (!context.rejected) {
+        p->next = impl_->live_context_plans;
+        if (p->next) p->next->previous = p.get();
+        impl_->live_context_plans = p.get(); p->linked = true;
+        break;
     }
     return PreparedAnnDataSetRead(std::move(p));
 }
@@ -575,6 +688,7 @@ void AnnDataSet::flush() { check(impl_); impl_->manifest.flush(); }
 void AnnDataSet::close() {
     if (!impl_ || !impl_->open) return;
     impl_->open = false;
+    for (auto* plan = impl_->live_context_plans; plan; plan = plan->next) drop_contexts(*plan);
     std::exception_ptr error;
     for (auto& f : impl_->files) try { f.close(); } catch (...) { if (!error) error = std::current_exception(); }
     try { impl_->manifest.close(); } catch (...) { if (!error) error = std::current_exception(); }
@@ -584,11 +698,17 @@ void AnnDataSet::close() {
 namespace {
 template<class F> void each_prepared(const Plan& p, F&& f) {
     if (p.retained) {
-        for (const auto& piece : p.pieces) f(piece.segment, piece.column, piece.read);
+        for (const auto& piece : p.pieces) {
+            if (p.reuse_contexts && piece.context != SIZE_MAX && piece.context >= p.contexts.size())
+                fail(ErrorCode::invalid_argument, "AnnDataSet/X", "prepared context is missing");
+            auto* context = p.reuse_contexts && piece.context != SIZE_MAX && !p.contexts[piece.context].rejected
+                ? &p.contexts[piece.context].transfer : nullptr;
+            f(piece.segment, piece.column, piece.read, context, &piece.nnz);
+        }
     } else {
         walk_pieces(p, [&](Segment s, const Axis& cols, std::size_t column) {
             auto read = prepared_x(*p.owner, p.obs, cols, s);
-            f(s, column, read);
+            f(s, column, read, nullptr, nullptr);
         });
     }
 }
@@ -619,7 +739,7 @@ void dense_plan(const Plan& p, const DenseBuffer& dst, bool transfer) {
     checked_shape(dst, r.shape[0], r.shape[1], r.dtype);
     const auto stride = row_stride(dst, r.shape[1]);
     if (r.shape[0]) (void)displacement(r.shape[0] - 1, stride);
-    each_prepared(p, [&](Segment s, std::size_t, const PreparedRead& read) {
+    each_prepared(p, [&](Segment s, std::size_t, const PreparedRead& read, TransferContext*, const std::size_t*) {
         auto target = dst; target.shape = {s.count, r.shape[1]};
         if (target.data) target.data = static_cast<std::byte*>(target.data) + displacement(s.first, stride);
         if (transfer) read.read_into(target); else read.preflight(target);
@@ -643,28 +763,43 @@ void sparse_plan(const Plan& p, const SparseBuffer& dst, bool transfer) {
     const auto limit = std::size_t(PTRDIFF_MAX);
     if (r.nnz * vw > limit || r.nnz * iw > limit || plus(major, 1) * ow > limit)
         fail(ErrorCode::out_of_bounds, "AnnDataSet/X", "sparse destination byte span exceeds signed range");
+    if (!transfer && p.reuse_contexts)
+        for (const auto& context : p.contexts)
+            if (!context.rejected) detail::refresh_backed_read_context(context.transfer);
     const bool csc = r.layout == Layout::csc;
     std::size_t written = 0, previous_column = 0;
     std::array<std::byte, 16> offsets{};
     if (transfer) write_integer(dst.offsets, r.offset_dtype, 0, 0);
-    each_prepared(p, [&](Segment s, std::size_t column, const PreparedRead& read) {
-        auto part = read.requirements();
-        if (part.layout != r.layout || part.dtype != r.dtype || written > r.nnz || part.nnz > r.nnz - written)
+    each_prepared(p, [&](Segment s, std::size_t column, const PreparedRead& read,
+                         TransferContext* context, const std::size_t* cached_nnz) {
+        std::size_t part_nnz;
+        if (context) part_nnz = *cached_nnz;
+        else {
+            auto part = read.requirements();
+            if (part.layout != r.layout || part.dtype != r.dtype)
+                fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component changed after preparation");
+            part_nnz = part.nnz;
+        }
+        if (written > r.nnz || part_nnz > r.nnz - written)
             fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component changed after preparation");
         if (transfer && csc) while (previous_column < column)
             write_integer(dst.offsets, r.offset_dtype, ++previous_column, written);
         auto* values = dst.values ? static_cast<std::byte*>(dst.values) + written * vw : nullptr;
         auto* indices = dst.indices ? static_cast<std::byte*>(dst.indices) + written * iw : nullptr;
         auto* out = csc ? offsets.data() : static_cast<std::byte*>(dst.offsets) + s.first * ow;
-        SparseBuffer b{values, indices, out, part.dtype, dst.index_dtype, dst.offset_dtype,
-                       part.nnz, part.nnz, (csc ? 1 : s.count) + 1};
-        if (!transfer) read.preflight(b);
+        SparseBuffer b{values, indices, out, r.dtype, dst.index_dtype, dst.offset_dtype,
+                       part_nnz, part_nnz, (csc ? 1 : s.count) + 1};
+        if (!transfer) {
+            if (context) detail::preflight_backed_read(*context, read, b);
+            else read.preflight(b);
+        }
         else {
-            read.read_into(b);
-            if (csc) add_to_integers(indices, r.index_dtype, part.nnz, s.first);
+            if (context) detail::read_preflighted_backed(*context, read, b);
+            else read.read_into(b);
+            if (csc) add_to_integers(indices, r.index_dtype, part_nnz, s.first);
             else add_to_integers(out, r.offset_dtype, s.count + 1, written);
         }
-        written = plus(written, part.nnz);
+        written = plus(written, part_nnz);
     });
     if (written != r.nnz) fail(ErrorCode::invalid_sparse_structure, "AnnDataSet/X", "component values changed after preparation");
     if (transfer && csc) while (previous_column < major)

@@ -1131,6 +1131,99 @@ void test_bounded_fill_reads(const std::filesystem::path& root) {
     H5Fclose(file);
 }
 
+void test_collection_read_binding(const std::filesystem::path& root) {
+    auto data=AnnData::empty(3,2);
+    data.set_x(fixture_sparse());data.set_layer("counts",fixture_sparse());
+    const auto left=root/"binding-left.h5ad",right=root/"binding-right.h5ad";
+    write_h5ad(left.string(),data);write_h5ad(right.string(),data);
+    auto first=open_h5ad(left.string()),second=open_h5ad(right.string());
+    TransferContext context;PreparedRead piece;
+    constexpr std::size_t budget=1024*1024;
+    require(detail::prepare_backed_x_read(first,all,all,context,budget,piece),"CSR binding was not admitted");
+    require(detail::backed_read_context_bytes(context)+detail::prepared_read_retained_bytes(piece)<=budget,
+            "CSR binding exceeded its retained allowance");
+    std::array<std::int64_t,5> values{};std::array<std::int32_t,5> indices{};std::array<std::int64_t,4> offsets{};
+    SparseBuffer destination{values.data(),indices.data(),offsets.data(),DType::int64,DType::int32,DType::int64,5,5,4};
+    for (int repeat=0;repeat<3;++repeat) {
+        detail::refresh_backed_read_context(context);
+        detail::preflight_backed_read(context,piece,destination);
+        detail::read_preflighted_backed(context,piece,destination);
+        require(values==std::array<std::int64_t,5>{1,0,2,3,4} && indices==std::array<std::int32_t,5>{1,0,0,0,1} &&
+                offsets==std::array<std::int64_t,4>{0,2,4,5},"repeated CSR binding changed sparse order/zeros");
+    }
+    const auto retained=detail::backed_read_context_bytes(context);
+    auto wrong_session=detail::prepare_backed_x_read(second,all,all);
+    auto wrong_path=first.layer("counts").prepare_read();
+    values.fill(-37);indices.fill(-37);offsets.fill(-37);
+    expect_error(ErrorCode::invalid_argument,[&] {detail::preflight_backed_read(context,wrong_session,destination);},"foreign session was accepted");
+    expect_error(ErrorCode::invalid_argument,[&] {detail::read_preflighted_backed(context,wrong_path,destination);},"foreign path was accepted");
+    auto invalid=destination;invalid.dtype=DType::float32;
+    expect_error(ErrorCode::dtype_mismatch,[&] {detail::preflight_backed_read(context,piece,invalid);},"piece dtype preflight was skipped");
+    require(values[0]==-37 && indices[0]==-37 && offsets[0]==-37,"failed piece preflight modified output");
+    TransferContext too_small;PreparedRead fallback;
+    require(!detail::prepare_backed_x_read(first,all,all,too_small,1,fallback) && fallback.requirements().nnz==5 &&
+            detail::backed_read_context_bytes(too_small)==0,"budget rejection did not preserve checked fallback");
+    auto store=create_hdf5_store((root/"binding-roots.h5").string());
+    store.write_anndata("/one",data.view());store.write_anndata("/two",data.view());
+    auto one=store.anndata("/one"),two=store.anndata("/two");
+    TransferContext rooted;PreparedRead own,other;
+    require(detail::prepare_backed_x_read(one,all,all,rooted,budget,own),"rooted CSR binding was not admitted");
+    other=detail::prepare_backed_x_read(two,all,all);detail::refresh_backed_read_context(rooted);
+    expect_error(ErrorCode::invalid_argument,[&] {detail::preflight_backed_read(rooted,other,destination);},"different root was accepted");
+    first.close();
+    require(detail::backed_read_context_bytes(context)==retained,"accounting accessed a closed backend");
+    expect_error(ErrorCode::invalid_argument,[&] {detail::refresh_backed_read_context(context);},"closed binding was accepted");
+}
+void test_collection_filtered_requirements(const std::filesystem::path& root) {
+    auto data=AnnData::empty(3,2);data.set_x(fixture_sparse());
+    const auto path=root/"binding-unavailable-filter.h5ad";write_h5ad(path.string(),data);
+    const unsigned filter=32021;
+    require(H5Zfilter_avail(filter)==0,"test filter unexpectedly exists");
+    auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(file>=0 && H5Ldelete(file,"/X/data",H5P_DEFAULT)>=0,"open filtered CSR fixture");
+    hsize_t n=5;auto space=H5Screate_simple(1,&n,nullptr),properties=H5Pcreate(H5P_DATASET_CREATE);
+    require(H5Pset_chunk(properties,1,&n)>=0 && H5Pset_filter(properties,filter,H5Z_FLAG_OPTIONAL,0,nullptr)>=0,"set optional unavailable filter");
+    auto array=H5Dcreate2(file,"/X/data",H5T_STD_I64LE,space,H5P_DEFAULT,properties,H5P_DEFAULT);
+    const std::int64_t values[]{1,0,2,3,4};
+    require(array>=0 && H5Dwrite(array,H5T_NATIVE_INT64,H5S_ALL,H5S_ALL,H5P_DEFAULT,values)>=0,"write optional-filter CSR data");
+    H5Dclose(array);H5Pclose(properties);H5Sclose(space);H5Fclose(file);
+    auto source=open_h5ad(path.string());TransferContext empty,context;PreparedRead none,piece;
+    require(detail::prepare_backed_x_read(source,range{0,0},all,empty,1024*1024,none) && none.requirements().nnz==0,
+            "empty sizing required an unused data codec");
+    std::int64_t offset=-1;
+    SparseBuffer destination{nullptr,nullptr,&offset,DType::int64,DType::int32,DType::int64,0,0,1};
+    detail::refresh_backed_read_context(empty);detail::preflight_backed_read(empty,none,destination);
+    detail::read_preflighted_backed(empty,none,destination);require(offset==0,"empty filtered read differed");
+    require(detail::prepare_backed_x_read(source,all,all,context,1024*1024,piece) && piece.requirements().nnz==5,
+            "index-only requirements required the data codec");
+    expect_error(ErrorCode::unavailable_filter,[&] {detail::refresh_backed_read_context(context);},"data codec failure was not explicit before output");
+}
+
+void test_collection_chunk_cache_budget(const std::filesystem::path& root) {
+    auto data=AnnData::empty(3,2);data.set_x(fixture_sparse());
+    const auto path=root/"binding-oversized-chunk.h5ad";write_h5ad(path.string(),data);
+    auto file=H5Fopen(path.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(file>=0 && H5Ldelete(file,"/X/data",H5P_DEFAULT)>=0,"open oversized chunk fixture");
+    hsize_t n=5,maximum=H5S_UNLIMITED,chunk=65536;
+    auto space=H5Screate_simple(1,&n,&maximum),properties=H5Pcreate(H5P_DATASET_CREATE);
+    require(H5Pset_chunk(properties,1,&chunk)>=0,"set padded physical chunk");
+    auto array=H5Dcreate2(file,"/X/data",H5T_STD_I64LE,space,H5P_DEFAULT,properties,H5P_DEFAULT);
+    const std::int64_t expected[]{1,0,2,3,4};
+    require(array>=0 && H5Dwrite(array,H5T_NATIVE_INT64,H5S_ALL,H5S_ALL,H5P_DEFAULT,expected)>=0,"write padded physical chunk");
+    H5Dclose(array);H5Pclose(properties);H5Sclose(space);H5Fclose(file);
+    auto source=open_h5ad(path.string());TransferContext small,context;PreparedRead fallback,piece;
+    require(!detail::prepare_backed_x_read(source,all,all,small,128*1024,fallback) && fallback.requirements().nnz==5,
+            "logical extent hid the larger retained decoded chunk");
+    require(detail::prepare_backed_x_read(source,all,all,context,2*1024*1024,piece) &&
+            detail::backed_read_context_bytes(context)>=65536*sizeof(std::int64_t),"physical chunk cache reservation was omitted");
+    std::array<std::int64_t,5> values{};std::array<std::int32_t,5> indices{};std::array<std::int64_t,4> offsets{};
+    SparseBuffer destination{values.data(),indices.data(),offsets.data(),DType::int64,DType::int32,DType::int64,5,5,4};
+    const auto before=detail::backed_read_context_bytes(context);detail::refresh_backed_read_context(context);
+    detail::preflight_backed_read(context,piece,destination);detail::read_preflighted_backed(context,piece,destination);
+    require(values==std::array<std::int64_t,5>{1,0,2,3,4} && detail::backed_read_context_bytes(context)<=before,
+            "padded chunk read changed values or exceeded its admitted capacity");
+}
+
 void test_hdf5_mapping(const std::filesystem::path& path) {
     static_assert(std::is_same_v<decltype(std::declval<MappedArray>().unsafe_dense<float>()), const float*>);
     auto store = open_h5ad(path.string());
@@ -1159,6 +1252,9 @@ int main(int argc, char** argv) {
         check_read_contract(native_h5ad, "h5ad");
 #if defined(ANNDATAPP_TEST_HDF5) && defined(__linux__) && defined(__clang__)
         test_hdf5_mapping(native_h5ad);
+        test_collection_read_binding(root);
+        test_collection_filtered_requirements(root);
+        test_collection_chunk_cache_budget(root);
 #endif
         update_and_reindex_h5ad(root / "source.h5ad", root / "update-reindex.h5ad");
         test_alignment_preflight(root / "alignment.h5ad");

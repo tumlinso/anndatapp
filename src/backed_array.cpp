@@ -522,7 +522,7 @@ void write_index(std::byte* p, DType t, std::size_t value, const NodePtr& n) {
     }
 }
 struct MinorLookup {
-    const Axis& axis;
+    Axis axis;
     std::unordered_map<std::size_t, std::vector<std::size_t>> explicit_indices;
     bool indexed = false;
     explicit MinorLookup(const Axis& a, std::size_t budget) : axis(a) {
@@ -576,43 +576,115 @@ struct MinorLookup {
         if (distance % step == 0 && distance / step < axis.size) f(distance / step);
     }
 };
+struct SparseReadResources {
+    std::unique_ptr<backed_detail::NumericTransfer> offsets, indices, data;
+    std::optional<MinorLookup> lookup;
+    std::vector<std::byte> index_chunk, value_chunk;
+    std::vector<std::size_t> start, count;
+    std::string offsets_path, indices_path, data_path;
+    std::array<std::size_t,3> reserved_stream_bytes{};
+    std::size_t limit = SIZE_MAX, fixed_bytes = 0;
+    bool provisioning = true, needs_values = false;
+};
+struct ReadBudgetExceeded {};
+bool same_axis(const Axis& a, const Axis& b) {
+    return a.size == b.size && a.start == b.start && a.step == b.step && a.category_positions == b.category_positions &&
+        (a.positions == b.positions || (a.positions && b.positions && *a.positions == *b.positions));
+}
+void charge_bytes(std::size_t& bytes, std::size_t count, std::size_t width, const NodePtr& n) {
+    const auto extra = multiply(count, width, n);
+    if (extra > SIZE_MAX - bytes) fail(ErrorCode::invalid_argument, n, "retained read size overflows size_t");
+    bytes += extra;
+}
+std::size_t sparse_resource_bytes(const SparseReadResources& r, const NodePtr& n) {
+    std::size_t bytes = 0;
+    for (const auto* path : {&r.offsets_path, &r.indices_path, &r.data_path}) charge_bytes(bytes, path->capacity()+1, 1, n);
+    charge_bytes(bytes, r.index_chunk.capacity()+r.value_chunk.capacity(), 1, n);
+    charge_bytes(bytes, r.start.capacity()+r.count.capacity(), sizeof(std::size_t), n);
+    std::size_t stream_index=0;
+    for (const auto* stream : {r.offsets.get(),r.indices.get(),r.data.get()}) {
+        charge_bytes(bytes,std::max(stream?stream->retained_bytes():0,r.reserved_stream_bytes[stream_index++]),1,n);
+    }
+    if (r.lookup) {
+        const auto& map = r.lookup->explicit_indices;
+        charge_bytes(bytes,map.bucket_count(),sizeof(void*),n);
+        charge_bytes(bytes,map.size(),sizeof(std::pair<const std::size_t,std::vector<std::size_t>>)+2*sizeof(void*),n);
+        for (const auto& [key, positions] : map) { (void)key; charge_bytes(bytes,positions.capacity(),sizeof(std::size_t),n); }
+        if (r.lookup->axis.positions) {
+            charge_bytes(bytes,1,sizeof(std::vector<std::size_t>),n);
+            charge_bytes(bytes,r.lookup->axis.positions->capacity(),sizeof(std::size_t),n);
+        }
+    }
+    return bytes;
+}
+void size_sparse_buffers(SparseReadResources& r, std::size_t len, std::size_t isz, std::size_t vsz,
+                         bool values, bool retained, const NodePtr& n, std::size_t value_cells) {
+    const auto ni = multiply(len,isz,n), nv = values || retained ? multiply(std::min(len,value_cells),vsz,n) : 0;
+    if (!retained) {
+        r.index_chunk.resize(ni);
+        if (values) r.value_chunk.resize(nv);
+        return;
+    }
+    if (retained) {
+        auto bytes = r.fixed_bytes;
+        charge_bytes(bytes,sparse_resource_bytes(r,n),1,n);
+        bytes -= r.index_chunk.capacity()+r.value_chunk.capacity();
+        charge_bytes(bytes,std::max(ni,r.index_chunk.capacity()),1,n);
+        charge_bytes(bytes,std::max(nv,r.value_chunk.capacity()),1,n);
+        if (bytes > r.limit) throw ReadBudgetExceeded{};
+    }
+    if (ni > r.index_chunk.capacity()) r.index_chunk.reserve(ni);
+    if (nv > r.value_chunk.capacity()) r.value_chunk.reserve(nv);
+    if (retained && (r.fixed_bytes > r.limit || sparse_resource_bytes(r,n) > r.limit-r.fixed_bytes)) throw ReadBudgetExceeded{};
+    r.index_chunk.resize(ni);
+    if (values) r.value_chunk.resize(nv);
+}
 // Scans one selected sparse major segment at a time. No buffer scales with the
 // source nnz; duplicate minor selectors intentionally emit duplicate entries.
 std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffer* out,
                         bool require_original_widths = false,
-                        std::size_t scratch_limit = std::numeric_limits<std::size_t>::max()) {
+                        std::size_t scratch_limit = std::numeric_limits<std::size_t>::max(),
+                        SparseReadResources* retained = nullptr, const std::vector<Axis>* selected_axes = nullptr) {
     auto& backend = *n->session->backend;
     const auto major_axis = d.layout == Layout::csr ? std::size_t{0} : std::size_t{1};
     const auto minor_axis = 1 - major_axis;
-    const auto& major = d.axes[major_axis];
-    const auto& minor = d.axes[minor_axis];
+    const auto& axes = selected_axes ? *selected_axes : d.axes;
+    const auto& major = axes[major_axis];
+    const auto& minor = axes[minor_axis];
     const auto nnz = d.data.shape[0];
     const auto isz = dtype_size(d.indices.dtype), osz = dtype_size(d.offsets.dtype), vsz = dtype_size(d.data.dtype);
-    const auto indices_path = backed_detail::child(n->path, "indices");
-    const auto offsets_path = backed_detail::child(n->path, "indptr");
-    const auto data_path = backed_detail::child(n->path, "data");
     const auto scratch = std::min(backed_detail::scratch_remaining(n), scratch_limit);
-    MinorLookup lookup(minor, scratch / 4);
+    SparseReadResources local;
+    auto& streams = retained ? *retained : local;
+    if (streams.offsets_path.empty()) {
+        streams.indices_path = backed_detail::child(n->path,"indices");
+        streams.offsets_path = backed_detail::child(n->path,"indptr");
+        streams.data_path = backed_detail::child(n->path,"data");
+    }
+    MinorLookup fallback(minor, retained ? 0 : scratch/4);
+    const auto& lookup = streams.lookup && same_axis(streams.lookup->axis,minor) ? *streams.lookup : fallback;
     std::array<std::byte, 16> pair{};
-    auto per = isz + (out ? vsz : 0);
-    if (scratch / 2 < per) fail(ErrorCode::invalid_argument, n, "remaining scratch budget is smaller than one sparse transfer cell");
-    auto chunk = (scratch / 2) / per;
-    std::vector<std::byte> index_chunk, value_chunk;
-    // Retain only the HDF5 stream handles used by this scan. Other backends keep
-    // their ordinary read path, including missing-chunk codec semantics.
+    const auto per = isz + (out ? vsz : 0);
+    if (scratch/2 < per) {
+        if (retained && !out) throw ReadBudgetExceeded{};
+        fail(ErrorCode::invalid_argument,n,"remaining scratch budget is smaller than one sparse transfer cell");
+    }
+    const auto transfer_cells=(scratch/2)/(isz+vsz);
+    if (retained && !out && !transfer_cells) throw ReadBudgetExceeded{};
+    auto chunk = (scratch/2)/per;
+    if (retained && !streams.provisioning)
+        chunk = std::min({chunk,streams.index_chunk.capacity()/isz,streams.value_chunk.capacity()/vsz});
     const bool reuse = backend.reuse_numeric_reads();
-    std::unique_ptr<backed_detail::NumericTransfer> offsets, indices, data;
-    std::vector<std::size_t> start, count;
-    auto read = [&](auto& transfer, const std::string& path, std::size_t pos, std::size_t len, void* dst) {
-        if (!reuse) { backend.read_numeric(path, {pos}, {len}, dst); return; }
-        if (!transfer) transfer = backend.prepare_numeric(path);
-        if (start.empty()) { start.resize(1); count.resize(1); }
-        start[0] = pos; count[0] = len;
-        transfer->read(start, count, dst);
+    auto read = [&](auto& transfer, const std::string& path, const NodeInfo& info, std::size_t pos, std::size_t len, void* dst) {
+        if (!reuse) { backend.read_numeric(path,{pos},{len},dst); return; }
+        if (!transfer) transfer = retained ? backend.prepare_numeric(path,info) : backend.prepare_numeric(path);
+        if (streams.start.empty()) { streams.start.resize(1); streams.count.resize(1); }
+        streams.start[0]=pos; streams.count[0]=len;
+        transfer->read(streams.start,streams.count,dst);
     };
     std::size_t emitted = 0;
     if (major.size == 0 && d.source_shape[major_axis] == 0 && n->session->options.validation == Validation::full) {
-        read(offsets, offsets_path, 0, 1, pair.data());
+        read(streams.offsets, streams.offsets_path, d.offsets, 0, 1, pair.data());
         if (read_index(pair.data(), d.offsets.dtype, n) != 0 || nnz != 0)
             fail(ErrorCode::invalid_sparse_structure, n, "empty sparse source has invalid boundary offsets");
     }
@@ -621,7 +693,7 @@ std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffe
     if (out) write_index(static_cast<std::byte*>(out->offsets), out->offset_dtype, 0, n);
     for (std::size_t m = 0; m < major.size; ++m) {
         const auto source_major = major.at(m);
-        read(offsets, offsets_path, source_major, 2, pair.data());
+        read(streams.offsets, streams.offsets_path, d.offsets, source_major, 2, pair.data());
         const auto begin = read_index(pair.data(), d.offsets.dtype, n);
         const auto end = read_index(pair.data() + osz, d.offsets.dtype, n);
         if (end < begin || end > nnz) fail(ErrorCode::invalid_sparse_structure, n, "sparse offsets are nonmonotonic or exceed nnz");
@@ -630,14 +702,15 @@ std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffe
             fail(ErrorCode::invalid_sparse_structure, n, "sparse boundary offset differs from nnz");
         for (auto pos = begin; pos < end;) {
             const auto len = std::min(chunk, end - pos);
-            index_chunk.resize(multiply(len, isz, n));
-            read(indices, indices_path, pos, len, index_chunk.data());
+            if (!chunk) fail(ErrorCode::invalid_sparse_structure,n,"sparse source exceeded provisioned read workspace");
+            size_sparse_buffers(streams,len,isz,vsz,out != nullptr,retained != nullptr,n,out?len:transfer_cells);
+            streams.needs_values=true;
+            read(streams.indices, streams.indices_path, d.indices, pos, len, streams.index_chunk.data());
             if (out) {
-                value_chunk.resize(multiply(len, vsz, n));
-                read(data, data_path, pos, len, value_chunk.data());
+                read(streams.data, streams.data_path, d.data, pos, len, streams.value_chunk.data());
             }
             visit_integer(d.indices.dtype, n, [&]<class I> { for (std::size_t j = 0; j < len; ++j) {
-                const auto source_minor = unpack_index<I>(index_chunk.data() + j * sizeof(I), n);
+                const auto source_minor = unpack_index<I>(streams.index_chunk.data() + j * sizeof(I), n);
                 if (source_minor >= d.source_shape[minor_axis])
                     fail(ErrorCode::invalid_sparse_structure, n, "sparse index exceeds minor dimension");
                 lookup.each(source_minor, [&](std::size_t selected_minor) {
@@ -648,7 +721,7 @@ std::size_t scan_sparse(const NodePtr& n, const Descriptor& d, const SparseBuffe
                             fail(ErrorCode::shape_mismatch, n, "sparse output capacity became insufficient");
                         auto* values = static_cast<std::byte*>(out->values);
                         auto* indices = static_cast<std::byte*>(out->indices);
-                        std::memcpy(values + emitted * vsz, value_chunk.data() + j * vsz, vsz);
+                        std::memcpy(values + emitted * vsz, streams.value_chunk.data() + j * vsz, vsz);
                         if (d.data.dtype == DType::boolean && n->session->options.validation == Validation::full)
                             values[emitted] = values[emitted] == std::byte{0} ? std::byte{0} : std::byte{1};
                         write_index(indices + emitted * out_isz, out->index_dtype, selected_minor, n);
@@ -1340,7 +1413,8 @@ struct TransferContextImpl {
     Descriptor descriptor;
     StorageGeometry geometry;
     std::unique_ptr<Backend> backend;
-    std::unique_ptr<backed_detail::NumericTransfer> data, indices, offsets;
+    SparseReadResources sparse;
+    bool collection_read = false, refreshed = false;
     std::vector<std::byte> tile;
     std::size_t budget = 0, tile_allocations = 0;
     bool sparse_prepared = false;
@@ -1375,8 +1449,8 @@ struct TransferContextImpl {
         std::array<std::byte, 16> pair{};
         const auto first = static_cast<std::size_t>(d.axes[major].start) + start[major];
         const auto osz = dtype_size(d.offsets.dtype);
-        offsets->read({first}, {1}, pair.data());
-        offsets->read({first + count[major]}, {1}, pair.data() + osz);
+        sparse.offsets->read({first}, {1}, pair.data());
+        sparse.offsets->read({first + count[major]}, {1}, pair.data() + osz);
         const auto begin = read_index(pair.data(), d.offsets.dtype, node);
         const auto end = read_index(pair.data() + osz, d.offsets.dtype, node);
         if (end < begin || end > d.data.shape[0])
@@ -1405,16 +1479,16 @@ struct TransferContextImpl {
         auto* p = static_cast<std::byte*>(b.data);
         if(writing && d.data.sharded_payload) {
             auto selected=selected_write(d,start,count,budget-tile.capacity());selected.data=b.data;selected.strides=strides;
-            if(data->write_selection(selected)) return;
+            if(sparse.data->write_selection(selected)) return;
         }
         if(!writing && (d.data.sharded_payload || d.data.prefer_chunk_grouping) && !forward_rectangle(d)) {
             const auto workspace=std::max({backend->numeric_workspace_bytes(d.data,false),backend->retained_scratch_bytes(),
                                           geometry.writable?backend->numeric_workspace_bytes(d.data,true):std::size_t{0}});
-            if(workspace<=budget && grouped_chunk_read(node,d,start,count,strides,p,data.get(),tile,budget-workspace,tile_allocations))return;
+            if(workspace<=budget && grouped_chunk_read(node,d,start,count,strides,p,sparse.data.get(),tile,budget-workspace,tile_allocations))return;
         }
         const bool canonical = !writing && d.data.dtype == DType::boolean && node->session->options.validation == Validation::full;
         auto transfer = [&](const std::vector<std::size_t>& source, const std::vector<std::size_t>& ext, std::byte* q) {
-            if (writing) data->write(source, ext, q); else data->read(source, ext, q);
+            if (writing) sparse.data->write(source, ext, q); else sparse.data->read(source, ext, q);
             if (canonical) for (std::size_t j = 0, m = elements(ext, node); j < m; ++j)
                 q[j] = q[j] == std::byte{0} ? std::byte{0} : std::byte{1};
         };
@@ -1499,7 +1573,7 @@ void TransferContext::read_into(const std::vector<std::size_t>& start, const std
         fail(ErrorCode::invalid_argument, p.node, "sparse destination byte span exceeds ptrdiff_t");
     const auto first = static_cast<std::size_t>(p.descriptor.axes[major].start) + start[major];
     auto* out = static_cast<std::byte*>(b.offsets);
-    p.offsets->read({first}, {m + 1}, out);
+    p.sparse.offsets->read({first}, {m + 1}, out);
     std::size_t previous = p.sparse_begin;
     for (std::size_t j = 0; j <= m; ++j) {
         const auto v = read_index(out + j*osz, r.offset_dtype, p.node);
@@ -1508,13 +1582,13 @@ void TransferContext::read_into(const std::vector<std::size_t>& start, const std
         write_index(out + j*osz, r.offset_dtype, v - p.sparse_begin, p.node); previous = v;
     }
     if (!r.nnz) return;
-    p.indices->read({p.sparse_begin}, {r.nnz}, b.indices);
+    p.sparse.indices->read({p.sparse_begin}, {r.nnz}, b.indices);
     if (p.node->session->options.validation == Validation::full)
         visit_integer(r.index_dtype, p.node, [&]<class I> { for (std::size_t j = 0; j < r.nnz; ++j)
             if (unpack_index<I>(static_cast<const std::byte*>(b.indices) + j*sizeof(I), p.node) >= r.shape[minor])
                 fail(ErrorCode::invalid_sparse_structure, p.node, "sparse index exceeds minor dimension");
         });
-    p.data->read({p.sparse_begin}, {r.nnz}, b.values);
+    p.sparse.data->read({p.sparse_begin}, {r.nnz}, b.values);
     if (r.dtype == DType::boolean && p.node->session->options.validation == Validation::full)
         for (std::size_t j = 0; j < r.nnz; ++j) {
             auto& v = static_cast<std::byte*>(b.values)[j]; v = v == std::byte{0} ? std::byte{0} : std::byte{1};
@@ -1523,7 +1597,7 @@ void TransferContext::read_into(const std::vector<std::size_t>& start, const std
 TransferStats TransferContext::stats() const {
     const auto& p = transfer_context(impl_);
     TransferStats out;
-    for (const auto* resource : {p.data.get(), p.indices.get(), p.offsets.get()}) if (resource) {
+    for (const auto* resource : {p.sparse.data.get(), p.sparse.indices.get(), p.sparse.offsets.get()}) if (resource) {
         const auto s = resource->stats();
         out.read_calls += s.read_calls; out.write_calls += s.write_calls;
         out.read_bytes += s.read_bytes; out.write_bytes += s.write_bytes;
@@ -1551,10 +1625,10 @@ TransferContext BackedArray::prepare_transfer(std::size_t scratch_bytes) const {
         fail(ErrorCode::invalid_argument, node_, "store identity changed before transfer preparation");
     const auto& desc = p->descriptor;
     const auto path = desc.layout == Layout::dense ? node_->path : backed_detail::child(node_->path, "data");
-    p->data = p->backend->prepare_numeric(path);
+    p->sparse.data = p->backend->prepare_numeric(path);
     if (desc.layout != Layout::dense) {
-        p->indices = p->backend->prepare_numeric(backed_detail::child(node_->path, "indices"));
-        p->offsets = p->backend->prepare_numeric(backed_detail::child(node_->path, "indptr"));
+        p->sparse.indices = p->backend->prepare_numeric(backed_detail::child(node_->path, "indices"));
+        p->sparse.offsets = p->backend->prepare_numeric(backed_detail::child(node_->path, "indptr"));
     } else if (!desc.shape.empty()) {
         const auto workspace = std::max(p->backend->numeric_workspace_bytes(desc.data, false),
                                        p->geometry.writable ? p->backend->numeric_workspace_bytes(desc.data, true) : std::size_t{0});
@@ -1565,4 +1639,149 @@ TransferContext BackedArray::prepare_transfer(std::size_t scratch_bytes) const {
     }
     return TransferContext(std::move(p));
 }
+
+namespace detail {
+TransferContext BackedAccess::context(std::unique_ptr<TransferContextImpl> value) { return TransferContext(std::move(value)); }
+namespace {
+std::size_t node_info_bytes(const NodeInfo& info, const NodePtr& n) {
+    std::size_t bytes = 0;
+    for (const auto* v : {&info.shape,&info.codec_tile_shape,&info.physical.shape,&info.physical.chunks,&info.physical.inner_chunks,&info.physical.write_unit})
+        charge_bytes(bytes,v->capacity(),sizeof(std::size_t),n);
+    charge_bytes(bytes,info.fields.capacity(),sizeof(backed_detail::RecordFieldInfo),n);
+    for (const auto& field : info.fields) charge_bytes(bytes,field.name.capacity()+1,1,n);
+    charge_bytes(bytes,info.attrs.size(),sizeof(backed_detail::Attributes::value_type)+4*sizeof(void*),n);
+    for (const auto& [key,value] : info.attrs) {
+        charge_bytes(bytes,key.capacity()+1,1,n);
+        if (const auto* v=std::get_if<std::string>(&value)) charge_bytes(bytes,v->capacity()+1,1,n);
+        else if (const auto* v=std::get_if<std::vector<std::int64_t>>(&value)) charge_bytes(bytes,v->capacity(),sizeof(std::int64_t),n);
+        else if (const auto* v=std::get_if<std::vector<std::string>>(&value)) {
+            charge_bytes(bytes,v->capacity(),sizeof(std::string),n);
+            for (const auto& text : *v) charge_bytes(bytes,text.capacity()+1,1,n);
+        }
+    }
+    return bytes;
+}
+std::size_t context_bytes(const TransferContextImpl& p) {
+    const auto& d=p.descriptor;const auto& n=p.node;
+    std::size_t bytes=sizeof(p)+sizeof(BackedNode);
+    charge_bytes(bytes,n->path.capacity()+1,1,n);
+    charge_bytes(bytes,n->axes.capacity()+d.axes.capacity(),sizeof(backed_detail::Axis),n);
+    charge_bytes(bytes,d.source_shape.capacity()+d.shape.capacity(),sizeof(std::size_t),n);
+    const std::vector<backed_detail::Axis>* axis_lists[]{&n->axes,&d.axes};
+    for (const auto* axes : axis_lists) for (const auto& a : *axes) if (a.positions) {
+        charge_bytes(bytes,1,sizeof(std::vector<std::size_t>),n);
+        charge_bytes(bytes,a.positions->capacity(),sizeof(std::size_t),n);
+    }
+    for (const auto* info : {&d.data,&d.indices,&d.offsets}) charge_bytes(bytes,node_info_bytes(*info,n),1,n);
+    charge_bytes(bytes,sparse_resource_bytes(p.sparse,n),1,n);
+    return bytes;
+}
+TransferContextImpl& collection_context(const TransferContext& context) {
+    const auto& ptr=BackedAccess::get(context);
+    if (!ptr || !ptr->collection_read) throw Error(ErrorCode::invalid_argument,"collection read","empty or non-collection execution context");
+    ptr->check();return *ptr;
+}
+const PreparedReadImpl& checked_piece(TransferContextImpl& p,const PreparedRead& read) {
+    const auto& ptr=BackedAccess::get(read);
+    if (!ptr) fail(ErrorCode::invalid_argument,p.node,"empty prepared piece");
+    const auto& n=ptr->node;backed_detail::check_node(n);
+    if (!p.refreshed || n->session != p.node->session || n->path != p.node->path || n->raw_array != p.node->raw_array)
+        fail(ErrorCode::invalid_argument,n,"prepared piece belongs to a different or unrefreshed physical binding");
+    const auto& d=p.descriptor;const auto& r=ptr->requirements;
+    if (d.layout!=r.layout || d.data.dtype!=r.dtype || d.indices.dtype!=r.index_dtype || d.offsets.dtype!=r.offset_dtype ||
+        n->axes.size()!=d.source_shape.size() || r.shape.size()!=n->axes.size())
+        fail(ErrorCode::invalid_sparse_structure,n,"stored array changed after preparation");
+    for (std::size_t i=0;i<n->axes.size();++i) {
+        const auto& a=n->axes[i];
+        if (a.size!=r.shape[i] || (a.size && (a.at(0)>=d.source_shape[i] || a.at(a.size-1)>=d.source_shape[i])))
+            fail(ErrorCode::invalid_sparse_structure,n,"prepared piece exceeds refreshed source shape");
+    }
+    return *ptr;
+}
+}
+std::size_t backed_read_context_bytes(const TransferContext& context) {
+    const auto& ptr=BackedAccess::get(context);
+    return ptr && ptr->collection_read ? context_bytes(*ptr) : 0;
+}
+bool prepare_backed_x_read(const BackedAnnData& source,::anndatapp::Selection obs,::anndatapp::Selection var,
+                           TransferContext& context,std::size_t retained_budget,PreparedRead& out) {
+    std::unique_ptr<TransferContextImpl> candidate;
+    auto* p=BackedAccess::get(context).get();
+    if (!p) {
+        candidate=std::make_unique<TransferContextImpl>();p=candidate.get();
+        p->descriptor=describe_backed_x(source,p->node);p->collection_read=true;
+    } else {
+        p->check();const auto& source_data=BackedAccess::get(source);
+        if (!p->collection_read || source_data->session != p->node->session || p->node->path!="/X")
+            fail(ErrorCode::invalid_argument,p->node,"collection context belongs to a different component");
+    }
+    auto piece=std::make_shared<PreparedReadImpl>();
+    piece->node=std::make_shared<BackedNode>(*p->node);
+    piece->node->axes[0]=backed_detail::select_axis(p->descriptor.axes[0],obs);
+    piece->node->axes[1]=backed_detail::select_axis(p->descriptor.axes[1],var);
+    auto& r=piece->requirements;const auto& d=p->descriptor;
+    r.layout=d.layout;r.dtype=d.data.dtype;r.shape={piece->node->axes[0].size,piece->node->axes[1].size};
+    if (d.layout!=Layout::dense) {r.index_dtype=d.indices.dtype;r.offset_dtype=d.offsets.dtype;}
+    out=BackedAccess::prepared(piece);
+    const auto fallback=[&] {
+        if (d.layout!=Layout::dense) r.nnz=scan_sparse(piece->node,d,nullptr,false,SIZE_MAX,nullptr,&piece->node->axes);
+        return false;
+    };
+    if (d.layout!=Layout::csr || !p->node->session->backend->reuse_numeric_reads()) return fallback();
+    for (const auto* info : {&d.data,&d.indices,&d.offsets})
+        if (info->physical.organization==StorageOrganization::unknown) return fallback();
+    auto& streams=p->sparse;
+    streams.provisioning=true;streams.limit=retained_budget;
+    const auto piece_bytes=prepared_read_retained_bytes(out);
+    try {
+        auto base=context_bytes(*p)-sparse_resource_bytes(streams,p->node);
+        charge_bytes(base,piece_bytes,1,p->node);streams.fixed_bytes=base;
+        if (base>retained_budget || sparse_resource_bytes(streams,p->node)>retained_budget-base) throw ReadBudgetExceeded{};
+        auto& backend=*p->node->session->backend;
+        if (streams.offsets_path.empty()) {
+            streams.offsets_path=backed_detail::child(p->node->path,"indptr");
+            streams.indices_path=backed_detail::child(p->node->path,"indices");
+            streams.data_path=backed_detail::child(p->node->path,"data");
+            streams.start.resize(1);streams.count.resize(1);
+        }
+        streams.reserved_stream_bytes={backend.numeric_retained_bytes(d.offsets,streams.offsets_path),
+            backend.numeric_retained_bytes(d.indices,streams.indices_path),backend.numeric_retained_bytes(d.data,streams.data_path)};
+        auto used=base+sparse_resource_bytes(streams,p->node);
+        if (used>retained_budget) throw ReadBudgetExceeded{};
+        if (!streams.lookup) streams.lookup.emplace(piece->node->axes[1],std::min(backed_detail::scratch_remaining(p->node)/4,(retained_budget-used)/4));
+        if (sparse_resource_bytes(streams,p->node)>retained_budget-base) throw ReadBudgetExceeded{};
+        r.nnz=scan_sparse(piece->node,d,nullptr,false,SIZE_MAX,&streams,&piece->node->axes);
+        if (context_bytes(*p)>retained_budget || piece_bytes>retained_budget-context_bytes(*p)) throw ReadBudgetExceeded{};
+    } catch (const ReadBudgetExceeded&) { return fallback(); }
+    if (candidate) context=BackedAccess::context(std::move(candidate));
+    p->refreshed=false;
+    return true;
+}
+void refresh_backed_read_context(TransferContext& context) {
+    auto& p=collection_context(context);
+    auto fresh=describe(p.node);const auto& d=p.descriptor;
+    if (fresh.layout!=d.layout || fresh.source_shape!=d.source_shape || fresh.data.dtype!=d.data.dtype ||
+        fresh.indices.dtype!=d.indices.dtype || fresh.offsets.dtype!=d.offsets.dtype || fresh.data.shape!=d.data.shape ||
+        fresh.indices.shape!=d.indices.shape || fresh.offsets.shape!=d.offsets.shape)
+        fail(ErrorCode::invalid_sparse_structure,p.node,"stored array changed after preparation");
+    p.descriptor=std::move(fresh);p.sparse.provisioning=false;
+    if (p.sparse.needs_values && !p.sparse.data) {
+        auto transfer=p.node->session->backend->prepare_numeric(p.sparse.data_path,p.descriptor.data);
+        if (transfer->retained_bytes()>p.sparse.reserved_stream_bytes[2])
+            fail(ErrorCode::invalid_argument,p.node,"numeric owner exceeds reserved execution capacity");
+        p.sparse.data=std::move(transfer);
+    }
+    p.refreshed=true;
+}
+void preflight_backed_read(TransferContext& context,const PreparedRead& read,const SparseBuffer& destination) {
+    auto& p=collection_context(context);const auto& piece=checked_piece(p,read);
+    sparse_preflight(piece.node,p.descriptor,piece.requirements,destination);
+}
+void read_preflighted_backed(TransferContext& context,const PreparedRead& read,const SparseBuffer& destination) {
+    auto& p=collection_context(context);const auto& piece=checked_piece(p,read);
+    sparse_preflight(piece.node,p.descriptor,piece.requirements,destination);
+    const auto actual=scan_sparse(piece.node,p.descriptor,&destination,false,SIZE_MAX,&p.sparse,&piece.node->axes);
+    if (actual!=piece.requirements.nnz) fail(ErrorCode::invalid_sparse_structure,piece.node,"sparse source changed after preparation");
+}
+} // namespace detail
 } // namespace anndatapp
