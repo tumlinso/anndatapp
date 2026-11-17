@@ -8,6 +8,34 @@ The [Python AnnData project](https://github.com/scverse/anndata) defines the dat
 
 The library provides **in-memory and backed AnnData, MuData, TreeData, linked AnnDataSet collections, and SpatialData**, with H5AD, H5MU, H5TD, Zarr, and HDF5-linked collection storage. Its native data includes dense arrays, CSR/CSC, heterogeneous metadata, and annotated matrices. Backed access reads selections into owned or caller-provided buffers and supports explicit structural updates. Python, Cellerator, and Torch are not runtime dependencies. Arrow/Parquet is optional and used for SpatialData vector-file payloads; a core-only build requires no storage backend.
 
+## Parallel streaming reads
+
+AnnData++ complements Python AnnData and the scverse ecosystem in native pipelines
+that process backed data in batches. Prepare a `TransferContext` once per worker
+and reuse that worker's output buffers. Schedule shard-aligned blocks for sharded
+Zarr and consecutive whole rows for CSR H5AD. Callers own scheduling, so they can
+pass each block directly to their numerical code and bound memory by worker count
+and block size. [Streaming guide](docs/streaming.md)
+
+On Linux x86-64 with four workers and warm caches, AnnData++ delivered
+**6.4× the throughput of Python Zarr** on shard-aligned Zarr reads and
+**23× the throughput of Python AnnData's backed sparse reader** on CSR H5AD
+row blocks. Both readers used the same files, block requests, and CPU allocation.
+
+| Backed streaming workload | AnnData++ | Python reference |
+| --- | ---: | ---: |
+| Zstd-sharded Zarr v3, 256 × 512 shard blocks | 510.5 MiB/s | 80.3 MiB/s |
+| Gzip CSR H5AD, 64-row blocks | 4,216.5 MiB/s | 182.3 MiB/s |
+
+These are median logical throughputs for verified 4096 × 1024 fixtures with
+worker setup measured separately. Python Zarr 3.4.2 reads into reusable buffers.
+For H5AD, both readers use persistent processes. AnnData++ reuses caller
+buffers and Python AnnData 0.13.4 with h5py 3.16.0 returns a SciPy CSR block
+per request. The measurements cover backed streaming on these layouts.
+[Method and reproduction](benchmarks/parallel_streaming/README.md)
+
+## In-memory example
+
 ```cmake
 find_package(anndatapp CONFIG REQUIRED)
 target_link_libraries(my_app PRIVATE anndatapp::anndatapp)
@@ -62,6 +90,7 @@ Consumers can use `add_subdirectory()` or install the package and link `anndatap
 - [Format-family C++ example](examples/format_family.cpp)
 - [Thin-library review and implementation backlog](docs/review/README.md)
 - [1.0 cleanup status](docs/v1-status.md), [support contract](docs/support.md), and [migration notes](docs/migration-1.0.md)
+- [1.1.0 Linux qualification](docs/v1.1-linux-qualification.md)
 - [1.0.0 release notes](docs/release-notes-1.0.md) and [final Linux qualification](docs/v1-release-linux.md)
 - [Bounded standard performance suite](docs/v1-performance.md)
 - [Extension contracts and qualification requirements](docs/extension-contract.md)

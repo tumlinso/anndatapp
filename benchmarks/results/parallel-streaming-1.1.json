@@ -1,0 +1,304 @@
+{
+  "schema": "anndatapp.parallel_streaming.v1",
+  "candidate_version": "1.1.0",
+  "base_commit": "08a131cdbe5b33e6d526375cf2c465fbdac6eb4f",
+  "source": "HDF5 read-reuse implementation and 1.1.0 package version, identified by source_inputs_sha256",
+  "timing": "observer-free median wall time across five alternating pairs, warm page and retained worker caches, excluding setup and verification",
+  "fixture_verification": "all dense values and each CSR block values, index widths, offsets and indices verified against independent formulas before timing",
+  "workers_verified": 20,
+  "untimed_verification_passes": 8,
+  "timed_passes": 40,
+  "evidence_directory": "build/release-1.1/parallel-streaming/measurements",
+  "fixture_identity": {
+    "manifest_sha256": "08886a42f32226fd0570ddea3661b991f450c6848bd37e9962b8fe7522ed9c2e",
+    "shape": [
+      4096,
+      1024
+    ],
+    "zarr_files": 47,
+    "zarr_chunks": [
+      64,
+      128
+    ],
+    "zarr_shards": [
+      256,
+      512
+    ],
+    "h5ad_compression": "gzip",
+    "h5ad_rows_per_block": 64,
+    "h5ad_sha256": "5d09c1790673b6bcd2ef45609826667792d537e978098ebbef5fd26704088585",
+    "dense_x_sha256": "928fd29acc84ce953eb2892fbd209d46daf14b475251cc2175c48e1ddc51f026",
+    "csr_values_indices_offsets_sha256": "d3f49c7eb0d44326ffefd0319794c085e8eafb6d5ac1d54b8af8e0018f18aa4e"
+  },
+  "max_seconds_per_window": 30,
+  "pairs": 5,
+  "host": {
+    "Architecture": "x86_64",
+    "Model name": "Intel(R) Xeon(R) CPU E5-2698 v4 @ 2.20GHz"
+  },
+  "thread_limits": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "BLOSC_NTHREADS": "1",
+    "NUMBA_NUM_THREADS": "1"
+  },
+  "native_build": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG",
+    "ANNDATAPP_HDF5_VERSION": "1.10.10",
+    "ANNDATAPP_ZSTD_VERSION": "1.5.5",
+    "cache_sha256": "6a74054bff1d21e5913195403d7b98a910180baf68ce2862e5606b8414cd99b1"
+  },
+  "case_results": {
+    "zarr-1": {
+      "workers": 1,
+      "cpus": [
+        2
+      ],
+      "blocks": 32,
+      "bytes_per_pass": 16777216,
+      "window_seconds": 2.3389670780002234,
+      "median_ns": {
+        "cpp": 75851354,
+        "python": 218408822
+      },
+      "mib_per_second": {
+        "cpp": 210.93888449242448,
+        "python": 73.25711412884229
+      },
+      "cpp_to_python_throughput": 2.8794320797490314,
+      "sample_ranges_ns": {
+        "cpp": [
+          66641915,
+          76813946
+        ],
+        "python": [
+          202267690,
+          224422787
+        ]
+      },
+      "worker_setup_ns": {
+        "cpp": 2042096,
+        "python": 275473149
+      },
+      "verification_ns": {
+        "cpp": 91472234,
+        "python": 390252632
+      },
+      "native_runtime": {
+        "worker_model": "threads",
+        "buffer_bytes_per_worker": 524288,
+        "verification_backend_reads": 32,
+        "verification_backend_bytes": 16777216,
+        "verification_cpp_scratch_allocations": 1,
+        "verification_retained_scratch_bytes": 4096
+      },
+      "python_runtime": {
+        "buffer_bytes_per_worker": 524288,
+        "versions": {
+          "numpy": "2.2.6",
+          "python": "3.12.14",
+          "zarr": "3.4.2"
+        },
+        "worker_model": "threads",
+        "zarr_async_concurrency": 1,
+        "zarr_codec_max_workers": 1,
+        "zarr_threading_max_workers": 1
+      }
+    },
+    "zarr-4": {
+      "workers": 4,
+      "cpus": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "blocks": 32,
+      "bytes_per_pass": 16777216,
+      "window_seconds": 1.8108093499999995,
+      "median_ns": {
+        "cpp": 31343392,
+        "python": 199270572
+      },
+      "mib_per_second": {
+        "cpp": 510.4744247208471,
+        "python": 80.29283922565345
+      },
+      "cpp_to_python_throughput": 6.357658162843383,
+      "sample_ranges_ns": {
+        "cpp": [
+          22213358,
+          42997327
+        ],
+        "python": [
+          175624682,
+          202257132
+        ]
+      },
+      "worker_setup_ns": {
+        "cpp": 6445053,
+        "python": 260148276
+      },
+      "verification_ns": {
+        "cpp": 27344344,
+        "python": 249499274
+      },
+      "native_runtime": {
+        "worker_model": "threads",
+        "buffer_bytes_per_worker": 524288,
+        "verification_backend_reads": 32,
+        "verification_backend_bytes": 16777216,
+        "verification_cpp_scratch_allocations": 4,
+        "verification_retained_scratch_bytes": 16384
+      },
+      "python_runtime": {
+        "buffer_bytes_per_worker": 524288,
+        "versions": {
+          "numpy": "2.2.6",
+          "python": "3.12.14",
+          "zarr": "3.4.2"
+        },
+        "worker_model": "threads",
+        "zarr_async_concurrency": 4,
+        "zarr_codec_max_workers": 4,
+        "zarr_threading_max_workers": 4
+      }
+    },
+    "h5ad-1": {
+      "workers": 1,
+      "cpus": [
+        2
+      ],
+      "blocks": 64,
+      "bytes_per_pass": 1065216,
+      "window_seconds": 1.602699634000146,
+      "median_ns": {
+        "cpp": 667196,
+        "python": 18118089
+      },
+      "mib_per_second": {
+        "cpp": 1522.5947706895724,
+        "python": 56.06933162901451
+      },
+      "cpp_to_python_throughput": 27.155571975851174,
+      "sample_ranges_ns": {
+        "cpp": [
+          621365,
+          858810
+        ],
+        "python": [
+          18072661,
+          18634180
+        ]
+      },
+      "worker_setup_ns": {
+        "cpp": 4203730,
+        "python": 1189073550
+      },
+      "verification_ns": {
+        "cpp": 8210919,
+        "python": 42720770
+      },
+      "native_runtime": {
+        "worker_model": "forked processes",
+        "buffer_bytes_per_worker": 16644,
+        "verification_backend_reads": 320,
+        "verification_backend_bytes": 1065728,
+        "verification_cpp_scratch_allocations": 0,
+        "verification_retained_scratch_bytes": 0
+      },
+      "python_runtime": {
+        "cached_offset_bytes_per_worker": 16388,
+        "hdf5_cache": {
+          "rdcc_nbytes": 1048576,
+          "rdcc_nslots": 521,
+          "rdcc_w0": 0.75
+        },
+        "versions": {
+          "anndata": "0.13.4",
+          "h5py": "3.16.0",
+          "hdf5": "2.0.0",
+          "numpy": "2.2.6",
+          "python": "3.12.14",
+          "scipy": "1.17.1"
+        },
+        "worker_model": "spawned processes"
+      }
+    },
+    "h5ad-4": {
+      "workers": 4,
+      "cpus": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "blocks": 64,
+      "bytes_per_pass": 1065216,
+      "window_seconds": 1.8788647239998681,
+      "median_ns": {
+        "cpp": 240926,
+        "python": 5571021
+      },
+      "mib_per_second": {
+        "cpp": 4216.519348783444,
+        "python": 182.34882629683142
+      },
+      "cpp_to_python_throughput": 23.123369831400513,
+      "sample_ranges_ns": {
+        "cpp": [
+          220297,
+          308927
+        ],
+        "python": [
+          5347727,
+          6239707
+        ]
+      },
+      "worker_setup_ns": {
+        "cpp": 5380484,
+        "python": 1427352881
+      },
+      "verification_ns": {
+        "cpp": 3198231,
+        "python": 14640193
+      },
+      "native_runtime": {
+        "worker_model": "forked processes",
+        "buffer_bytes_per_worker": 16644,
+        "verification_backend_reads": 320,
+        "verification_backend_bytes": 1065728,
+        "verification_cpp_scratch_allocations": 0,
+        "verification_retained_scratch_bytes": 0
+      },
+      "python_runtime": {
+        "cached_offset_bytes_per_worker": 16388,
+        "hdf5_cache": {
+          "rdcc_nbytes": 1048576,
+          "rdcc_nslots": 521,
+          "rdcc_w0": 0.75
+        },
+        "versions": {
+          "anndata": "0.13.4",
+          "h5py": "3.16.0",
+          "hdf5": "2.0.0",
+          "numpy": "2.2.6",
+          "python": "3.12.14",
+          "scipy": "1.17.1"
+        },
+        "worker_model": "spawned processes"
+      }
+    }
+  },
+  "source_inputs_sha256": "51190757c7835cbe78cae87f0eafc66f77614c9d98562e251cea6d60cbca8607",
+  "driver_sha256": {
+    "cpp_binary": "26df2419f554e1aa8b50fb32ae1b348c4517f1756320a469ae6d72224397d781",
+    "cpp_source": "8f32014a7af29b4bfe45cc7e76c5ad021499575b89cff0ceeaeb5b3da90fe2a3",
+    "python_source": "c34b78a169715b53230f49b2cd4885b4020dbafcef6b3b0d3c49b46e36f605dd",
+    "runner": "4bd0f3f364dc30de6e45c2ad294ba64c9bc4569e920b3b8710a0d6ceefbc2072"
+  },
+  "observations_sha256": "24a6f040b17b8007131a2ad17b0fc84636f43c270985dece8f85b101647c85fa"
+}
