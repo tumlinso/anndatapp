@@ -1,0 +1,2334 @@
+{
+  "schema": "anndatapp.collection-matrix-results.v2",
+  "source_commit": "32852b6b65d0ab6d8204f3cb5ebb7cc584be0def",
+  "analyzer_sha256": "d6592f55806474f61edcea25ac321d34fa834bc11e1bb89e9a76994ca4197689",
+  "frozen_files": 128,
+  "new_fixture_bytes": 25829811,
+  "windows": {
+    "screen": {
+      "seconds": 24.748614373998862,
+      "processes": 26,
+      "cpu": 2,
+      "receipt_sha256": "b4a729722e5f5375639927f7a783964ac0d07ea7ec0cc47ce07f36cdb830eff0",
+      "plan_sha256": "6aebf67c9b0657e4839533f10c9c904c1229c91e7131284aaad0bd384f4cb627"
+    },
+    "volume": {
+      "seconds": 16.23355426300259,
+      "processes": 16,
+      "cpu": 2,
+      "receipt_sha256": "ae9aff762c90e358ca7355c0bf0cd55129079c9c9be3d0e8054a011109ccb16a",
+      "plan_sha256": "31e573a7de1ffee55fdef061f5c1bde7fb5217bd4af1ff7e3adaf3a8b19b9667"
+    },
+    "reuse": {
+      "seconds": 17.052320590002637,
+      "processes": 24,
+      "cpu": 2,
+      "receipt_sha256": "8fdc0498de82e2a5a2fb22592f1ef862810472c630e0dec8514e54a3cb28588c",
+      "plan_sha256": "bed938a1084c6bffc9148b25920a4ac664f119f490c9af7cead2f74177eda4ab"
+    }
+  },
+  "cases": {
+    "components-1": {
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "modes": {
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 8.868222,
+            "min_ms": 8.634971,
+            "max_ms": 9.048741,
+            "samples_ms": [
+              9.048741,
+              8.634971,
+              8.868222
+            ]
+          },
+          "open": {
+            "median_ms": 5.749043,
+            "min_ms": 5.577876,
+            "max_ms": 5.975875,
+            "samples_ms": [
+              5.975875,
+              5.577876,
+              5.749043
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.410181,
+            "min_ms": 0.406246,
+            "max_ms": 0.414117,
+            "samples_ms": [
+              0.410181,
+              0.414117,
+              0.406246
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 1.789211,
+            "min_ms": 1.775649,
+            "max_ms": 1.834645,
+            "samples_ms": [
+              1.789211,
+              1.775649,
+              1.834645
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.000374,
+            "min_ms": 0.000344,
+            "max_ms": 0.00043,
+            "samples_ms": [
+              0.000374,
+              0.00043,
+              0.000344
+            ]
+          },
+          "transfer": {
+            "median_ms": 0.8731,
+            "min_ms": 0.866899,
+            "max_ms": 0.877944,
+            "samples_ms": [
+              0.8731,
+              0.866899,
+              0.877944
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        },
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 16.139933,
+            "min_ms": 15.962666,
+            "max_ms": 16.421571,
+            "samples_ms": [
+              16.139933,
+              16.421571,
+              15.962666
+            ]
+          },
+          "open": {
+            "median_ms": 14.121675,
+            "min_ms": 13.954981,
+            "max_ms": 14.396695,
+            "samples_ms": [
+              14.121675,
+              14.396695,
+              13.954981
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "operation": {
+            "median_ms": 2.016604,
+            "min_ms": 2.006151,
+            "max_ms": 2.023319,
+            "samples_ms": [
+              2.016604,
+              2.023319,
+              2.006151
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 0.5494584147282395
+    },
+    "components-8": {
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "modes": {
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 23.016949,
+            "min_ms": 22.855187,
+            "max_ms": 23.152223,
+            "samples_ms": [
+              23.016949,
+              23.152223,
+              22.855187
+            ]
+          },
+          "open": {
+            "median_ms": 20.045425,
+            "min_ms": 19.861675,
+            "max_ms": 20.195835,
+            "samples_ms": [
+              20.045425,
+              20.195835,
+              19.861675
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "operation": {
+            "median_ms": 2.969785,
+            "min_ms": 2.954397,
+            "max_ms": 2.99194,
+            "samples_ms": [
+              2.969785,
+              2.954397,
+              2.99194
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        },
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 23.687832,
+            "min_ms": 23.641763,
+            "max_ms": 23.922487,
+            "samples_ms": [
+              23.687832,
+              23.641763,
+              23.922487
+            ]
+          },
+          "open": {
+            "median_ms": 13.464947,
+            "min_ms": 13.439451,
+            "max_ms": 13.478051,
+            "samples_ms": [
+              13.464947,
+              13.439451,
+              13.478051
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.412433,
+            "min_ms": 0.409648,
+            "max_ms": 0.422784,
+            "samples_ms": [
+              0.409648,
+              0.422784,
+              0.412433
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 5.507363,
+            "min_ms": 5.493932,
+            "max_ms": 5.538212,
+            "samples_ms": [
+              5.493932,
+              5.507363,
+              5.538212
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.000554,
+            "min_ms": 0.000538,
+            "max_ms": 0.000595,
+            "samples_ms": [
+              0.000595,
+              0.000554,
+              0.000538
+            ]
+          },
+          "transfer": {
+            "median_ms": 4.31871,
+            "min_ms": 4.271611,
+            "max_ms": 4.493253,
+            "samples_ms": [
+              4.31871,
+              4.271611,
+              4.493253
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        },
+        "checked": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 27.418096,
+            "min_ms": 26.511502,
+            "max_ms": 27.471446,
+            "samples_ms": [
+              26.511502,
+              27.471446,
+              27.418096
+            ]
+          },
+          "open": {
+            "median_ms": 11.943575,
+            "min_ms": 11.837143,
+            "max_ms": 12.906224,
+            "samples_ms": [
+              11.943575,
+              12.906224,
+              11.837143
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.434132,
+            "min_ms": 0.415427,
+            "max_ms": 0.43648,
+            "samples_ms": [
+              0.415427,
+              0.434132,
+              0.43648
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 9.818995,
+            "min_ms": 9.735992,
+            "max_ms": 10.05383,
+            "samples_ms": [
+              9.818995,
+              9.735992,
+              10.05383
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.000546,
+            "min_ms": 0.00053,
+            "max_ms": 0.000562,
+            "samples_ms": [
+              0.00053,
+              0.000546,
+              0.000562
+            ]
+          },
+          "transfer": {
+            "median_ms": 4.394552,
+            "min_ms": 4.332975,
+            "max_ms": 5.090081,
+            "samples_ms": [
+              4.332975,
+              4.394552,
+              5.090081
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 1.0291473470267498
+    },
+    "components-32": {
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "modes": {
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 71.884372,
+            "min_ms": 71.592217,
+            "max_ms": 73.299577,
+            "samples_ms": [
+              71.884372,
+              71.592217,
+              73.299577
+            ]
+          },
+          "open": {
+            "median_ms": 37.455103,
+            "min_ms": 37.388628,
+            "max_ms": 38.854328,
+            "samples_ms": [
+              37.388628,
+              37.455103,
+              38.854328
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.418271,
+            "min_ms": 0.413377,
+            "max_ms": 0.4278,
+            "samples_ms": [
+              0.4278,
+              0.413377,
+              0.418271
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 17.950751,
+            "min_ms": 17.927749,
+            "max_ms": 17.997977,
+            "samples_ms": [
+              17.927749,
+              17.950751,
+              17.997977
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.000564,
+            "min_ms": 0.000529,
+            "max_ms": 0.000634,
+            "samples_ms": [
+              0.000634,
+              0.000529,
+              0.000564
+            ]
+          },
+          "transfer": {
+            "median_ms": 16.028437,
+            "min_ms": 15.772457,
+            "max_ms": 16.139561,
+            "samples_ms": [
+              16.139561,
+              15.772457,
+              16.028437
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        },
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 48.498819,
+            "min_ms": 48.466131,
+            "max_ms": 50.181671,
+            "samples_ms": [
+              48.466131,
+              50.181671,
+              48.498819
+            ]
+          },
+          "open": {
+            "median_ms": 40.754993,
+            "min_ms": 40.710316,
+            "max_ms": 42.518683,
+            "samples_ms": [
+              40.710316,
+              42.518683,
+              40.754993
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "operation": {
+            "median_ms": 7.741506,
+            "min_ms": 7.660594,
+            "max_ms": 7.753441,
+            "samples_ms": [
+              7.753441,
+              7.660594,
+              7.741506
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 1.4821880920440558
+    },
+    "positive-stride": {
+      "output_fnv1a64": "725659ab49fc972d",
+      "modes": {
+        "default": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 23.41775,
+            "min_ms": 23.41775,
+            "max_ms": 23.41775,
+            "samples_ms": [
+              23.41775
+            ]
+          },
+          "open": {
+            "median_ms": 13.21837,
+            "min_ms": 13.21837,
+            "max_ms": 13.21837,
+            "samples_ms": [
+              13.21837
+            ]
+          },
+          "nnz": 28,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.4107,
+            "min_ms": 0.4107,
+            "max_ms": 0.4107,
+            "samples_ms": [
+              0.4107
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 5.341138,
+            "min_ms": 5.341138,
+            "max_ms": 5.341138,
+            "samples_ms": [
+              5.341138
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.00035,
+            "min_ms": 0.00035,
+            "max_ms": 0.00035,
+            "samples_ms": [
+              0.00035
+            ]
+          },
+          "transfer": {
+            "median_ms": 4.447192,
+            "min_ms": 4.447192,
+            "max_ms": 4.447192,
+            "samples_ms": [
+              4.447192
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "strided_range",
+            "col_selector_kind": "strided_range"
+          }
+        }
+      },
+      "comparison_status": "python_incorrect_output_no_latency_ratio"
+    },
+    "contiguous-one-component": {
+      "output_fnv1a64": "17064116932e1db5",
+      "modes": {
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 17.02377,
+            "min_ms": 15.356063,
+            "max_ms": 17.165343,
+            "samples_ms": [
+              15.356063,
+              17.165343,
+              17.02377
+            ]
+          },
+          "open": {
+            "median_ms": 13.384821,
+            "min_ms": 11.795647,
+            "max_ms": 13.478238,
+            "samples_ms": [
+              11.795647,
+              13.478238,
+              13.384821
+            ]
+          },
+          "nnz": 259,
+          "shape": [
+            256,
+            128
+          ],
+          "selection": {
+            "median_ms": 0.410709,
+            "min_ms": 0.401434,
+            "max_ms": 0.42095,
+            "samples_ms": [
+              0.401434,
+              0.410709,
+              0.42095
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 1.971459,
+            "min_ms": 1.935411,
+            "max_ms": 1.993473,
+            "samples_ms": [
+              1.935411,
+              1.993473,
+              1.971459
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.001252,
+            "min_ms": 0.00108,
+            "max_ms": 0.001452,
+            "samples_ms": [
+              0.00108,
+              0.001452,
+              0.001252
+            ]
+          },
+          "transfer": {
+            "median_ms": 1.245288,
+            "min_ms": 1.222491,
+            "max_ms": 1.281471,
+            "samples_ms": [
+              1.222491,
+              1.281471,
+              1.245288
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "contiguous_range",
+            "col_selector_kind": "contiguous_range"
+          }
+        },
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 22.866707,
+            "min_ms": 22.722718,
+            "max_ms": 26.43626,
+            "samples_ms": [
+              22.722718,
+              26.43626,
+              22.866707
+            ]
+          },
+          "open": {
+            "median_ms": 19.883935,
+            "min_ms": 19.781134,
+            "max_ms": 23.040109,
+            "samples_ms": [
+              19.781134,
+              23.040109,
+              19.883935
+            ]
+          },
+          "nnz": 259,
+          "shape": [
+            256,
+            128
+          ],
+          "operation": {
+            "median_ms": 2.981036,
+            "min_ms": 2.939898,
+            "max_ms": 3.39443,
+            "samples_ms": [
+              2.939898,
+              3.39443,
+              2.981036
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "range",
+            "col_selector_kind": "range"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 0.7444784244622541
+    },
+    "contiguous-across-boundary": {
+      "output_fnv1a64": "ba0529a44b208ce6",
+      "modes": {
+        "python": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 22.66666,
+            "min_ms": 22.66666,
+            "max_ms": 22.66666,
+            "samples_ms": [
+              22.66666
+            ]
+          },
+          "open": {
+            "median_ms": 19.795229,
+            "min_ms": 19.795229,
+            "max_ms": 19.795229,
+            "samples_ms": [
+              19.795229
+            ]
+          },
+          "nnz": 258,
+          "shape": [
+            256,
+            128
+          ],
+          "operation": {
+            "median_ms": 2.869736,
+            "min_ms": 2.869736,
+            "max_ms": 2.869736,
+            "samples_ms": [
+              2.869736
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "range",
+            "col_selector_kind": "range"
+          }
+        },
+        "default": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 18.485873,
+            "min_ms": 18.485873,
+            "max_ms": 18.485873,
+            "samples_ms": [
+              18.485873
+            ]
+          },
+          "open": {
+            "median_ms": 13.761203,
+            "min_ms": 13.761203,
+            "max_ms": 13.761203,
+            "samples_ms": [
+              13.761203
+            ]
+          },
+          "nnz": 258,
+          "shape": [
+            256,
+            128
+          ],
+          "selection": {
+            "median_ms": 0.423295,
+            "min_ms": 0.423295,
+            "max_ms": 0.423295,
+            "samples_ms": [
+              0.423295
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 2.572227,
+            "min_ms": 2.572227,
+            "max_ms": 2.572227,
+            "samples_ms": [
+              2.572227
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.001221,
+            "min_ms": 0.001221,
+            "max_ms": 0.001221,
+            "samples_ms": [
+              0.001221
+            ]
+          },
+          "transfer": {
+            "median_ms": 1.727927,
+            "min_ms": 1.727927,
+            "max_ms": 1.727927,
+            "samples_ms": [
+              1.727927
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "contiguous_range",
+            "col_selector_kind": "contiguous_range"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 0.8155534604569002
+    },
+    "reverse-duplicates": {
+      "output_fnv1a64": "c41355d7a44f4635",
+      "modes": {
+        "default": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 65.104518,
+            "min_ms": 65.104518,
+            "max_ms": 65.104518,
+            "samples_ms": [
+              65.104518
+            ]
+          },
+          "open": {
+            "median_ms": 11.977472,
+            "min_ms": 11.977472,
+            "max_ms": 11.977472,
+            "samples_ms": [
+              11.977472
+            ]
+          },
+          "nnz": 704,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.406303,
+            "min_ms": 0.406303,
+            "max_ms": 0.406303,
+            "samples_ms": [
+              0.406303
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 25.567245,
+            "min_ms": 25.567245,
+            "max_ms": 25.567245,
+            "samples_ms": [
+              25.567245
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.00145,
+            "min_ms": 0.00145,
+            "max_ms": 0.00145,
+            "samples_ms": [
+              0.00145
+            ]
+          },
+          "transfer": {
+            "median_ms": 27.152048,
+            "min_ms": 27.152048,
+            "max_ms": 27.152048,
+            "samples_ms": [
+              27.152048
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        },
+        "python": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 22.91844,
+            "min_ms": 22.91844,
+            "max_ms": 22.91844,
+            "samples_ms": [
+              22.91844
+            ]
+          },
+          "open": {
+            "median_ms": 19.817184,
+            "min_ms": 19.817184,
+            "max_ms": 19.817184,
+            "samples_ms": [
+              19.817184
+            ]
+          },
+          "nnz": 704,
+          "shape": [
+            64,
+            64
+          ],
+          "operation": {
+            "median_ms": 3.099584,
+            "min_ms": 3.099584,
+            "max_ms": 3.099584,
+            "samples_ms": [
+              3.099584
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 2.8407046029310896
+    },
+    "all-columns-512-rows": {
+      "output_fnv1a64": "c4372f38bbc04308",
+      "modes": {
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 25.447609,
+            "min_ms": 24.89532,
+            "max_ms": 25.715987,
+            "samples_ms": [
+              25.715987,
+              24.89532,
+              25.447609
+            ]
+          },
+          "open": {
+            "median_ms": 13.356217,
+            "min_ms": 13.007063,
+            "max_ms": 13.718185,
+            "samples_ms": [
+              13.718185,
+              13.007063,
+              13.356217
+            ]
+          },
+          "nnz": 8192,
+          "shape": [
+            512,
+            2048
+          ],
+          "selection": {
+            "median_ms": 0.417708,
+            "min_ms": 0.409113,
+            "max_ms": 0.420645,
+            "samples_ms": [
+              0.420645,
+              0.409113,
+              0.417708
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 6.057461,
+            "min_ms": 6.029206,
+            "max_ms": 6.110477,
+            "samples_ms": [
+              6.057461,
+              6.029206,
+              6.110477
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.03456,
+            "min_ms": 0.03407,
+            "max_ms": 0.034772,
+            "samples_ms": [
+              0.034772,
+              0.03456,
+              0.03407
+            ]
+          },
+          "transfer": {
+            "median_ms": 5.484924,
+            "min_ms": 5.415378,
+            "max_ms": 5.529137,
+            "samples_ms": [
+              5.484924,
+              5.415378,
+              5.529137
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        },
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 23.026139,
+            "min_ms": 22.984454,
+            "max_ms": 27.988209,
+            "samples_ms": [
+              23.026139,
+              22.984454,
+              27.988209
+            ]
+          },
+          "open": {
+            "median_ms": 19.891723,
+            "min_ms": 19.743553,
+            "max_ms": 23.762217,
+            "samples_ms": [
+              19.891723,
+              19.743553,
+              23.762217
+            ]
+          },
+          "nnz": 8192,
+          "shape": [
+            512,
+            2048
+          ],
+          "operation": {
+            "median_ms": 3.239156,
+            "min_ms": 3.132727,
+            "max_ms": 4.223739,
+            "samples_ms": [
+              3.132727,
+              3.239156,
+              4.223739
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 1.1051617902593223
+    },
+    "higher-density-all-columns": {
+      "output_fnv1a64": "130102053721e225",
+      "modes": {
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 27.769938,
+            "min_ms": 27.16518,
+            "max_ms": 29.08711,
+            "samples_ms": [
+              27.16518,
+              29.08711,
+              27.769938
+            ]
+          },
+          "open": {
+            "median_ms": 20.202343,
+            "min_ms": 19.782712,
+            "max_ms": 21.24659,
+            "samples_ms": [
+              19.782712,
+              21.24659,
+              20.202343
+            ]
+          },
+          "nnz": 65536,
+          "shape": [
+            512,
+            2048
+          ],
+          "operation": {
+            "median_ms": 7.565942,
+            "min_ms": 7.380908,
+            "max_ms": 7.838659,
+            "samples_ms": [
+              7.380908,
+              7.838659,
+              7.565942
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        },
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 28.742058,
+            "min_ms": 27.392271,
+            "max_ms": 28.831106,
+            "samples_ms": [
+              28.831106,
+              27.392271,
+              28.742058
+            ]
+          },
+          "open": {
+            "median_ms": 13.405616,
+            "min_ms": 12.176586,
+            "max_ms": 13.531305,
+            "samples_ms": [
+              13.531305,
+              12.176586,
+              13.405616
+            ]
+          },
+          "nnz": 65536,
+          "shape": [
+            512,
+            2048
+          ],
+          "selection": {
+            "median_ms": 0.4267,
+            "min_ms": 0.4239,
+            "max_ms": 0.435237,
+            "samples_ms": [
+              0.4267,
+              0.4239,
+              0.435237
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 7.245347,
+            "min_ms": 7.2392,
+            "max_ms": 7.24767,
+            "samples_ms": [
+              7.2392,
+              7.245347,
+              7.24767
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.276709,
+            "min_ms": 0.255156,
+            "max_ms": 0.288047,
+            "samples_ms": [
+              0.276709,
+              0.255156,
+              0.288047
+            ]
+          },
+          "transfer": {
+            "median_ms": 7.357192,
+            "min_ms": 7.291282,
+            "max_ms": 7.365488,
+            "samples_ms": [
+              7.357192,
+              7.291282,
+              7.365488
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        },
+        "checked": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 35.971559,
+            "min_ms": 35.650261,
+            "max_ms": 36.82263,
+            "samples_ms": [
+              36.82263,
+              35.971559,
+              35.650261
+            ]
+          },
+          "open": {
+            "median_ms": 12.196188,
+            "min_ms": 12.002728,
+            "max_ms": 12.371414,
+            "samples_ms": [
+              12.371414,
+              12.196188,
+              12.002728
+            ]
+          },
+          "nnz": 65536,
+          "shape": [
+            512,
+            2048
+          ],
+          "selection": {
+            "median_ms": 0.414121,
+            "min_ms": 0.410797,
+            "max_ms": 0.420865,
+            "samples_ms": [
+              0.410797,
+              0.420865,
+              0.414121
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 15.936403,
+            "min_ms": 15.845351,
+            "max_ms": 16.207863,
+            "samples_ms": [
+              16.207863,
+              15.936403,
+              15.845351
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.23505,
+            "min_ms": 0.225021,
+            "max_ms": 0.320362,
+            "samples_ms": [
+              0.320362,
+              0.23505,
+              0.225021
+            ]
+          },
+          "transfer": {
+            "median_ms": 7.183053,
+            "min_ms": 7.16304,
+            "max_ms": 7.512194,
+            "samples_ms": [
+              7.512194,
+              7.183053,
+              7.16304
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 1.0350061998698017
+    },
+    "all-rows-spread-columns": {
+      "output_fnv1a64": "7a422241fa1825b5",
+      "modes": {
+        "default": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 58.463925,
+            "min_ms": 58.463925,
+            "max_ms": 58.463925,
+            "samples_ms": [
+              58.463925
+            ]
+          },
+          "open": {
+            "median_ms": 12.219761,
+            "min_ms": 12.219761,
+            "max_ms": 12.219761,
+            "samples_ms": [
+              12.219761
+            ]
+          },
+          "nnz": 4056,
+          "shape": [
+            8192,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.414767,
+            "min_ms": 0.414767,
+            "max_ms": 0.414767,
+            "samples_ms": [
+              0.414767
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 20.099454,
+            "min_ms": 20.099454,
+            "max_ms": 20.099454,
+            "samples_ms": [
+              20.099454
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.044257,
+            "min_ms": 0.044257,
+            "max_ms": 0.044257,
+            "samples_ms": [
+              0.044257
+            ]
+          },
+          "transfer": {
+            "median_ms": 25.685686,
+            "min_ms": 25.685686,
+            "max_ms": 25.685686,
+            "samples_ms": [
+              25.685686
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "all",
+            "col_selector_kind": "indices"
+          }
+        },
+        "python": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 23.983779,
+            "min_ms": 23.983779,
+            "max_ms": 23.983779,
+            "samples_ms": [
+              23.983779
+            ]
+          },
+          "open": {
+            "median_ms": 19.931483,
+            "min_ms": 19.931483,
+            "max_ms": 19.931483,
+            "samples_ms": [
+              19.931483
+            ]
+          },
+          "nnz": 4056,
+          "shape": [
+            8192,
+            64
+          ],
+          "operation": {
+            "median_ms": 4.050748,
+            "min_ms": 4.050748,
+            "max_ms": 4.050748,
+            "samples_ms": [
+              4.050748
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "all",
+            "col_selector_kind": "indices"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 2.4376444179209624
+    },
+    "gzip-spread": {
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "modes": {
+        "python": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 27.048746,
+            "min_ms": 27.048746,
+            "max_ms": 27.048746,
+            "samples_ms": [
+              27.048746
+            ]
+          },
+          "open": {
+            "median_ms": 19.901184,
+            "min_ms": 19.901184,
+            "max_ms": 19.901184,
+            "samples_ms": [
+              19.901184
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "operation": {
+            "median_ms": 7.145621,
+            "min_ms": 7.145621,
+            "max_ms": 7.145621,
+            "samples_ms": [
+              7.145621
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        },
+        "default": {
+          "observations": 1,
+          "end_to_end": {
+            "median_ms": 33.386334,
+            "min_ms": 33.386334,
+            "max_ms": 33.386334,
+            "samples_ms": [
+              33.386334
+            ]
+          },
+          "open": {
+            "median_ms": 14.269754,
+            "min_ms": 14.269754,
+            "max_ms": 14.269754,
+            "samples_ms": [
+              14.269754
+            ]
+          },
+          "nnz": 34,
+          "shape": [
+            64,
+            64
+          ],
+          "selection": {
+            "median_ms": 0.430203,
+            "min_ms": 0.430203,
+            "max_ms": 0.430203,
+            "samples_ms": [
+              0.430203
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 9.642344,
+            "min_ms": 9.642344,
+            "max_ms": 9.642344,
+            "samples_ms": [
+              9.642344
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.000372,
+            "min_ms": 0.000372,
+            "max_ms": 0.000372,
+            "samples_ms": [
+              0.000372
+            ]
+          },
+          "transfer": {
+            "median_ms": 9.043661,
+            "min_ms": 9.043661,
+            "max_ms": 9.043661,
+            "samples_ms": [
+              9.043661
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "indices"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 1.2343024700664496
+    },
+    "reuse-sparse": {
+      "output_fnv1a64": "db4258cfa067f6a2",
+      "modes": {
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 24.030433,
+            "min_ms": 23.331149,
+            "max_ms": 25.705906,
+            "samples_ms": [
+              24.030433,
+              25.705906,
+              23.331149
+            ]
+          },
+          "open": {
+            "median_ms": 13.623915,
+            "min_ms": 13.388068,
+            "max_ms": 15.019302,
+            "samples_ms": [
+              13.623915,
+              15.019302,
+              13.388068
+            ]
+          },
+          "nnz": 1024,
+          "shape": [
+            64,
+            2048
+          ],
+          "selection": {
+            "median_ms": 0.41215,
+            "min_ms": 0.40905,
+            "max_ms": 0.460145,
+            "samples_ms": [
+              0.40905,
+              0.460145,
+              0.41215
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 5.537004,
+            "min_ms": 5.303636,
+            "max_ms": 5.669356,
+            "samples_ms": [
+              5.537004,
+              5.669356,
+              5.303636
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.004493,
+            "min_ms": 0.004372,
+            "max_ms": 0.004719,
+            "samples_ms": [
+              0.004372,
+              0.004719,
+              0.004493
+            ]
+          },
+          "transfer": {
+            "median_ms": 4.456092,
+            "min_ms": 4.222802,
+            "max_ms": 4.552384,
+            "samples_ms": [
+              4.456092,
+              4.552384,
+              4.222802
+            ]
+          },
+          "reused_operation": {
+            "median_ms": 4.318094,
+            "min_ms": 4.067811,
+            "max_ms": 4.325342,
+            "samples_ms": [
+              4.325342,
+              4.318094,
+              4.067811
+            ],
+            "within_process_samples_ms": [
+              [
+                4.456034,
+                4.27917,
+                4.176042,
+                4.371514
+              ],
+              [
+                4.399665,
+                4.338215,
+                4.256219,
+                4.297973
+              ],
+              [
+                4.089536,
+                4.071686,
+                4.063936,
+                4.062249
+              ]
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        },
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 23.075758,
+            "min_ms": 22.818059,
+            "max_ms": 28.681282,
+            "samples_ms": [
+              28.681282,
+              23.075758,
+              22.818059
+            ]
+          },
+          "open": {
+            "median_ms": 20.019607,
+            "min_ms": 19.826492,
+            "max_ms": 24.868913,
+            "samples_ms": [
+              24.868913,
+              20.019607,
+              19.826492
+            ]
+          },
+          "nnz": 1024,
+          "shape": [
+            64,
+            2048
+          ],
+          "operation": {
+            "median_ms": 3.054497,
+            "min_ms": 2.989915,
+            "max_ms": 3.810663,
+            "samples_ms": [
+              3.810663,
+              3.054497,
+              2.989915
+            ]
+          },
+          "reused_operation": {
+            "median_ms": 2.129472,
+            "min_ms": 2.1021605,
+            "max_ms": 2.5606215,
+            "samples_ms": [
+              2.5606215,
+              2.1021605,
+              2.129472
+            ],
+            "within_process_samples_ms": [
+              [
+                2.506456,
+                2.848587,
+                2.614787,
+                2.485798
+              ],
+              [
+                2.104714,
+                2.144257,
+                2.099607,
+                2.09565
+              ],
+              [
+                2.187114,
+                2.064751,
+                2.197007,
+                2.07183
+              ]
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 1.0413713387009864,
+      "cpp_over_python_reused_api_operation": 2.027776838577826
+    },
+    "reuse-higher-density": {
+      "output_fnv1a64": "b666b44706c498a9",
+      "modes": {
+        "python": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 27.118611,
+            "min_ms": 27.061563,
+            "max_ms": 27.332986,
+            "samples_ms": [
+              27.061563,
+              27.118611,
+              27.332986
+            ]
+          },
+          "open": {
+            "median_ms": 19.901873,
+            "min_ms": 19.765884,
+            "max_ms": 20.020834,
+            "samples_ms": [
+              19.765884,
+              20.020834,
+              19.901873
+            ]
+          },
+          "nnz": 32768,
+          "shape": [
+            256,
+            2048
+          ],
+          "operation": {
+            "median_ms": 7.293976,
+            "min_ms": 7.096045,
+            "max_ms": 7.429437,
+            "samples_ms": [
+              7.293976,
+              7.096045,
+              7.429437
+            ]
+          },
+          "reused_operation": {
+            "median_ms": 3.9056315,
+            "min_ms": 3.884319,
+            "max_ms": 3.921899,
+            "samples_ms": [
+              3.9056315,
+              3.884319,
+              3.921899
+            ],
+            "within_process_samples_ms": [
+              [
+                4.195212,
+                3.896537,
+                3.903712,
+                3.907551
+              ],
+              [
+                4.04272,
+                3.874246,
+                3.863381,
+                3.894392
+              ],
+              [
+                4.013306,
+                3.873066,
+                3.860227,
+                3.970732
+              ]
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int32"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        },
+        "default": {
+          "observations": 3,
+          "end_to_end": {
+            "median_ms": 26.784377,
+            "min_ms": 26.769275,
+            "max_ms": 27.200481,
+            "samples_ms": [
+              26.784377,
+              26.769275,
+              27.200481
+            ]
+          },
+          "open": {
+            "median_ms": 13.265665,
+            "min_ms": 12.898334,
+            "max_ms": 13.424013,
+            "samples_ms": [
+              13.424013,
+              12.898334,
+              13.265665
+            ]
+          },
+          "nnz": 32768,
+          "shape": [
+            256,
+            2048
+          ],
+          "selection": {
+            "median_ms": 0.410277,
+            "min_ms": 0.406789,
+            "max_ms": 0.42881,
+            "samples_ms": [
+              0.42881,
+              0.406789,
+              0.410277
+            ]
+          },
+          "preparation_requirements": {
+            "median_ms": 6.814383,
+            "min_ms": 6.583964,
+            "max_ms": 6.864384,
+            "samples_ms": [
+              6.583964,
+              6.814383,
+              6.864384
+            ]
+          },
+          "buffer_allocation": {
+            "median_ms": 0.148387,
+            "min_ms": 0.142097,
+            "max_ms": 0.149303,
+            "samples_ms": [
+              0.142097,
+              0.148387,
+              0.149303
+            ]
+          },
+          "transfer": {
+            "median_ms": 6.501382,
+            "min_ms": 6.205493,
+            "max_ms": 6.510852,
+            "samples_ms": [
+              6.205493,
+              6.501382,
+              6.510852
+            ]
+          },
+          "reused_operation": {
+            "median_ms": 5.86128,
+            "min_ms": 5.772469,
+            "max_ms": 6.1554735,
+            "samples_ms": [
+              5.86128,
+              6.1554735,
+              5.772469
+            ],
+            "within_process_samples_ms": [
+              [
+                5.868634,
+                5.816946,
+                5.853926,
+                5.89877
+              ],
+              [
+                6.083224,
+                6.120906,
+                6.190041,
+                6.385293
+              ],
+              [
+                5.787913,
+                6.606656,
+                5.757025,
+                5.743675
+              ]
+            ]
+          },
+          "native_dtypes": {
+            "value_dtype": "float32",
+            "actual_index_dtype": "int32",
+            "actual_offset_dtype": "int64"
+          },
+          "selector_kinds": {
+            "row_selector_kind": "indices",
+            "col_selector_kind": "all"
+          }
+        }
+      },
+      "comparison_status": "verified_equivalent_logical_output",
+      "cpp_over_python_end_to_end": 0.9876751062213326,
+      "cpp_over_python_reused_api_operation": 1.5007252988409172
+    }
+  },
+  "diagnostics": {
+    "components-8": {
+      "case": "components-8",
+      "api": "open_h5ads_prepare_x_caller_buffers",
+      "check_axis_names": false,
+      "row_selector_kind": "indices",
+      "col_selector_kind": "indices",
+      "components": 8,
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 34,
+      "golden": "pass",
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64",
+      "open_ns": 12221747,
+      "selection_ns": 403620,
+      "preparation_requirements_ns": 5394525,
+      "buffer_allocation_ns": 830,
+      "transfer_ns": 4439073,
+      "end_to_end_ns": 22459795,
+      "repeat_transfer_ns": [],
+      "diagnostic": {
+        "scope": "open_through_transfer",
+        "intercepted_read_calls": 410,
+        "intercepted_read_bytes": 2747109,
+        "intercepted_write_calls": 0,
+        "intercepted_write_bytes": 0,
+        "h5dread_calls": 324,
+        "h5dwrite_calls": 0,
+        "cpp_new_calls": 7902,
+        "cpp_new_bytes": 330015,
+        "phases": {
+          "open": {
+            "v1_io_slots": [
+              314,
+              1119205,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              4,
+              0
+            ],
+            "metadata_slots": [
+              176,
+              47,
+              47,
+              43,
+              342,
+              102,
+              4
+            ],
+            "cpp_new_calls": 2234,
+            "cpp_new_bytes": 117837
+          },
+          "selection": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "metadata_slots": [
+              12,
+              4,
+              4,
+              4,
+              30,
+              8,
+              0
+            ],
+            "cpp_new_calls": 192,
+            "cpp_new_bytes": 8840
+          },
+          "preparation_requirements": {
+            "v1_io_slots": [
+              72,
+              574656,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              128,
+              0
+            ],
+            "metadata_slots": [
+              183,
+              70,
+              70,
+              70,
+              286,
+              113,
+              0
+            ],
+            "cpp_new_calls": 2921,
+            "cpp_new_bytes": 111970
+          },
+          "buffer_allocation": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "metadata_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 3,
+            "cpp_new_bytes": 792
+          },
+          "transfer": {
+            "v1_io_slots": [
+              24,
+              1053248,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              192,
+              0
+            ],
+            "metadata_slots": [
+              176,
+              72,
+              72,
+              72,
+              208,
+              104,
+              0
+            ],
+            "cpp_new_calls": 2552,
+            "cpp_new_bytes": 90576
+          }
+        }
+      }
+    },
+    "higher-density-all-columns": {
+      "case": "higher-density-all-columns",
+      "api": "open_h5ads_prepare_x_caller_buffers",
+      "check_axis_names": false,
+      "row_selector_kind": "indices",
+      "col_selector_kind": "all",
+      "components": 8,
+      "shape": [
+        512,
+        2048
+      ],
+      "nnz": 65536,
+      "golden": "pass",
+      "output_fnv1a64": "130102053721e225",
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64",
+      "open_ns": 12162147,
+      "selection_ns": 408583,
+      "preparation_requirements_ns": 7259102,
+      "buffer_allocation_ns": 270957,
+      "transfer_ns": 7482340,
+      "end_to_end_ns": 27583129,
+      "repeat_transfer_ns": [],
+      "diagnostic": {
+        "scope": "open_through_transfer",
+        "intercepted_read_calls": 578,
+        "intercepted_read_bytes": 13754325,
+        "intercepted_write_calls": 0,
+        "intercepted_write_bytes": 0,
+        "h5dread_calls": 2564,
+        "h5dwrite_calls": 0,
+        "cpp_new_calls": 5791,
+        "cpp_new_bytes": 796025,
+        "phases": {
+          "open": {
+            "v1_io_slots": [
+              314,
+              1119205,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              4,
+              0
+            ],
+            "metadata_slots": [
+              176,
+              47,
+              47,
+              43,
+              342,
+              102,
+              4
+            ],
+            "cpp_new_calls": 2263,
+            "cpp_new_bytes": 118791
+          },
+          "selection": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "metadata_slots": [
+              12,
+              4,
+              4,
+              4,
+              30,
+              8,
+              0
+            ],
+            "cpp_new_calls": 188,
+            "cpp_new_bytes": 14904
+          },
+          "preparation_requirements": {
+            "v1_io_slots": [
+              128,
+              4244792,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1024,
+              0
+            ],
+            "metadata_slots": [
+              183,
+              70,
+              70,
+              70,
+              286,
+              113,
+              0
+            ],
+            "cpp_new_calls": 1841,
+            "cpp_new_bytes": 75170
+          },
+          "buffer_allocation": {
+            "v1_io_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "metadata_slots": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "cpp_new_calls": 3,
+            "cpp_new_bytes": 528392
+          },
+          "transfer": {
+            "v1_io_slots": [
+              136,
+              8390328,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1536,
+              0
+            ],
+            "metadata_slots": [
+              176,
+              72,
+              72,
+              72,
+              208,
+              104,
+              0
+            ],
+            "cpp_new_calls": 1496,
+            "cpp_new_bytes": 58768
+          }
+        }
+      }
+    }
+  },
+  "successful_records": 65,
+  "all_successful_outputs_verified": true,
+  "limitations": [
+    "Eight primary cases have three independent process observations per mode; auxiliary controls have one.",
+    "Normal OS/HDF5 caches; hashing may warm stores. Fresh process does not mean cold storage.",
+    "Logical selected CSR equivalence; canonical ordering is outside clocks, native sparse ordering/widths may differ.",
+    "Repeated C++ reads reuse prepared plans/caller buffers; Python repeats native same-handle indexing/allocation. API lifecycle comparison, not equal allocation-free kernels.",
+    "C++ diagnostics are separate intercepted calls/new requests, not physical traffic, all allocators or live memory. Reuse itself was not instrumented.",
+    "Float32 CSR only; no dense/CSC, cold-cache or larger-than-memory throughput qualification.",
+    "The Python positive-stride result was incorrect; its latency is excluded."
+  ],
+  "capability_failures": [
+    {
+      "window": "screen",
+      "case": "positive-stride",
+      "version": "python",
+      "status": "incorrect_output",
+      "expected_shape": [
+        64,
+        64
+      ],
+      "observed_shape": [
+        8065,
+        63
+      ],
+      "latency_comparison": "excluded"
+    }
+  ],
+  "source_evidence": "build/collection-matrix-2026-11-17/",
+  "source_summary_sha256": "06f3c3a548b2bc2ba20373ea99e6e1e0d2865ebd83348d4f8fe41a1eda84e08a",
+  "qualified_io_archive_sha256": "2678592fc437c3744915c0672943c458a7b7dd2840e113d1f1a4a67abe4be930",
+  "core_archive_sha256": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19",
+  "new_fixture_bytes_including_preserved_partial": 25829811,
+  "environment": {
+    "python": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+    "executable": "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/full/bin/python3",
+    "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+    "packages": {
+      "snapatac2": "2.10.0",
+      "anndata": "0.13.4",
+      "numpy": "2.2.6",
+      "scipy": "1.17.1",
+      "h5py": "3.16.0"
+    },
+    "scope": "existing pinned reference environment; no packages upgraded"
+  },
+  "settings": {
+    "cpu": 2,
+    "thread_limits": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "1",
+      "BLOSC_NTHREADS": "1"
+    },
+    "cache": "normal OS/HDF5 caches, no eviction",
+    "case_timeout_seconds": 5.0,
+    "window_seconds": 30
+  },
+  "host_check": "host-before.json records a pre-run process/load snapshot; host is not exclusively reserved",
+  "hardware": {
+    "cpu_model": "Intel(R) Xeon(R) CPU E5-2698 v4 @ 2.20GHz",
+    "logical_cpu": 2,
+    "smt_siblings": "2,42",
+    "governor": "schedutil"
+  }
+}

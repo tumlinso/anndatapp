@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.28)
+project(collection_matrix LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+find_package(anndatapp 1.0 CONFIG REQUIRED)
+add_executable(collection-matrix-cpp cpp_probe.cpp)
+target_link_libraries(collection-matrix-cpp PRIVATE anndatapp::anndatapp ${CMAKE_DL_LIBS})
