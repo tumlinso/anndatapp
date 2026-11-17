@@ -1,0 +1,3647 @@
+{
+  "schema": "anndatapp.collection-execution-comparison.v1",
+  "baseline_source_commit": "5d212328e10a54dea8a8918506bd39585af859d5",
+  "baseline_library_commit": "d479d5d9e0cac161ff5aecb1d4eb0ff84a47836d",
+  "baseline_archive_sha256": "91aa9e1ea7fa4fad36f945e715255ceb7d5f69cab55a179e7f46ae9c77948b46",
+  "baseline_core_archive_sha256": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19",
+  "candidate_archive_sha256": "f4da8c4805256282c19582b268b22bd995a99ac508b979bb3d10b91d5d96e82e",
+  "candidate_core_archive_sha256": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19",
+  "frozen_files": 354,
+  "successful_processes": 53,
+  "windows": {
+    "screen": {
+      "processes": 28,
+      "measured_seconds": 17.308878581003228,
+      "wall_seconds": 18.595847391999996,
+      "cpu": 2,
+      "thread_limits": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "BLOSC_NTHREADS": "1"
+      },
+      "cache": "normal OS/HDF5 caches, no eviction",
+      "plan_sha256": "1191e12ea723e8c5023d59c462acf93e0522ab801b4f1a8fb2faac7147c27e15",
+      "receipt_sha256": "a73b9ff9c7ae73befe1d1c182f1be4ca1779b2efc124cb7be12b1ca197fd2302"
+    },
+    "repeat": {
+      "processes": 25,
+      "measured_seconds": 15.464295133002452,
+      "wall_seconds": 16.769818060001853,
+      "cpu": 2,
+      "thread_limits": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "BLOSC_NTHREADS": "1"
+      },
+      "cache": "normal OS/HDF5 caches, no eviction",
+      "plan_sha256": "b40e7a26d72c47aeb5411e21cecf771f05541a732e57f46453bc9530b568e4df",
+      "receipt_sha256": "7d94dc73a8d217325861b456ccceee841cc19f0d2347bf2cef2f93cae8e07fd8"
+    }
+  },
+  "cases": {
+    "components-32": {
+      "digest": "d60079b9ac5aa14c",
+      "observations": 3,
+      "modes": {
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              69.077049,
+              73.989418,
+              69.202938
+            ],
+            "median_ms": 69.202938,
+            "min_ms": 69.077049,
+            "max_ms": 73.989418
+          },
+          "open": {
+            "samples_ms": [
+              36.354209,
+              35.688256,
+              36.083943
+            ],
+            "median_ms": 36.083943,
+            "min_ms": 35.688256,
+            "max_ms": 36.354209
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.412683,
+              0.510405,
+              0.416349
+            ],
+            "median_ms": 0.416349,
+            "min_ms": 0.412683,
+            "max_ms": 0.510405
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              16.670593,
+              19.368534,
+              16.754292
+            ],
+            "median_ms": 16.754292,
+            "min_ms": 16.670593,
+            "max_ms": 19.368534
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.000605,
+              0.000606,
+              0.00061
+            ],
+            "median_ms": 0.000606,
+            "min_ms": 0.000605,
+            "max_ms": 0.00061
+          },
+          "transfer": {
+            "samples_ms": [
+              15.638959,
+              18.421617,
+              15.947744
+            ],
+            "median_ms": 15.947744,
+            "min_ms": 15.638959,
+            "max_ms": 18.421617
+          },
+          "reused_operation": {
+            "samples_ms": [
+              15.7676575,
+              18.3728405,
+              15.761233
+            ],
+            "median_ms": 15.7676575,
+            "min_ms": 15.761233,
+            "max_ms": 18.3728405,
+            "within_process_samples_ms": [
+              [
+                15.689907,
+                15.845408,
+                15.621098,
+                15.860092
+              ],
+              [
+                18.64302,
+                18.458673,
+                18.287008,
+                16.705227
+              ],
+              [
+                15.832386,
+                15.71535,
+                15.699008,
+                15.807116
+              ]
+            ]
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              59.306567,
+              61.762674,
+              59.936298
+            ],
+            "median_ms": 59.936298,
+            "min_ms": 59.306567,
+            "max_ms": 61.762674
+          },
+          "open": {
+            "samples_ms": [
+              32.913032,
+              35.530402,
+              33.96524
+            ],
+            "median_ms": 33.96524,
+            "min_ms": 32.913032,
+            "max_ms": 35.530402
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.423041,
+              0.420871,
+              0.467816
+            ],
+            "median_ms": 0.423041,
+            "min_ms": 0.420871,
+            "max_ms": 0.467816
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              18.388542,
+              18.290367,
+              18.114823
+            ],
+            "median_ms": 18.290367,
+            "min_ms": 18.114823,
+            "max_ms": 18.388542
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.000318,
+              0.000335,
+              0.00033
+            ],
+            "median_ms": 0.00033,
+            "min_ms": 0.000318,
+            "max_ms": 0.000335
+          },
+          "transfer": {
+            "samples_ms": [
+              7.581634,
+              7.520699,
+              7.388089
+            ],
+            "median_ms": 7.520699,
+            "min_ms": 7.388089,
+            "max_ms": 7.581634
+          },
+          "reused_operation": {
+            "samples_ms": [
+              5.1588125,
+              5.1030365,
+              4.983855
+            ],
+            "median_ms": 5.1030365,
+            "min_ms": 4.983855,
+            "max_ms": 5.1588125,
+            "within_process_samples_ms": [
+              [
+                5.223055,
+                5.15179,
+                5.165835,
+                5.149214
+              ],
+              [
+                5.107745,
+                5.116227,
+                5.098328,
+                5.072718
+              ],
+              [
+                5.013124,
+                4.965849,
+                4.979337,
+                4.988373
+              ]
+            ]
+          }
+        },
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              49.297015,
+              48.812949,
+              49.120394
+            ],
+            "median_ms": 49.120394,
+            "min_ms": 48.812949,
+            "max_ms": 49.297015
+          },
+          "open": {
+            "samples_ms": [
+              41.325626,
+              41.193966,
+              41.27684
+            ],
+            "median_ms": 41.27684,
+            "min_ms": 41.193966,
+            "max_ms": 41.325626
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              7.969006,
+              7.61675,
+              7.841189
+            ],
+            "median_ms": 7.841189,
+            "min_ms": 7.61675,
+            "max_ms": 7.969006
+          },
+          "reused_operation": {
+            "samples_ms": [
+              6.182305,
+              6.0904395,
+              6.119973
+            ],
+            "median_ms": 6.119973,
+            "min_ms": 6.0904395,
+            "max_ms": 6.182305,
+            "within_process_samples_ms": [
+              [
+                6.206725,
+                6.157885,
+                6.265249,
+                6.15015
+              ],
+              [
+                6.087687,
+                6.093192,
+                6.045897,
+                6.427046
+              ],
+              [
+                6.144219,
+                6.418647,
+                6.095727,
+                6.080454
+              ]
+            ]
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 69.202938,
+        "candidate_ms": 59.936298,
+        "candidate_over_baseline": 0.8660947025110408,
+        "delta_ms": -9.266640000000002,
+        "material": true
+      },
+      "candidate_over_python_first_read": 1.2201917191462268,
+      "reuse_change": {
+        "baseline_ms": 15.7676575,
+        "candidate_ms": 5.1030365,
+        "candidate_over_baseline": 0.32363948164145495,
+        "delta_ms": -10.664621,
+        "material": true
+      },
+      "candidate_over_python_reuse": 0.8338331721398118
+    },
+    "reverse-duplicates": {
+      "digest": "c41355d7a44f4635",
+      "observations": 3,
+      "modes": {
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              64.81064,
+              64.889486,
+              65.096092
+            ],
+            "median_ms": 64.889486,
+            "min_ms": 64.81064,
+            "max_ms": 65.096092
+          },
+          "open": {
+            "samples_ms": [
+              12.535162,
+              11.344582,
+              12.514961
+            ],
+            "median_ms": 12.514961,
+            "min_ms": 11.344582,
+            "max_ms": 12.535162
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.40418,
+              0.415655,
+              0.41841
+            ],
+            "median_ms": 0.415655,
+            "min_ms": 0.40418,
+            "max_ms": 0.41841
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              24.596515,
+              25.704084,
+              24.660435
+            ],
+            "median_ms": 24.660435,
+            "min_ms": 24.596515,
+            "max_ms": 25.704084
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.00131,
+              0.001181,
+              0.001154
+            ],
+            "median_ms": 0.001181,
+            "min_ms": 0.001154,
+            "max_ms": 0.00131
+          },
+          "transfer": {
+            "samples_ms": [
+              27.273473,
+              27.423984,
+              27.501132
+            ],
+            "median_ms": 27.423984,
+            "min_ms": 27.273473,
+            "max_ms": 27.501132
+          },
+          "reused_operation": {
+            "samples_ms": [
+              27.0606745,
+              27.3633825,
+              27.743012
+            ],
+            "median_ms": 27.3633825,
+            "min_ms": 27.0606745,
+            "max_ms": 27.743012,
+            "within_process_samples_ms": [
+              [
+                27.080538,
+                26.990211,
+                27.040811,
+                27.103545
+              ],
+              [
+                28.183114,
+                27.589486,
+                27.137279,
+                26.931095
+              ],
+              [
+                27.349271,
+                28.136753,
+                28.333532,
+                27.29474
+              ]
+            ]
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              15.170213,
+              17.163982,
+              15.793184
+            ],
+            "median_ms": 15.793184,
+            "min_ms": 15.170213,
+            "max_ms": 17.163982
+          },
+          "open": {
+            "samples_ms": [
+              10.859218,
+              12.711243,
+              11.43733
+            ],
+            "median_ms": 11.43733,
+            "min_ms": 10.859218,
+            "max_ms": 12.711243
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.399229,
+              0.414738,
+              0.404327
+            ],
+            "median_ms": 0.404327,
+            "min_ms": 0.399229,
+            "max_ms": 0.414738
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              2.632646,
+              2.701666,
+              2.674435
+            ],
+            "median_ms": 2.674435,
+            "min_ms": 2.632646,
+            "max_ms": 2.701666
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.004616,
+              0.004022,
+              0.004372
+            ],
+            "median_ms": 0.004372,
+            "min_ms": 0.004022,
+            "max_ms": 0.004616
+          },
+          "transfer": {
+            "samples_ms": [
+              1.274504,
+              1.332313,
+              1.27272
+            ],
+            "median_ms": 1.274504,
+            "min_ms": 1.27272,
+            "max_ms": 1.332313
+          },
+          "reused_operation": {
+            "samples_ms": [
+              0.8188695,
+              0.831418,
+              0.822468
+            ],
+            "median_ms": 0.822468,
+            "min_ms": 0.8188695,
+            "max_ms": 0.831418,
+            "within_process_samples_ms": [
+              [
+                0.835047,
+                0.821765,
+                0.813585,
+                0.815974
+              ],
+              [
+                0.837214,
+                0.825622,
+                0.82469,
+                0.870693
+              ],
+              [
+                0.842151,
+                0.828403,
+                0.816533,
+                0.810022
+              ]
+            ]
+          }
+        },
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              25.051556,
+              23.331501,
+              23.315648
+            ],
+            "median_ms": 23.331501,
+            "min_ms": 23.315648,
+            "max_ms": 25.051556
+          },
+          "open": {
+            "samples_ms": [
+              21.209038,
+              20.196015,
+              20.146538
+            ],
+            "median_ms": 20.196015,
+            "min_ms": 20.146538,
+            "max_ms": 21.209038
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              3.840704,
+              3.133803,
+              3.167594
+            ],
+            "median_ms": 3.167594,
+            "min_ms": 3.133803,
+            "max_ms": 3.840704
+          },
+          "reused_operation": {
+            "samples_ms": [
+              2.145085,
+              2.1782155,
+              2.218284
+            ],
+            "median_ms": 2.1782155,
+            "min_ms": 2.145085,
+            "max_ms": 2.218284,
+            "within_process_samples_ms": [
+              [
+                2.144926,
+                2.145244,
+                2.146068,
+                2.136625
+              ],
+              [
+                2.181373,
+                2.175058,
+                2.189072,
+                2.173407
+              ],
+              [
+                2.157469,
+                2.151294,
+                2.279099,
+                2.307049
+              ]
+            ]
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 64.889486,
+        "candidate_ms": 15.793184,
+        "candidate_over_baseline": 0.2433858699389297,
+        "delta_ms": -49.09630200000001,
+        "material": true
+      },
+      "candidate_over_python_first_read": 0.6769038991533378,
+      "reuse_change": {
+        "baseline_ms": 27.3633825,
+        "candidate_ms": 0.822468,
+        "candidate_over_baseline": 0.03005724895304884,
+        "delta_ms": -26.5409145,
+        "material": true
+      },
+      "candidate_over_python_reuse": 0.3775879842926469
+    },
+    "components-1": {
+      "digest": "d60079b9ac5aa14c",
+      "observations": 1,
+      "modes": {
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              16.198403
+            ],
+            "median_ms": 16.198403,
+            "min_ms": 16.198403,
+            "max_ms": 16.198403
+          },
+          "open": {
+            "samples_ms": [
+              14.127644
+            ],
+            "median_ms": 14.127644,
+            "min_ms": 14.127644,
+            "max_ms": 14.127644
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              2.06914
+            ],
+            "median_ms": 2.06914,
+            "min_ms": 2.06914,
+            "max_ms": 2.06914
+          }
+        },
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              7.716861
+            ],
+            "median_ms": 7.716861,
+            "min_ms": 7.716861,
+            "max_ms": 7.716861
+          },
+          "open": {
+            "samples_ms": [
+              5.502618
+            ],
+            "median_ms": 5.502618,
+            "min_ms": 5.502618,
+            "max_ms": 5.502618
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.480085
+            ],
+            "median_ms": 0.480085,
+            "min_ms": 0.480085,
+            "max_ms": 0.480085
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              0.875864
+            ],
+            "median_ms": 0.875864,
+            "min_ms": 0.875864,
+            "max_ms": 0.875864
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.000647
+            ],
+            "median_ms": 0.000647,
+            "min_ms": 0.000647,
+            "max_ms": 0.000647
+          },
+          "transfer": {
+            "samples_ms": [
+              0.857647
+            ],
+            "median_ms": 0.857647,
+            "min_ms": 0.857647,
+            "max_ms": 0.857647
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              6.790819
+            ],
+            "median_ms": 6.790819,
+            "min_ms": 6.790819,
+            "max_ms": 6.790819
+          },
+          "open": {
+            "samples_ms": [
+              4.974187
+            ],
+            "median_ms": 4.974187,
+            "min_ms": 4.974187,
+            "max_ms": 4.974187
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.409611
+            ],
+            "median_ms": 0.409611,
+            "min_ms": 0.409611,
+            "max_ms": 0.409611
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              0.822563
+            ],
+            "median_ms": 0.822563,
+            "min_ms": 0.822563,
+            "max_ms": 0.822563
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.00043
+            ],
+            "median_ms": 0.00043,
+            "min_ms": 0.00043,
+            "max_ms": 0.00043
+          },
+          "transfer": {
+            "samples_ms": [
+              0.584028
+            ],
+            "median_ms": 0.584028,
+            "min_ms": 0.584028,
+            "max_ms": 0.584028
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 7.716861,
+        "candidate_ms": 6.790819,
+        "candidate_over_baseline": 0.87999757932662,
+        "delta_ms": -0.9260419999999998,
+        "material": true
+      },
+      "candidate_over_python_first_read": 0.4192276855934502
+    },
+    "contiguous-one-component": {
+      "digest": "17064116932e1db5",
+      "observations": 1,
+      "modes": {
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              23.063996
+            ],
+            "median_ms": 23.063996,
+            "min_ms": 23.063996,
+            "max_ms": 23.063996
+          },
+          "open": {
+            "samples_ms": [
+              20.108558
+            ],
+            "median_ms": 20.108558,
+            "min_ms": 20.108558,
+            "max_ms": 20.108558
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              2.953752
+            ],
+            "median_ms": 2.953752,
+            "min_ms": 2.953752,
+            "max_ms": 2.953752
+          }
+        },
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              15.163209
+            ],
+            "median_ms": 15.163209,
+            "min_ms": 15.163209,
+            "max_ms": 15.163209
+          },
+          "open": {
+            "samples_ms": [
+              12.473654
+            ],
+            "median_ms": 12.473654,
+            "min_ms": 12.473654,
+            "max_ms": 12.473654
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.424532
+            ],
+            "median_ms": 0.424532,
+            "min_ms": 0.424532,
+            "max_ms": 0.424532
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              1.034814
+            ],
+            "median_ms": 1.034814,
+            "min_ms": 1.034814,
+            "max_ms": 1.034814
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.001089
+            ],
+            "median_ms": 0.001089,
+            "min_ms": 0.001089,
+            "max_ms": 0.001089
+          },
+          "transfer": {
+            "samples_ms": [
+              1.22912
+            ],
+            "median_ms": 1.22912,
+            "min_ms": 1.22912,
+            "max_ms": 1.22912
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              13.551002
+            ],
+            "median_ms": 13.551002,
+            "min_ms": 13.551002,
+            "max_ms": 13.551002
+          },
+          "open": {
+            "samples_ms": [
+              11.14855
+            ],
+            "median_ms": 11.14855,
+            "min_ms": 11.14855,
+            "max_ms": 11.14855
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.420971
+            ],
+            "median_ms": 0.420971,
+            "min_ms": 0.420971,
+            "max_ms": 0.420971
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              1.042516
+            ],
+            "median_ms": 1.042516,
+            "min_ms": 1.042516,
+            "max_ms": 1.042516
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.002793
+            ],
+            "median_ms": 0.002793,
+            "min_ms": 0.002793,
+            "max_ms": 0.002793
+          },
+          "transfer": {
+            "samples_ms": [
+              0.936172
+            ],
+            "median_ms": 0.936172,
+            "min_ms": 0.936172,
+            "max_ms": 0.936172
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 15.163209,
+        "candidate_ms": 13.551002,
+        "candidate_over_baseline": 0.8936763979181452,
+        "delta_ms": -1.6122069999999997,
+        "material": true
+      },
+      "candidate_over_python_first_read": 0.5875392104646567
+    },
+    "reuse-sparse": {
+      "digest": "db4258cfa067f6a2",
+      "observations": 3,
+      "modes": {
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              25.715562,
+              20.497606,
+              21.493666
+            ],
+            "median_ms": 21.493666,
+            "min_ms": 20.497606,
+            "max_ms": 25.715562
+          },
+          "open": {
+            "samples_ms": [
+              15.349604,
+              11.256451,
+              12.533885
+            ],
+            "median_ms": 12.533885,
+            "min_ms": 11.256451,
+            "max_ms": 15.349604
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.527077,
+              0.44238,
+              0.420828
+            ],
+            "median_ms": 0.44238,
+            "min_ms": 0.420828,
+            "max_ms": 0.527077
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              4.972058,
+              4.485692,
+              4.329815
+            ],
+            "median_ms": 4.485692,
+            "min_ms": 4.329815,
+            "max_ms": 4.972058
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.004549,
+              0.003955,
+              0.004228
+            ],
+            "median_ms": 0.004228,
+            "min_ms": 0.003955,
+            "max_ms": 0.004549
+          },
+          "transfer": {
+            "samples_ms": [
+              4.862274,
+              4.309128,
+              4.20491
+            ],
+            "median_ms": 4.309128,
+            "min_ms": 4.20491,
+            "max_ms": 4.862274
+          },
+          "reused_operation": {
+            "samples_ms": [
+              4.765801,
+              4.236177,
+              4.056786
+            ],
+            "median_ms": 4.236177,
+            "min_ms": 4.056786,
+            "max_ms": 4.765801,
+            "within_process_samples_ms": [
+              [
+                4.770774,
+                4.760828,
+                4.739952,
+                4.887602
+              ],
+              [
+                4.242974,
+                4.22938,
+                4.225046,
+                4.349736
+              ],
+              [
+                4.075349,
+                4.052629,
+                4.058348,
+                4.055224
+              ]
+            ]
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              21.594806,
+              20.056292,
+              22.245974
+            ],
+            "median_ms": 21.594806,
+            "min_ms": 20.056292,
+            "max_ms": 22.245974
+          },
+          "open": {
+            "samples_ms": [
+              13.064266,
+              12.5111,
+              13.716934
+            ],
+            "median_ms": 13.064266,
+            "min_ms": 12.5111,
+            "max_ms": 13.716934
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.559189,
+              0.417441,
+              0.433278
+            ],
+            "median_ms": 0.433278,
+            "min_ms": 0.417441,
+            "max_ms": 0.559189
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              5.457612,
+              4.828452,
+              5.548598
+            ],
+            "median_ms": 5.457612,
+            "min_ms": 4.828452,
+            "max_ms": 5.548598
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.005411,
+              0.005059,
+              0.004801
+            ],
+            "median_ms": 0.005059,
+            "min_ms": 0.004801,
+            "max_ms": 0.005411
+          },
+          "transfer": {
+            "samples_ms": [
+              2.508328,
+              2.29424,
+              2.542363
+            ],
+            "median_ms": 2.508328,
+            "min_ms": 2.29424,
+            "max_ms": 2.542363
+          },
+          "reused_operation": {
+            "samples_ms": [
+              1.499455,
+              1.3861295,
+              1.5738915
+            ],
+            "median_ms": 1.499455,
+            "min_ms": 1.3861295,
+            "max_ms": 1.5738915,
+            "within_process_samples_ms": [
+              [
+                1.592433,
+                1.505394,
+                1.493516,
+                1.462172
+              ],
+              [
+                1.409541,
+                1.390487,
+                1.381483,
+                1.381772
+              ],
+              [
+                1.545696,
+                1.602087,
+                1.607367,
+                1.528241
+              ]
+            ]
+          }
+        },
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              24.25064,
+              23.173097,
+              23.072481
+            ],
+            "median_ms": 23.173097,
+            "min_ms": 23.072481,
+            "max_ms": 24.25064
+          },
+          "open": {
+            "samples_ms": [
+              20.706561,
+              20.178372,
+              20.052995
+            ],
+            "median_ms": 20.178372,
+            "min_ms": 20.052995,
+            "max_ms": 20.706561
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              3.542438,
+              2.993093,
+              3.017818
+            ],
+            "median_ms": 3.017818,
+            "min_ms": 2.993093,
+            "max_ms": 3.542438
+          },
+          "reused_operation": {
+            "samples_ms": [
+              2.174914,
+              2.054837,
+              2.0924995
+            ],
+            "median_ms": 2.0924995,
+            "min_ms": 2.054837,
+            "max_ms": 2.174914,
+            "within_process_samples_ms": [
+              [
+                2.21407,
+                2.275766,
+                2.135758,
+                2.078299
+              ],
+              [
+                2.068738,
+                2.051423,
+                2.058251,
+                2.050053
+              ],
+              [
+                2.1941,
+                2.071381,
+                2.113618,
+                2.057909
+              ]
+            ]
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 21.493666,
+        "candidate_ms": 21.594806,
+        "candidate_over_baseline": 1.0047055723300062,
+        "delta_ms": 0.10113999999999734,
+        "material": false
+      },
+      "candidate_over_python_first_read": 0.9318912357722405,
+      "reuse_change": {
+        "baseline_ms": 4.236177,
+        "candidate_ms": 1.499455,
+        "candidate_over_baseline": 0.35396419932406037,
+        "delta_ms": -2.7367219999999994,
+        "material": true
+      },
+      "candidate_over_python_reuse": 0.7165855953609546
+    },
+    "reuse-higher-density": {
+      "digest": "b666b44706c498a9",
+      "observations": 3,
+      "modes": {
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              27.166154,
+              23.061541,
+              24.85411
+            ],
+            "median_ms": 24.85411,
+            "min_ms": 23.061541,
+            "max_ms": 27.166154
+          },
+          "open": {
+            "samples_ms": [
+              13.131424,
+              11.335721,
+              12.436469
+            ],
+            "median_ms": 12.436469,
+            "min_ms": 11.335721,
+            "max_ms": 13.131424
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.41906,
+              0.418974,
+              0.423455
+            ],
+            "median_ms": 0.41906,
+            "min_ms": 0.418974,
+            "max_ms": 0.423455
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              6.502403,
+              5.309249,
+              5.639133
+            ],
+            "median_ms": 5.639133,
+            "min_ms": 5.309249,
+            "max_ms": 6.502403
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.179399,
+              0.125372,
+              0.14683
+            ],
+            "median_ms": 0.14683,
+            "min_ms": 0.125372,
+            "max_ms": 0.179399
+          },
+          "transfer": {
+            "samples_ms": [
+              6.933868,
+              5.872225,
+              6.208223
+            ],
+            "median_ms": 6.208223,
+            "min_ms": 5.872225,
+            "max_ms": 6.933868
+          },
+          "reused_operation": {
+            "samples_ms": [
+              5.8875445,
+              5.8798255,
+              5.820227
+            ],
+            "median_ms": 5.8798255,
+            "min_ms": 5.820227,
+            "max_ms": 5.8875445,
+            "within_process_samples_ms": [
+              [
+                6.083937,
+                5.834108,
+                5.92758,
+                5.847509
+              ],
+              [
+                5.831019,
+                5.923829,
+                5.835822,
+                6.51203
+              ],
+              [
+                5.855588,
+                5.833299,
+                5.807155,
+                5.803998
+              ]
+            ]
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              22.275902,
+              23.440676,
+              22.141009
+            ],
+            "median_ms": 22.275902,
+            "min_ms": 22.141009,
+            "max_ms": 23.440676
+          },
+          "open": {
+            "samples_ms": [
+              11.943852,
+              12.491813,
+              11.116936
+            ],
+            "median_ms": 11.943852,
+            "min_ms": 11.116936,
+            "max_ms": 12.491813
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.412863,
+              0.406177,
+              0.417424
+            ],
+            "median_ms": 0.412863,
+            "min_ms": 0.406177,
+            "max_ms": 0.417424
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              5.646017,
+              6.072752,
+              6.115551
+            ],
+            "median_ms": 6.072752,
+            "min_ms": 5.646017,
+            "max_ms": 6.115551
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.148618,
+              0.14338,
+              0.147474
+            ],
+            "median_ms": 0.147474,
+            "min_ms": 0.14338,
+            "max_ms": 0.148618
+          },
+          "transfer": {
+            "samples_ms": [
+              4.124552,
+              4.326554,
+              4.343624
+            ],
+            "median_ms": 4.326554,
+            "min_ms": 4.124552,
+            "max_ms": 4.343624
+          },
+          "reused_operation": {
+            "samples_ms": [
+              3.2243085,
+              3.2316665,
+              3.218497
+            ],
+            "median_ms": 3.2243085,
+            "min_ms": 3.218497,
+            "max_ms": 3.2316665,
+            "within_process_samples_ms": [
+              [
+                3.696856,
+                3.182856,
+                3.265761,
+                3.175415
+              ],
+              [
+                3.234127,
+                3.737285,
+                3.229206,
+                3.224132
+              ],
+              [
+                3.220568,
+                3.215682,
+                3.218224,
+                3.21877
+              ]
+            ]
+          }
+        },
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              27.460458,
+              27.442796,
+              27.581416
+            ],
+            "median_ms": 27.460458,
+            "min_ms": 27.442796,
+            "max_ms": 27.581416
+          },
+          "open": {
+            "samples_ms": [
+              20.11109,
+              20.146585,
+              20.269954
+            ],
+            "median_ms": 20.146585,
+            "min_ms": 20.11109,
+            "max_ms": 20.269954
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              7.347652,
+              7.294511,
+              7.309865
+            ],
+            "median_ms": 7.309865,
+            "min_ms": 7.294511,
+            "max_ms": 7.347652
+          },
+          "reused_operation": {
+            "samples_ms": [
+              4.076199,
+              3.943142,
+              3.965047
+            ],
+            "median_ms": 3.965047,
+            "min_ms": 3.943142,
+            "max_ms": 4.076199,
+            "within_process_samples_ms": [
+              [
+                4.041195,
+                4.111203,
+                3.892579,
+                5.497557
+              ],
+              [
+                4.001399,
+                3.884885,
+                3.874861,
+                5.519453
+              ],
+              [
+                4.039661,
+                3.878474,
+                3.890433,
+                4.598969
+              ]
+            ]
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 24.85411,
+        "candidate_ms": 22.275902,
+        "candidate_over_baseline": 0.8962663318058864,
+        "delta_ms": -2.578208,
+        "material": true
+      },
+      "candidate_over_python_first_read": 0.8111992159781166,
+      "reuse_change": {
+        "baseline_ms": 5.8798255,
+        "candidate_ms": 3.2243085,
+        "candidate_over_baseline": 0.5483680595623118,
+        "delta_ms": -2.655517,
+        "material": true
+      },
+      "candidate_over_python_reuse": 0.813182920656426
+    },
+    "gzip-spread": {
+      "digest": "d60079b9ac5aa14c",
+      "observations": 1,
+      "modes": {
+        "python": {
+          "end_to_end": {
+            "samples_ms": [
+              27.164388
+            ],
+            "median_ms": 27.164388,
+            "min_ms": 27.164388,
+            "max_ms": 27.164388
+          },
+          "open": {
+            "samples_ms": [
+              19.993932
+            ],
+            "median_ms": 19.993932,
+            "min_ms": 19.993932,
+            "max_ms": 19.993932
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int32"
+          ],
+          "operation": {
+            "samples_ms": [
+              7.168721
+            ],
+            "median_ms": 7.168721,
+            "min_ms": 7.168721,
+            "max_ms": 7.168721
+          }
+        },
+        "baseline": {
+          "end_to_end": {
+            "samples_ms": [
+              30.012884
+            ],
+            "median_ms": 30.012884,
+            "min_ms": 30.012884,
+            "max_ms": 30.012884
+          },
+          "open": {
+            "samples_ms": [
+              12.404403
+            ],
+            "median_ms": 12.404403,
+            "min_ms": 12.404403,
+            "max_ms": 12.404403
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.415429
+            ],
+            "median_ms": 0.415429,
+            "min_ms": 0.415429,
+            "max_ms": 0.415429
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              8.030608
+            ],
+            "median_ms": 8.030608,
+            "min_ms": 8.030608,
+            "max_ms": 8.030608
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.000412
+            ],
+            "median_ms": 0.000412,
+            "min_ms": 0.000412,
+            "max_ms": 0.000412
+          },
+          "transfer": {
+            "samples_ms": [
+              9.162032
+            ],
+            "median_ms": 9.162032,
+            "min_ms": 9.162032,
+            "max_ms": 9.162032
+          }
+        },
+        "candidate": {
+          "end_to_end": {
+            "samples_ms": [
+              23.246386
+            ],
+            "median_ms": 23.246386,
+            "min_ms": 23.246386,
+            "max_ms": 23.246386
+          },
+          "open": {
+            "samples_ms": [
+              10.951058
+            ],
+            "median_ms": 10.951058,
+            "min_ms": 10.951058,
+            "max_ms": 10.951058
+          },
+          "native_dtypes": [
+            "float32",
+            "int32",
+            "int64"
+          ],
+          "selection": {
+            "samples_ms": [
+              0.400694
+            ],
+            "median_ms": 0.400694,
+            "min_ms": 0.400694,
+            "max_ms": 0.400694
+          },
+          "preparation_requirements": {
+            "samples_ms": [
+              8.158803
+            ],
+            "median_ms": 8.158803,
+            "min_ms": 8.158803,
+            "max_ms": 8.158803
+          },
+          "buffer_allocation": {
+            "samples_ms": [
+              0.000413
+            ],
+            "median_ms": 0.000413,
+            "min_ms": 0.000413,
+            "max_ms": 0.000413
+          },
+          "transfer": {
+            "samples_ms": [
+              3.735418
+            ],
+            "median_ms": 3.735418,
+            "min_ms": 3.735418,
+            "max_ms": 3.735418
+          }
+        }
+      },
+      "first_read_change": {
+        "baseline_ms": 30.012884,
+        "candidate_ms": 23.246386,
+        "candidate_over_baseline": 0.7745468912617661,
+        "delta_ms": -6.766497999999999,
+        "material": true
+      },
+      "candidate_over_python_first_read": 0.855766969607414
+    }
+  },
+  "diagnostics": {
+    "components-32": {
+      "baseline": {
+        "open": {
+          "h5_object_opens": 299,
+          "h5_dataset_get_type": 86,
+          "h5_dataset_get_space": 86,
+          "h5_dataset_get_create_plist": 82,
+          "h5_attribute_reads": 774,
+          "h5_group_opens": 228,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 1130,
+          "observed_read_bytes": 3037669,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 4829,
+          "cpp_new_bytes": 325154
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840
+        },
+        "prepare": {
+          "h5_object_opens": 576,
+          "h5_dataset_get_type": 224,
+          "h5_dataset_get_space": 224,
+          "h5_dataset_get_create_plist": 224,
+          "h5_attribute_reads": 864,
+          "h5_group_opens": 352,
+          "h5_string_reads": 0,
+          "h5dread_calls": 128,
+          "observed_read_calls": 288,
+          "observed_read_bytes": 515328,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 10121,
+          "cpp_new_bytes": 394624
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 792
+        },
+        "preflight": {
+          "h5_object_opens": 256,
+          "h5_dataset_get_type": 96,
+          "h5_dataset_get_space": 96,
+          "h5_dataset_get_create_plist": 96,
+          "h5_attribute_reads": 416,
+          "h5_group_opens": 160,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 2400,
+          "cpp_new_bytes": 74496
+        },
+        "first_read": {
+          "h5_object_opens": 704,
+          "h5_dataset_get_type": 288,
+          "h5_dataset_get_space": 288,
+          "h5_dataset_get_create_plist": 288,
+          "h5_attribute_reads": 832,
+          "h5_group_opens": 416,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400
+        },
+        "repeat_1": {
+          "h5_object_opens": 704,
+          "h5_dataset_get_type": 288,
+          "h5_dataset_get_space": 288,
+          "h5_dataset_get_create_plist": 288,
+          "h5_attribute_reads": 832,
+          "h5_group_opens": 416,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400
+        },
+        "repeat_2": {
+          "h5_object_opens": 704,
+          "h5_dataset_get_type": 288,
+          "h5_dataset_get_space": 288,
+          "h5_dataset_get_create_plist": 288,
+          "h5_attribute_reads": 832,
+          "h5_group_opens": 416,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400
+        },
+        "repeat_3": {
+          "h5_object_opens": 704,
+          "h5_dataset_get_type": 288,
+          "h5_dataset_get_space": 288,
+          "h5_dataset_get_create_plist": 288,
+          "h5_attribute_reads": 832,
+          "h5_group_opens": 416,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400
+        }
+      },
+      "candidate": {
+        "open": {
+          "h5_object_opens": 299,
+          "h5_dataset_get_type": 86,
+          "h5_dataset_get_space": 86,
+          "h5_dataset_get_create_plist": 82,
+          "h5_attribute_reads": 774,
+          "h5_group_opens": 228,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 1130,
+          "observed_read_bytes": 3037669,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 4829,
+          "cpp_new_bytes": 325690
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840
+        },
+        "prepare": {
+          "h5_object_opens": 576,
+          "h5_dataset_get_type": 224,
+          "h5_dataset_get_space": 224,
+          "h5_dataset_get_create_plist": 224,
+          "h5_attribute_reads": 864,
+          "h5_group_opens": 352,
+          "h5_string_reads": 0,
+          "h5dread_calls": 128,
+          "observed_read_calls": 288,
+          "observed_read_bytes": 515328,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 10255,
+          "cpp_new_bytes": 466824
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 792
+        },
+        "preflight": {
+          "h5_object_opens": 320,
+          "h5_dataset_get_type": 128,
+          "h5_dataset_get_space": 128,
+          "h5_dataset_get_create_plist": 128,
+          "h5_attribute_reads": 416,
+          "h5_group_opens": 192,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 2688,
+          "cpp_new_bytes": 91360
+        },
+        "first_read": {
+          "h5_object_opens": 256,
+          "h5_dataset_get_type": 96,
+          "h5_dataset_get_space": 96,
+          "h5_dataset_get_create_plist": 96,
+          "h5_attribute_reads": 416,
+          "h5_group_opens": 160,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 32,
+          "observed_read_bytes": 397312,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 2400,
+          "cpp_new_bytes": 74240
+        },
+        "repeat_1": {
+          "h5_object_opens": 256,
+          "h5_dataset_get_type": 96,
+          "h5_dataset_get_space": 96,
+          "h5_dataset_get_create_plist": 96,
+          "h5_attribute_reads": 416,
+          "h5_group_opens": 160,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 2368,
+          "cpp_new_bytes": 73984
+        },
+        "repeat_2": {
+          "h5_object_opens": 256,
+          "h5_dataset_get_type": 96,
+          "h5_dataset_get_space": 96,
+          "h5_dataset_get_create_plist": 96,
+          "h5_attribute_reads": 416,
+          "h5_group_opens": 160,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 2368,
+          "cpp_new_bytes": 73984
+        },
+        "repeat_3": {
+          "h5_object_opens": 256,
+          "h5_dataset_get_type": 96,
+          "h5_dataset_get_space": 96,
+          "h5_dataset_get_create_plist": 96,
+          "h5_attribute_reads": 416,
+          "h5_group_opens": 160,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 2368,
+          "cpp_new_bytes": 73984
+        }
+      }
+    },
+    "reverse-duplicates": {
+      "baseline": {
+        "open": {
+          "h5_object_opens": 131,
+          "h5_dataset_get_type": 38,
+          "h5_dataset_get_space": 38,
+          "h5_dataset_get_create_plist": 34,
+          "h5_attribute_reads": 270,
+          "h5_group_opens": 84,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1775,
+          "cpp_new_bytes": 101772
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840
+        },
+        "prepare": {
+          "h5_object_opens": 1008,
+          "h5_dataset_get_type": 392,
+          "h5_dataset_get_space": 392,
+          "h5_dataset_get_create_plist": 392,
+          "h5_attribute_reads": 1512,
+          "h5_group_opens": 616,
+          "h5_string_reads": 0,
+          "h5dread_calls": 128,
+          "observed_read_calls": 140,
+          "observed_read_bytes": 2369984,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 12058,
+          "cpp_new_bytes": 483840
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 6152
+        },
+        "preflight": {
+          "h5_object_opens": 448,
+          "h5_dataset_get_type": 168,
+          "h5_dataset_get_space": 168,
+          "h5_dataset_get_create_plist": 168,
+          "h5_attribute_reads": 728,
+          "h5_group_opens": 280,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 4200,
+          "cpp_new_bytes": 130368
+        },
+        "first_read": {
+          "h5_object_opens": 1232,
+          "h5_dataset_get_type": 504,
+          "h5_dataset_get_space": 504,
+          "h5_dataset_get_create_plist": 504,
+          "h5_attribute_reads": 1456,
+          "h5_group_opens": 728,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776
+        },
+        "repeat_1": {
+          "h5_object_opens": 1232,
+          "h5_dataset_get_type": 504,
+          "h5_dataset_get_space": 504,
+          "h5_dataset_get_create_plist": 504,
+          "h5_attribute_reads": 1456,
+          "h5_group_opens": 728,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776
+        },
+        "repeat_2": {
+          "h5_object_opens": 1232,
+          "h5_dataset_get_type": 504,
+          "h5_dataset_get_space": 504,
+          "h5_dataset_get_create_plist": 504,
+          "h5_attribute_reads": 1456,
+          "h5_group_opens": 728,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776
+        },
+        "repeat_3": {
+          "h5_object_opens": 1232,
+          "h5_dataset_get_type": 504,
+          "h5_dataset_get_space": 504,
+          "h5_dataset_get_create_plist": 504,
+          "h5_attribute_reads": 1456,
+          "h5_group_opens": 728,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776
+        }
+      },
+      "candidate": {
+        "open": {
+          "h5_object_opens": 131,
+          "h5_dataset_get_type": 38,
+          "h5_dataset_get_space": 38,
+          "h5_dataset_get_create_plist": 34,
+          "h5_attribute_reads": 270,
+          "h5_group_opens": 84,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1775,
+          "cpp_new_bytes": 101924
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840
+        },
+        "prepare": {
+          "h5_object_opens": 72,
+          "h5_dataset_get_type": 28,
+          "h5_dataset_get_space": 28,
+          "h5_dataset_get_create_plist": 28,
+          "h5_attribute_reads": 108,
+          "h5_group_opens": 44,
+          "h5_string_reads": 0,
+          "h5dread_calls": 128,
+          "observed_read_calls": 36,
+          "observed_read_bytes": 229800,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1469,
+          "cpp_new_bytes": 131416
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 6152
+        },
+        "preflight": {
+          "h5_object_opens": 40,
+          "h5_dataset_get_type": 16,
+          "h5_dataset_get_space": 16,
+          "h5_dataset_get_create_plist": 16,
+          "h5_attribute_reads": 52,
+          "h5_group_opens": 24,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 336,
+          "cpp_new_bytes": 11416
+        },
+        "first_read": {
+          "h5_object_opens": 32,
+          "h5_dataset_get_type": 12,
+          "h5_dataset_get_space": 12,
+          "h5_dataset_get_create_plist": 12,
+          "h5_attribute_reads": 52,
+          "h5_group_opens": 20,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 4,
+          "observed_read_bytes": 196672,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 300,
+          "cpp_new_bytes": 9280
+        },
+        "repeat_1": {
+          "h5_object_opens": 32,
+          "h5_dataset_get_type": 12,
+          "h5_dataset_get_space": 12,
+          "h5_dataset_get_create_plist": 12,
+          "h5_attribute_reads": 52,
+          "h5_group_opens": 20,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 296,
+          "cpp_new_bytes": 9248
+        },
+        "repeat_2": {
+          "h5_object_opens": 32,
+          "h5_dataset_get_type": 12,
+          "h5_dataset_get_space": 12,
+          "h5_dataset_get_create_plist": 12,
+          "h5_attribute_reads": 52,
+          "h5_group_opens": 20,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 296,
+          "cpp_new_bytes": 9248
+        },
+        "repeat_3": {
+          "h5_object_opens": 32,
+          "h5_dataset_get_type": 12,
+          "h5_dataset_get_space": 12,
+          "h5_dataset_get_create_plist": 12,
+          "h5_attribute_reads": 52,
+          "h5_group_opens": 20,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 296,
+          "cpp_new_bytes": 9248
+        }
+      }
+    },
+    "reuse-sparse": {
+      "baseline": {
+        "open": {
+          "h5_object_opens": 131,
+          "h5_dataset_get_type": 38,
+          "h5_dataset_get_space": 38,
+          "h5_dataset_get_create_plist": 34,
+          "h5_attribute_reads": 270,
+          "h5_group_opens": 84,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1775,
+          "cpp_new_bytes": 101772
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 188,
+          "cpp_new_bytes": 7736
+        },
+        "prepare": {
+          "h5_object_opens": 144,
+          "h5_dataset_get_type": 56,
+          "h5_dataset_get_space": 56,
+          "h5_dataset_get_create_plist": 56,
+          "h5_attribute_reads": 216,
+          "h5_group_opens": 88,
+          "h5_string_reads": 0,
+          "h5dread_calls": 128,
+          "observed_read_calls": 72,
+          "observed_read_bytes": 574656,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1455,
+          "cpp_new_bytes": 51872
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 8712
+        },
+        "preflight": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 600,
+          "cpp_new_bytes": 18624
+        },
+        "first_read": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 51408
+        },
+        "repeat_1": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 51408
+        },
+        "repeat_2": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 51408
+        },
+        "repeat_3": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 51408
+        }
+      },
+      "candidate": {
+        "open": {
+          "h5_object_opens": 131,
+          "h5_dataset_get_type": 38,
+          "h5_dataset_get_space": 38,
+          "h5_dataset_get_create_plist": 34,
+          "h5_attribute_reads": 270,
+          "h5_group_opens": 84,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1775,
+          "cpp_new_bytes": 101924
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 188,
+          "cpp_new_bytes": 7736
+        },
+        "prepare": {
+          "h5_object_opens": 144,
+          "h5_dataset_get_type": 56,
+          "h5_dataset_get_space": 56,
+          "h5_dataset_get_create_plist": 56,
+          "h5_attribute_reads": 216,
+          "h5_group_opens": 88,
+          "h5_string_reads": 0,
+          "h5dread_calls": 128,
+          "observed_read_calls": 72,
+          "observed_read_bytes": 574656,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1491,
+          "cpp_new_bytes": 69928
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 8712
+        },
+        "preflight": {
+          "h5_object_opens": 80,
+          "h5_dataset_get_type": 32,
+          "h5_dataset_get_space": 32,
+          "h5_dataset_get_create_plist": 32,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 48,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 672,
+          "cpp_new_bytes": 22832
+        },
+        "first_read": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 8,
+          "observed_read_bytes": 495616,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 600,
+          "cpp_new_bytes": 18560
+        },
+        "repeat_1": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 592,
+          "cpp_new_bytes": 18496
+        },
+        "repeat_2": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 592,
+          "cpp_new_bytes": 18496
+        },
+        "repeat_3": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 192,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 592,
+          "cpp_new_bytes": 18496
+        }
+      }
+    },
+    "reuse-higher-density": {
+      "baseline": {
+        "open": {
+          "h5_object_opens": 131,
+          "h5_dataset_get_type": 38,
+          "h5_dataset_get_space": 38,
+          "h5_dataset_get_create_plist": 34,
+          "h5_attribute_reads": 270,
+          "h5_group_opens": 84,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1804,
+          "cpp_new_bytes": 102726
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 188,
+          "cpp_new_bytes": 10808
+        },
+        "prepare": {
+          "h5_object_opens": 144,
+          "h5_dataset_get_type": 56,
+          "h5_dataset_get_space": 56,
+          "h5_dataset_get_create_plist": 56,
+          "h5_attribute_reads": 216,
+          "h5_group_opens": 88,
+          "h5_string_reads": 0,
+          "h5dread_calls": 512,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 4208504,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1455,
+          "cpp_new_bytes": 58656
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 264200
+        },
+        "preflight": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 600,
+          "cpp_new_bytes": 18624
+        },
+        "first_read": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768
+        },
+        "repeat_1": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768
+        },
+        "repeat_2": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768
+        },
+        "repeat_3": {
+          "h5_object_opens": 176,
+          "h5_dataset_get_type": 72,
+          "h5_dataset_get_space": 72,
+          "h5_dataset_get_create_plist": 72,
+          "h5_attribute_reads": 208,
+          "h5_group_opens": 104,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768
+        }
+      },
+      "candidate": {
+        "open": {
+          "h5_object_opens": 131,
+          "h5_dataset_get_type": 38,
+          "h5_dataset_get_space": 38,
+          "h5_dataset_get_create_plist": 34,
+          "h5_attribute_reads": 270,
+          "h5_group_opens": 84,
+          "h5_string_reads": 4,
+          "h5dread_calls": 4,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1804,
+          "cpp_new_bytes": 102878
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5_dataset_get_type": 4,
+          "h5_dataset_get_space": 4,
+          "h5_dataset_get_create_plist": 4,
+          "h5_attribute_reads": 30,
+          "h5_group_opens": 8,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 188,
+          "cpp_new_bytes": 10808
+        },
+        "prepare": {
+          "h5_object_opens": 144,
+          "h5_dataset_get_type": 56,
+          "h5_dataset_get_space": 56,
+          "h5_dataset_get_create_plist": 56,
+          "h5_attribute_reads": 216,
+          "h5_group_opens": 88,
+          "h5_string_reads": 0,
+          "h5dread_calls": 512,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 4208504,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 1491,
+          "cpp_new_bytes": 80296
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5_dataset_get_type": 0,
+          "h5_dataset_get_space": 0,
+          "h5_dataset_get_create_plist": 0,
+          "h5_attribute_reads": 0,
+          "h5_group_opens": 0,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 264200
+        },
+        "preflight": {
+          "h5_object_opens": 80,
+          "h5_dataset_get_type": 32,
+          "h5_dataset_get_space": 32,
+          "h5_dataset_get_create_plist": 32,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 48,
+          "h5_string_reads": 0,
+          "h5dread_calls": 0,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 672,
+          "cpp_new_bytes": 22896
+        },
+        "first_read": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 8253440,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 600,
+          "cpp_new_bytes": 18560
+        },
+        "repeat_1": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 8253440,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 592,
+          "cpp_new_bytes": 18496
+        },
+        "repeat_2": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 8253440,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 592,
+          "cpp_new_bytes": 18496
+        },
+        "repeat_3": {
+          "h5_object_opens": 64,
+          "h5_dataset_get_type": 24,
+          "h5_dataset_get_space": 24,
+          "h5_dataset_get_create_plist": 24,
+          "h5_attribute_reads": 104,
+          "h5_group_opens": 40,
+          "h5_string_reads": 0,
+          "h5dread_calls": 768,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 8253440,
+          "dataset_opens": 0,
+          "dataset_closes": 0,
+          "cpp_new_calls": 592,
+          "cpp_new_bytes": 18496
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Three independent process samples for four primary cases; controls have one. No tail-latency claim.",
+    "Fresh-process normal caches; no cache eviction, exclusive-host guarantee, physical-I/O counter, or general speed claim.",
+    "Each output is fully checked against the existing independent formula and cross-language canonical digest; native CSR widths/order can differ.",
+    "Default C++ preserves numerical validation and destination preflight, while Python exposes a different API/validation contract.",
+    "Repeated C++ operations reuse prepared plan/caller buffers; Python native indexing allocates each result. This compares lifecycles, not identical kernels.",
+    "Diagnostics are separately interposed; counts exclude non-C++ allocators and physical device I/O, and instrumented durations are not timing evidence."
+  ],
+  "candidate_source_commit": "fb518d9d5f1d23d5c1583b987902b635504f6fa0",
+  "source_summary_sha256": "f3ab409d3881e58654ec3d400468af4cbb9f29fb932003e7f8b4b59599ee4805",
+  "source_phase_audit_sha256": "aa27dea3d9ff7afd1d6ec15235ba4d887cc0cf253cf3736715864bffcba88f2b",
+  "phase_audit": {
+    "source_summary_sha256": "f3ab409d3881e58654ec3d400468af4cbb9f29fb932003e7f8b4b59599ee4805",
+    "analysis_script_sha256": "34ca709f547a584c261a7b11efed3b12f0dad857dc279049d8196d063a95956d",
+    "threshold": "absolute delta >0.1 ms AND relative delta >10%",
+    "note": "Post-campaign analysis only; medians from distinct phases need not add to the end-to-end median. Controls have one observation.",
+    "regressions": [
+      {
+        "case": "reuse-sparse",
+        "phase": "preparation_requirements",
+        "baseline_ms": 4.485692,
+        "candidate_ms": 5.457612,
+        "delta_ms": 0.9719199999999999,
+        "relative_change": 0.21667114014961344,
+        "baseline_samples_ms": [
+          4.972058,
+          4.485692,
+          4.329815
+        ],
+        "candidate_samples_ms": [
+          5.457612,
+          4.828452,
+          5.548598
+        ],
+        "material": true,
+        "observations": 3
+      }
+    ],
+    "phases": {
+      "components-32": {
+        "open": {
+          "baseline_ms": 36.083943,
+          "candidate_ms": 33.96524,
+          "delta_ms": -2.1187029999999965,
+          "relative_change": -0.05871595019424558,
+          "baseline_samples_ms": [
+            36.354209,
+            35.688256,
+            36.083943
+          ],
+          "candidate_samples_ms": [
+            32.913032,
+            35.530402,
+            33.96524
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "selection": {
+          "baseline_ms": 0.416349,
+          "candidate_ms": 0.423041,
+          "delta_ms": 0.006691999999999976,
+          "relative_change": 0.01607305409644307,
+          "baseline_samples_ms": [
+            0.412683,
+            0.510405,
+            0.416349
+          ],
+          "candidate_samples_ms": [
+            0.423041,
+            0.420871,
+            0.467816
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "preparation_requirements": {
+          "baseline_ms": 16.754292,
+          "candidate_ms": 18.290367,
+          "delta_ms": 1.5360750000000003,
+          "relative_change": 0.09168247754068035,
+          "baseline_samples_ms": [
+            16.670593,
+            19.368534,
+            16.754292
+          ],
+          "candidate_samples_ms": [
+            18.388542,
+            18.290367,
+            18.114823
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.000606,
+          "candidate_ms": 0.00033,
+          "delta_ms": -0.000276,
+          "relative_change": -0.45544554455445546,
+          "baseline_samples_ms": [
+            0.000605,
+            0.000606,
+            0.00061
+          ],
+          "candidate_samples_ms": [
+            0.000318,
+            0.000335,
+            0.00033
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "transfer": {
+          "baseline_ms": 15.947744,
+          "candidate_ms": 7.520699,
+          "delta_ms": -8.427045,
+          "relative_change": -0.5284161195464386,
+          "baseline_samples_ms": [
+            15.638959,
+            18.421617,
+            15.947744
+          ],
+          "candidate_samples_ms": [
+            7.581634,
+            7.520699,
+            7.388089
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "end_to_end": {
+          "baseline_ms": 69.202938,
+          "candidate_ms": 59.936298,
+          "delta_ms": -9.266640000000002,
+          "relative_change": -0.13390529748895924,
+          "baseline_samples_ms": [
+            69.077049,
+            73.989418,
+            69.202938
+          ],
+          "candidate_samples_ms": [
+            59.306567,
+            61.762674,
+            59.936298
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "reused_operation": {
+          "baseline_ms": 15.7676575,
+          "candidate_ms": 5.1030365,
+          "delta_ms": -10.664621,
+          "relative_change": -0.676360518358545,
+          "baseline_samples_ms": [
+            15.7676575,
+            18.3728405,
+            15.761233
+          ],
+          "candidate_samples_ms": [
+            5.1588125,
+            5.1030365,
+            4.983855
+          ],
+          "material": true,
+          "observations": 3
+        }
+      },
+      "reverse-duplicates": {
+        "open": {
+          "baseline_ms": 12.514961,
+          "candidate_ms": 11.43733,
+          "delta_ms": -1.0776310000000002,
+          "relative_change": -0.08610741975144791,
+          "baseline_samples_ms": [
+            12.535162,
+            11.344582,
+            12.514961
+          ],
+          "candidate_samples_ms": [
+            10.859218,
+            12.711243,
+            11.43733
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "selection": {
+          "baseline_ms": 0.415655,
+          "candidate_ms": 0.404327,
+          "delta_ms": -0.011328000000000005,
+          "relative_change": -0.027253371185237768,
+          "baseline_samples_ms": [
+            0.40418,
+            0.415655,
+            0.41841
+          ],
+          "candidate_samples_ms": [
+            0.399229,
+            0.414738,
+            0.404327
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "preparation_requirements": {
+          "baseline_ms": 24.660435,
+          "candidate_ms": 2.674435,
+          "delta_ms": -21.986,
+          "relative_change": -0.8915495610681645,
+          "baseline_samples_ms": [
+            24.596515,
+            25.704084,
+            24.660435
+          ],
+          "candidate_samples_ms": [
+            2.632646,
+            2.701666,
+            2.674435
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.001181,
+          "candidate_ms": 0.004372,
+          "delta_ms": 0.0031910000000000003,
+          "relative_change": 2.7019475021168504,
+          "baseline_samples_ms": [
+            0.00131,
+            0.001181,
+            0.001154
+          ],
+          "candidate_samples_ms": [
+            0.004616,
+            0.004022,
+            0.004372
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "transfer": {
+          "baseline_ms": 27.423984,
+          "candidate_ms": 1.274504,
+          "delta_ms": -26.14948,
+          "relative_change": -0.9535259355460534,
+          "baseline_samples_ms": [
+            27.273473,
+            27.423984,
+            27.501132
+          ],
+          "candidate_samples_ms": [
+            1.274504,
+            1.332313,
+            1.27272
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "end_to_end": {
+          "baseline_ms": 64.889486,
+          "candidate_ms": 15.793184,
+          "delta_ms": -49.09630200000001,
+          "relative_change": -0.7566141300610704,
+          "baseline_samples_ms": [
+            64.81064,
+            64.889486,
+            65.096092
+          ],
+          "candidate_samples_ms": [
+            15.170213,
+            17.163982,
+            15.793184
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "reused_operation": {
+          "baseline_ms": 27.3633825,
+          "candidate_ms": 0.822468,
+          "delta_ms": -26.5409145,
+          "relative_change": -0.9699427510469512,
+          "baseline_samples_ms": [
+            27.0606745,
+            27.3633825,
+            27.743012
+          ],
+          "candidate_samples_ms": [
+            0.8188695,
+            0.831418,
+            0.822468
+          ],
+          "material": true,
+          "observations": 3
+        }
+      },
+      "components-1": {
+        "open": {
+          "baseline_ms": 5.502618,
+          "candidate_ms": 4.974187,
+          "delta_ms": -0.5284310000000003,
+          "relative_change": -0.09603265209396697,
+          "baseline_samples_ms": [
+            5.502618
+          ],
+          "candidate_samples_ms": [
+            4.974187
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "selection": {
+          "baseline_ms": 0.480085,
+          "candidate_ms": 0.409611,
+          "delta_ms": -0.07047399999999998,
+          "relative_change": -0.14679483841403082,
+          "baseline_samples_ms": [
+            0.480085
+          ],
+          "candidate_samples_ms": [
+            0.409611
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "preparation_requirements": {
+          "baseline_ms": 0.875864,
+          "candidate_ms": 0.822563,
+          "delta_ms": -0.05330099999999993,
+          "relative_change": -0.06085533827169507,
+          "baseline_samples_ms": [
+            0.875864
+          ],
+          "candidate_samples_ms": [
+            0.822563
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.000647,
+          "candidate_ms": 0.00043,
+          "delta_ms": -0.00021700000000000002,
+          "relative_change": -0.3353941267387945,
+          "baseline_samples_ms": [
+            0.000647
+          ],
+          "candidate_samples_ms": [
+            0.00043
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "transfer": {
+          "baseline_ms": 0.857647,
+          "candidate_ms": 0.584028,
+          "delta_ms": -0.27361900000000006,
+          "relative_change": -0.3190345211957834,
+          "baseline_samples_ms": [
+            0.857647
+          ],
+          "candidate_samples_ms": [
+            0.584028
+          ],
+          "material": true,
+          "observations": 1
+        },
+        "end_to_end": {
+          "baseline_ms": 7.716861,
+          "candidate_ms": 6.790819,
+          "delta_ms": -0.9260419999999998,
+          "relative_change": -0.12000242067338,
+          "baseline_samples_ms": [
+            7.716861
+          ],
+          "candidate_samples_ms": [
+            6.790819
+          ],
+          "material": true,
+          "observations": 1
+        }
+      },
+      "contiguous-one-component": {
+        "open": {
+          "baseline_ms": 12.473654,
+          "candidate_ms": 11.14855,
+          "delta_ms": -1.3251039999999996,
+          "relative_change": -0.10623222353289578,
+          "baseline_samples_ms": [
+            12.473654
+          ],
+          "candidate_samples_ms": [
+            11.14855
+          ],
+          "material": true,
+          "observations": 1
+        },
+        "selection": {
+          "baseline_ms": 0.424532,
+          "candidate_ms": 0.420971,
+          "delta_ms": -0.0035610000000000364,
+          "relative_change": -0.008388060264008452,
+          "baseline_samples_ms": [
+            0.424532
+          ],
+          "candidate_samples_ms": [
+            0.420971
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "preparation_requirements": {
+          "baseline_ms": 1.034814,
+          "candidate_ms": 1.042516,
+          "delta_ms": 0.007702000000000098,
+          "relative_change": 0.007442883455384347,
+          "baseline_samples_ms": [
+            1.034814
+          ],
+          "candidate_samples_ms": [
+            1.042516
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.001089,
+          "candidate_ms": 0.002793,
+          "delta_ms": 0.001704,
+          "relative_change": 1.5647382920110193,
+          "baseline_samples_ms": [
+            0.001089
+          ],
+          "candidate_samples_ms": [
+            0.002793
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "transfer": {
+          "baseline_ms": 1.22912,
+          "candidate_ms": 0.936172,
+          "delta_ms": -0.292948,
+          "relative_change": -0.23833962509763082,
+          "baseline_samples_ms": [
+            1.22912
+          ],
+          "candidate_samples_ms": [
+            0.936172
+          ],
+          "material": true,
+          "observations": 1
+        },
+        "end_to_end": {
+          "baseline_ms": 15.163209,
+          "candidate_ms": 13.551002,
+          "delta_ms": -1.6122069999999997,
+          "relative_change": -0.10632360208185482,
+          "baseline_samples_ms": [
+            15.163209
+          ],
+          "candidate_samples_ms": [
+            13.551002
+          ],
+          "material": true,
+          "observations": 1
+        }
+      },
+      "reuse-sparse": {
+        "open": {
+          "baseline_ms": 12.533885,
+          "candidate_ms": 13.064266,
+          "delta_ms": 0.5303810000000002,
+          "relative_change": 0.042315770409573746,
+          "baseline_samples_ms": [
+            15.349604,
+            11.256451,
+            12.533885
+          ],
+          "candidate_samples_ms": [
+            13.064266,
+            12.5111,
+            13.716934
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "selection": {
+          "baseline_ms": 0.44238,
+          "candidate_ms": 0.433278,
+          "delta_ms": -0.009101999999999999,
+          "relative_change": -0.02057507120575071,
+          "baseline_samples_ms": [
+            0.527077,
+            0.44238,
+            0.420828
+          ],
+          "candidate_samples_ms": [
+            0.559189,
+            0.417441,
+            0.433278
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "preparation_requirements": {
+          "baseline_ms": 4.485692,
+          "candidate_ms": 5.457612,
+          "delta_ms": 0.9719199999999999,
+          "relative_change": 0.21667114014961344,
+          "baseline_samples_ms": [
+            4.972058,
+            4.485692,
+            4.329815
+          ],
+          "candidate_samples_ms": [
+            5.457612,
+            4.828452,
+            5.548598
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.004228,
+          "candidate_ms": 0.005059,
+          "delta_ms": 0.0008310000000000001,
+          "relative_change": 0.19654683065279094,
+          "baseline_samples_ms": [
+            0.004549,
+            0.003955,
+            0.004228
+          ],
+          "candidate_samples_ms": [
+            0.005411,
+            0.005059,
+            0.004801
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "transfer": {
+          "baseline_ms": 4.309128,
+          "candidate_ms": 2.508328,
+          "delta_ms": -1.8008000000000002,
+          "relative_change": -0.41790357585107707,
+          "baseline_samples_ms": [
+            4.862274,
+            4.309128,
+            4.20491
+          ],
+          "candidate_samples_ms": [
+            2.508328,
+            2.29424,
+            2.542363
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "end_to_end": {
+          "baseline_ms": 21.493666,
+          "candidate_ms": 21.594806,
+          "delta_ms": 0.10113999999999734,
+          "relative_change": 0.004705572330006307,
+          "baseline_samples_ms": [
+            25.715562,
+            20.497606,
+            21.493666
+          ],
+          "candidate_samples_ms": [
+            21.594806,
+            20.056292,
+            22.245974
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "reused_operation": {
+          "baseline_ms": 4.236177,
+          "candidate_ms": 1.499455,
+          "delta_ms": -2.7367219999999994,
+          "relative_change": -0.6460358006759396,
+          "baseline_samples_ms": [
+            4.765801,
+            4.236177,
+            4.056786
+          ],
+          "candidate_samples_ms": [
+            1.499455,
+            1.3861295,
+            1.5738915
+          ],
+          "material": true,
+          "observations": 3
+        }
+      },
+      "reuse-higher-density": {
+        "open": {
+          "baseline_ms": 12.436469,
+          "candidate_ms": 11.943852,
+          "delta_ms": -0.49261700000000097,
+          "relative_change": -0.03961068049138392,
+          "baseline_samples_ms": [
+            13.131424,
+            11.335721,
+            12.436469
+          ],
+          "candidate_samples_ms": [
+            11.943852,
+            12.491813,
+            11.116936
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "selection": {
+          "baseline_ms": 0.41906,
+          "candidate_ms": 0.412863,
+          "delta_ms": -0.006197000000000008,
+          "relative_change": -0.01478785854054314,
+          "baseline_samples_ms": [
+            0.41906,
+            0.418974,
+            0.423455
+          ],
+          "candidate_samples_ms": [
+            0.412863,
+            0.406177,
+            0.417424
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "preparation_requirements": {
+          "baseline_ms": 5.639133,
+          "candidate_ms": 6.072752,
+          "delta_ms": 0.4336190000000002,
+          "relative_change": 0.07689462192149045,
+          "baseline_samples_ms": [
+            6.502403,
+            5.309249,
+            5.639133
+          ],
+          "candidate_samples_ms": [
+            5.646017,
+            6.072752,
+            6.115551
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.14683,
+          "candidate_ms": 0.147474,
+          "delta_ms": 0.0006440000000000057,
+          "relative_change": 0.004386024654362226,
+          "baseline_samples_ms": [
+            0.179399,
+            0.125372,
+            0.14683
+          ],
+          "candidate_samples_ms": [
+            0.148618,
+            0.14338,
+            0.147474
+          ],
+          "material": false,
+          "observations": 3
+        },
+        "transfer": {
+          "baseline_ms": 6.208223,
+          "candidate_ms": 4.326554,
+          "delta_ms": -1.8816690000000005,
+          "relative_change": -0.3030930106731025,
+          "baseline_samples_ms": [
+            6.933868,
+            5.872225,
+            6.208223
+          ],
+          "candidate_samples_ms": [
+            4.124552,
+            4.326554,
+            4.343624
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "end_to_end": {
+          "baseline_ms": 24.85411,
+          "candidate_ms": 22.275902,
+          "delta_ms": -2.578208,
+          "relative_change": -0.10373366819411357,
+          "baseline_samples_ms": [
+            27.166154,
+            23.061541,
+            24.85411
+          ],
+          "candidate_samples_ms": [
+            22.275902,
+            23.440676,
+            22.141009
+          ],
+          "material": true,
+          "observations": 3
+        },
+        "reused_operation": {
+          "baseline_ms": 5.8798255,
+          "candidate_ms": 3.2243085,
+          "delta_ms": -2.655517,
+          "relative_change": -0.4516319404376882,
+          "baseline_samples_ms": [
+            5.8875445,
+            5.8798255,
+            5.820227
+          ],
+          "candidate_samples_ms": [
+            3.2243085,
+            3.2316665,
+            3.218497
+          ],
+          "material": true,
+          "observations": 3
+        }
+      },
+      "gzip-spread": {
+        "open": {
+          "baseline_ms": 12.404403,
+          "candidate_ms": 10.951058,
+          "delta_ms": -1.4533450000000006,
+          "relative_change": -0.11716363939481815,
+          "baseline_samples_ms": [
+            12.404403
+          ],
+          "candidate_samples_ms": [
+            10.951058
+          ],
+          "material": true,
+          "observations": 1
+        },
+        "selection": {
+          "baseline_ms": 0.415429,
+          "candidate_ms": 0.400694,
+          "delta_ms": -0.014734999999999998,
+          "relative_change": -0.03546935818154245,
+          "baseline_samples_ms": [
+            0.415429
+          ],
+          "candidate_samples_ms": [
+            0.400694
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "preparation_requirements": {
+          "baseline_ms": 8.030608,
+          "candidate_ms": 8.158803,
+          "delta_ms": 0.12819499999999984,
+          "relative_change": 0.015963299416432708,
+          "baseline_samples_ms": [
+            8.030608
+          ],
+          "candidate_samples_ms": [
+            8.158803
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "buffer_allocation": {
+          "baseline_ms": 0.000412,
+          "candidate_ms": 0.000413,
+          "delta_ms": 1.0000000000000243e-06,
+          "relative_change": 0.0024271844660194767,
+          "baseline_samples_ms": [
+            0.000412
+          ],
+          "candidate_samples_ms": [
+            0.000413
+          ],
+          "material": false,
+          "observations": 1
+        },
+        "transfer": {
+          "baseline_ms": 9.162032,
+          "candidate_ms": 3.735418,
+          "delta_ms": -5.426614,
+          "relative_change": -0.5922937182494015,
+          "baseline_samples_ms": [
+            9.162032
+          ],
+          "candidate_samples_ms": [
+            3.735418
+          ],
+          "material": true,
+          "observations": 1
+        },
+        "end_to_end": {
+          "baseline_ms": 30.012884,
+          "candidate_ms": 23.246386,
+          "delta_ms": -6.766497999999999,
+          "relative_change": -0.22545310873823385,
+          "baseline_samples_ms": [
+            30.012884
+          ],
+          "candidate_samples_ms": [
+            23.246386
+          ],
+          "material": true,
+          "observations": 1
+        }
+      }
+    }
+  },
+  "qualification": {
+    "debug": "38/38",
+    "release": "39/39",
+    "asan_ubsan": "7/7;detect_leaks=0",
+    "hdf5_only": "6/6",
+    "zarr_only": "5/5",
+    "mmap_pointer_audit": "passed",
+    "private_bmis": "15 unchanged;2 example objects unchanged"
+  },
+  "scope": "Retained per-component CSR execution; dense/CSC retain existing paths. No HDF5 sieve policy change.",
+  "raw_evidence": "build/collection-execution-fix-2026-11-17/",
+  "independent_verification": "Artifact-only checks passed for all identities, schedules, medians, goldens, native C++ widths and counters; reported counter typo corrected."
+}

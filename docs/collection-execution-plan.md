@@ -1,5 +1,10 @@
 # Collection execution overhead: investigation and fix plan
 
+Implementation status: the first CSR resource-reuse step is implemented in
+`fb518d9` and qualified in [the results report](collection-execution-fastpaths.md).
+Dense/CSC retain their existing paths. The remaining text records the approved
+design; batching and HDF5-policy work remain conditional follow-ups.
+
 The next fix should make collection preparation retain useful execution
 resources and stop describing the same stored matrix repeatedly. Numerical
 batching is a separate step. Simply routing collections through the existing
