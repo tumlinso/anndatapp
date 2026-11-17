@@ -1,0 +1,576 @@
+{
+  "window_seconds": 11.953193835001002,
+  "record_count": 22,
+  "output_fnv1a64": {
+    "dataset-small": "bb7805bcc25ffdde",
+    "dataset-10k": "54073d4a0e9be58f"
+  },
+  "native_dtypes": {
+    "dataset-small/baseline": {
+      "indices": "int32",
+      "indptr": "int32"
+    },
+    "dataset-small/candidate": {
+      "indices": "int32",
+      "indptr": "int32"
+    },
+    "dataset-small/python": {
+      "indices": "int32",
+      "indptr": "int32"
+    },
+    "dataset-10k/python": {
+      "indices": "int32",
+      "indptr": "int32"
+    },
+    "dataset-10k/candidate": {
+      "indices": "int32",
+      "indptr": "int64"
+    },
+    "dataset-10k/baseline": {
+      "indices": "int32",
+      "indptr": "int64"
+    }
+  },
+  "timings": {
+    "dataset-small/baseline": {
+      "open_ns": {
+        "samples": [
+          6506220,
+          6499650,
+          5957748
+        ],
+        "median": 6499650
+      },
+      "slice_ns": {
+        "samples": [
+          460704,
+          512910,
+          408411
+        ],
+        "median": 460704
+      },
+      "prepare_requirements_ns": {
+        "samples": [
+          2686155,
+          2879707,
+          2117777
+        ],
+        "median": 2686155
+      },
+      "output_allocation_ns": {
+        "samples": [
+          2353,
+          2493,
+          2450
+        ],
+        "median": 2450
+      },
+      "read_into_ns": {
+        "samples": [
+          1255582,
+          1961375,
+          1232352
+        ],
+        "median": 1255582
+      },
+      "end_to_end_ns": {
+        "samples": [
+          10911228,
+          11856692,
+          9719142
+        ],
+        "median": 10911228
+      }
+    },
+    "dataset-small/candidate": {
+      "open_ns": {
+        "samples": [
+          5080971,
+          5664649,
+          5046285
+        ],
+        "median": 5080971
+      },
+      "slice_ns": {
+        "samples": [
+          398640,
+          421579,
+          420055
+        ],
+        "median": 420055
+      },
+      "prepare_requirements_ns": {
+        "samples": [
+          1256945,
+          1289131,
+          1289838
+        ],
+        "median": 1289131
+      },
+      "output_allocation_ns": {
+        "samples": [
+          2379,
+          2710,
+          2719
+        ],
+        "median": 2710
+      },
+      "read_into_ns": {
+        "samples": [
+          1184764,
+          1194482,
+          1222115
+        ],
+        "median": 1194482
+      },
+      "end_to_end_ns": {
+        "samples": [
+          7924049,
+          8573046,
+          7981642
+        ],
+        "median": 7981642
+      }
+    },
+    "dataset-small/python": {
+      "open_ns": {
+        "samples": [
+          4599459,
+          4697602,
+          4640846
+        ],
+        "median": 4640846
+      },
+      "operation_ns": {
+        "samples": [
+          1045023,
+          1253856,
+          1054945
+        ],
+        "median": 1054945
+      },
+      "end_to_end_ns": {
+        "samples": [
+          5650017,
+          5957191,
+          5700989
+        ],
+        "median": 5700989
+      }
+    },
+    "dataset-10k/python": {
+      "open_ns": {
+        "samples": [
+          30580540,
+          30422909,
+          30585622
+        ],
+        "median": 30580540
+      },
+      "operation_ns": {
+        "samples": [
+          6114904,
+          6139381,
+          6290357
+        ],
+        "median": 6139381
+      },
+      "end_to_end_ns": {
+        "samples": [
+          36701292,
+          36568210,
+          36881759
+        ],
+        "median": 36701292
+      }
+    },
+    "dataset-10k/candidate": {
+      "open_ns": {
+        "samples": [
+          12274082,
+          10898336,
+          12317768
+        ],
+        "median": 12274082
+      },
+      "selection_ns": {
+        "samples": [
+          353844,
+          363835,
+          350805
+        ],
+        "median": 353844
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          4949872,
+          4611532,
+          4851283
+        ],
+        "median": 4851283
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          367,
+          602,
+          359
+        ],
+        "median": 367
+      },
+      "transfer_ns": {
+        "samples": [
+          4789346,
+          4686066,
+          4864299
+        ],
+        "median": 4789346
+      },
+      "end_to_end_ns": {
+        "samples": [
+          22367511,
+          20560371,
+          22384514
+        ],
+        "median": 22367511
+      }
+    },
+    "dataset-10k/baseline": {
+      "open_ns": {
+        "samples": [
+          12113317,
+          13313808,
+          11788036
+        ],
+        "median": 12113317
+      },
+      "selection_ns": {
+        "samples": [
+          371266,
+          364850,
+          354070
+        ],
+        "median": 364850
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          5846613,
+          5863882,
+          5572675
+        ],
+        "median": 5846613
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          341,
+          318,
+          430
+        ],
+        "median": 341
+      },
+      "transfer_ns": {
+        "samples": [
+          5148659,
+          4943303,
+          4709129
+        ],
+        "median": 4943303
+      },
+      "end_to_end_ns": {
+        "samples": [
+          23480196,
+          24486161,
+          22424340
+        ],
+        "median": 23480196
+      }
+    }
+  },
+  "caveats": [
+    "Three fresh process samples per case; normal OS/HDF5 caches. Independent medians need not add.",
+    "Python and C++ use different library and validation work. Selector construction is outside measured small clocks for both; 10k follows original separate clock boundary.",
+    "Diagnostic counters are interposed observations, not physical I/O or live memory; no Python interposition."
+  ],
+  "baseline_commit": "7f8d72af02cd5b5b1cfc7de3c019658baa6e230b",
+  "baseline_production_commit": "32852b6b65d0ab6d8204f3cb5ebb7cc584be0def",
+  "implementation_commit": "d479d5d9e0cac161ff5aecb1d4eb0ff84a47836d",
+  "settings": {
+    "cpu": 0,
+    "thread_limits": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "1",
+      "BLOSC_NTHREADS": "1"
+    },
+    "cache": "normal OS/HDF5 caches, no eviction",
+    "case_timeout_seconds": 5.0,
+    "plan_sha256": "1c89591cb451b6d5237abb323b0d633e2f148516b3fba2df0cded26c5d774a32",
+    "runner_sha256": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9"
+  },
+  "input_identity_sha256": {
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/fixtures-family-v3/dataset.h5ads": "863ea92319904a402dfa6e9d61868ca1c27421f84a15546cc842aab862c5c221",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/fixtures-family-v3/dataset-part-0.h5ad": "dc25951ce48b8cdefe095a002b2386cde61cf8178fe6850711b806b3612ef0e5",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/fixtures-family-v3/dataset-part-1.h5ad": "d61203df87b9b69ff5adcdd74b460c6df58f2c1d0633185873f6e9ca53cd92ec",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/collection.h5ads": "c307e937e0a8118a6983b75cc5360979f08e8fc259deffcf59514bfabca243b1",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-0.h5ad": "11e3a1ed026447fa44840b79eb993ad31b2c421fb1bb56eb0a6793c317b3b3e5",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-1.h5ad": "41da4407ec069eaba7dcfefec0cc2877bd717c781bc6f56bf5269f42cbf1e5d2",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-2.h5ad": "728407e8853b3ee8c584ee123acc20f0a6323336cf321cb40bcb93dc75526872",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-3.h5ad": "00fea6315c42dc9d494f8a4409d88b24bf75fa6a02908b217b9578a3e8be8acd",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-4.h5ad": "578f275d636ecb4d09972d7404401642d0bde322c5310097e8c43de7918e50ea",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-5.h5ad": "7f8f8fc4095a97c9545fe565fb6edeb080fbecbcbcfd1219a28ada1c2dce2616",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-6.h5ad": "66187a488808ed73f806e82874dee6ac901fab3235fd87ac48152dc6c46918ca",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-7.h5ad": "461a9be8fa1f72e4812566d6f661828a28eca1d53552dfa3306385e8f7136a1f",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/baseline-consumer/small-collection-cpp": "c41d7f9ed35e76a73f16ff36afbd3a137db0825bb471d7a153a094d5071c0584",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/baseline-consumer/collection-control-cpp": "11e18f710e279c833c63c541e31b8a8cb3a77bc98de06766230cee636d53fc5e",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/candidate-consumer/small-collection-cpp": "8d5420c2dac0cd66467532bd5653093a24c20bbe438ec561c76f35bdcf0ad9f5",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/candidate-consumer/collection-control-cpp": "f956dc7fda1a936f4965ddf9931772ccf9c74f09a6ebdb434630c9d9cfa09679",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/release11/python_probe.py": "6684222165e05e471b4bc50ecff544bca946359e6442be3c596502b9b2924a5a",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/python_family.py": "989356b87df5385968672a922f5fe15d9b92420f7b0ed53db9f2324d4e56af06",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/window.py": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-prep-fix-2026-11-16/comparison/libmetadata.so": "237c936b857cdacc167984c50e230e31791e70512eababbf112b64199ec117a5",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-preparation-2026-11-16/candidate-profile-v2/build/libcollection-io.so": "6693087eaa14ce56894310a9e59523e4eb23f6f454aaae2f7ff34b284ec7ff65",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-preparation-2026-11-16/candidate-profile-v2/build/libcollection-alloc.so": "52bbbf34e8e454a0f27afbb3f5b7579b41eb7aeaad24d050e4b32dce40ca8744",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/source/small_collection_cpp.cpp": "4804137d6824904d919164960b86ef378ec1d35d7b384a94458265ea0a18f5e0",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/source/reference_cpp_probe.cpp": "2ce20b29d9204bb160fe2e6e3b55e98fbbed9c7fd66db38661ebfddd2b4ad2a1",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/source/control_cpp.cpp": "bae1ef55f9f685fac54459d85723975f2bc9c6fa0968a5aaa336d46ff49f7bed",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/comparison/source/CMakeLists.txt": "ace9b27e554672c401bd6e66865ef60b6e063a0d9a2a1929d8c73199a9a12538",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/metadata-reuse/freeze.py": "f2758eae7340f2647bf2470d1f30daec5826bf972c20977c140c0c0bec067568",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/metadata-reuse/summarize.py": "d50acf9c389756adb7c2cb7e58fb764f8ba4f5ec94ca3137f0cb4a8218d4a2fb",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/metadata-reuse/setup.py": "a86ce36c014b19da3e14efe6e78ddfe9964bca0d81f2046aed4c3e6db04cdb11",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/metadata-reuse/small_collection_cpp.cpp": "4804137d6824904d919164960b86ef378ec1d35d7b384a94458265ea0a18f5e0",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/metadata-reuse/control_cpp.cpp": "bae1ef55f9f685fac54459d85723975f2bc9c6fa0968a5aaa336d46ff49f7bed",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/metadata-reuse/CMakeLists.txt": "ace9b27e554672c401bd6e66865ef60b6e063a0d9a2a1929d8c73199a9a12538",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/tools/format-family-screen/collection-fix/cpp_probe.cpp": "f59640befeadeaa71a3195ba81fea28c939fc7a0f256b386ac987d7c5eb0ffbf",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/optional-axis-validation-2026-11-17/candidate-prefix/lib/libanndatapp.a": "2678592fc437c3744915c0672943c458a7b7dd2840e113d1f1a4a67abe4be930",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/optional-axis-validation-2026-11-17/candidate-prefix/lib/libanndatapp_core.a": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/candidate-prefix/lib/libanndatapp.a": "91aa9e1ea7fa4fad36f945e715255ceb7d5f69cab55a179e7f46ae9c77948b46",
+    "/home/tumlinson/.codex/worktrees/anndata-collection-metadata/anndatapp/build/collection-metadata-reuse-2026-11-17/candidate-prefix/lib/libanndatapp_core.a": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/release11-performance-2026-11-16/input-identities.json": "4a331a378b5fc86e9dedae4e535c15b8638d0c804e6ea443facda0793d88229c"
+  },
+  "phase_diagnostics": {
+    "dataset-small/baseline": {
+      "open": {
+        "h5oopen": 104,
+        "h5dread": 4,
+        "string_h5dread": 4,
+        "cpp_new": 1181,
+        "cpp_new_bytes": 50772,
+        "intercepted_reads": 108,
+        "intercepted_read_bytes": 82693
+      },
+      "selection": {
+        "h5oopen": 12,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 192,
+        "cpp_new_bytes": 8840,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "preparation_requirements": {
+        "h5oopen": 75,
+        "h5dread": 128,
+        "string_h5dread": 0,
+        "cpp_new": 945,
+        "cpp_new_bytes": 32730,
+        "intercepted_reads": 18,
+        "intercepted_read_bytes": 25528
+      },
+      "buffer_allocation": {
+        "h5oopen": 0,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 3,
+        "cpp_new_bytes": 4360,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "transfer": {
+        "h5oopen": 44,
+        "h5dread": 192,
+        "string_h5dread": 0,
+        "cpp_new": 578,
+        "cpp_new_bytes": 18658,
+        "intercepted_reads": 6,
+        "intercepted_read_bytes": 17416
+      }
+    },
+    "dataset-small/candidate": {
+      "open": {
+        "h5oopen": 89,
+        "h5dread": 4,
+        "string_h5dread": 4,
+        "cpp_new": 1028,
+        "cpp_new_bytes": 45417,
+        "intercepted_reads": 108,
+        "intercepted_read_bytes": 82693
+      },
+      "selection": {
+        "h5oopen": 12,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 192,
+        "cpp_new_bytes": 8840,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "preparation_requirements": {
+        "h5oopen": 36,
+        "h5dread": 128,
+        "string_h5dread": 0,
+        "cpp_new": 615,
+        "cpp_new_bytes": 23984,
+        "intercepted_reads": 18,
+        "intercepted_read_bytes": 25528
+      },
+      "buffer_allocation": {
+        "h5oopen": 0,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 3,
+        "cpp_new_bytes": 4360,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "transfer": {
+        "h5oopen": 44,
+        "h5dread": 192,
+        "string_h5dread": 0,
+        "cpp_new": 578,
+        "cpp_new_bytes": 18658,
+        "intercepted_reads": 6,
+        "intercepted_read_bytes": 17416
+      }
+    },
+    "dataset-10k/candidate": {
+      "open": {
+        "h5oopen": 131,
+        "h5dread": 4,
+        "string_h5dread": 4,
+        "cpp_new": 1701,
+        "cpp_new_bytes": 101888,
+        "intercepted_reads": 319,
+        "intercepted_read_bytes": 1050544
+      },
+      "selection": {
+        "h5oopen": 12,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 185,
+        "cpp_new_bytes": 11672,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "preparation_requirements": {
+        "h5oopen": 144,
+        "h5dread": 128,
+        "string_h5dread": 0,
+        "cpp_new": 2535,
+        "cpp_new_bytes": 101984,
+        "intercepted_reads": 96,
+        "intercepted_read_bytes": 2188312
+      },
+      "buffer_allocation": {
+        "h5oopen": 0,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 3,
+        "cpp_new_bytes": 664,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "transfer": {
+        "h5oopen": 176,
+        "h5dread": 192,
+        "string_h5dread": 0,
+        "cpp_new": 2552,
+        "cpp_new_bytes": 95568,
+        "intercepted_reads": 72,
+        "intercepted_read_bytes": 4266904
+      }
+    },
+    "dataset-10k/baseline": {
+      "open": {
+        "h5oopen": 176,
+        "h5dread": 4,
+        "string_h5dread": 4,
+        "cpp_new": 2124,
+        "cpp_new_bytes": 117674,
+        "intercepted_reads": 319,
+        "intercepted_read_bytes": 1050544
+      },
+      "selection": {
+        "h5oopen": 12,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 185,
+        "cpp_new_bytes": 11672,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "preparation_requirements": {
+        "h5oopen": 183,
+        "h5dread": 128,
+        "string_h5dread": 0,
+        "cpp_new": 2921,
+        "cpp_new_bytes": 114402,
+        "intercepted_reads": 96,
+        "intercepted_read_bytes": 2188312
+      },
+      "buffer_allocation": {
+        "h5oopen": 0,
+        "h5dread": 0,
+        "string_h5dread": 0,
+        "cpp_new": 3,
+        "cpp_new_bytes": 664,
+        "intercepted_reads": 0,
+        "intercepted_read_bytes": 0
+      },
+      "transfer": {
+        "h5oopen": 176,
+        "h5dread": 192,
+        "string_h5dread": 0,
+        "cpp_new": 2552,
+        "cpp_new_bytes": 95568,
+        "intercepted_reads": 72,
+        "intercepted_read_bytes": 4266904
+      }
+    }
+  },
+  "python_versions": {
+    "anndata": "0.13.4",
+    "h5py": "3.16.0",
+    "mudata": "0.4.1",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "pyarrow": "21.0.0",
+    "scipy": "1.17.1",
+    "snapatac2": "2.10.0",
+    "spatialdata": "0.9.0",
+    "treedata": "0.4.0",
+    "zarr": "3.4.2"
+  },
+  "raw_artifacts": {
+    "build/collection-metadata-reuse-2026-11-17/comparison/plan.json": "1c89591cb451b6d5237abb323b0d633e2f148516b3fba2df0cded26c5d774a32",
+    "build/collection-metadata-reuse-2026-11-17/comparison/receipt.jsonl": "29c2c8aa2eaa95b2f53d2a649116496ee69b62de555e3286a2c4adbc621a643f",
+    "build/collection-metadata-reuse-2026-11-17/comparison/summary.json": "57e70fc38e70576fe3f93981f97c0dc31c36c48863465fe4c1a37b76127aff2d"
+  },
+  "toolchain": {
+    "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+    "cmake": "cmake version 3.28.3",
+    "ninja": "1.11.1"
+  },
+  "qualification": {
+    "debug": "38/38",
+    "asan_ubsan": "7/7; leak detection disabled",
+    "mmap_audit": "passed real mappings and retained pointers",
+    "core_archive_identical": true,
+    "private_rebuild": "15 public BMIs and 8 consumer objects unchanged in SHA256 and mtime",
+    "independent_source_review": "no confirmed defect",
+    "sparse_batching": "deferred pending discriminating bounded experiment",
+    "scope": "focused internal metadata qualification, not full release matrix"
+  }
+}

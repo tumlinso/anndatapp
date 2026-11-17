@@ -1,9 +1,13 @@
 #include <hdf5.h>
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 import anndatapp;
@@ -14,6 +18,14 @@ void require(bool ok,const char* text) { if (!ok) throw std::runtime_error(text)
 template<class F> void rejects(F&& f) {
     try { f(); } catch (const Error&) { return; }
     throw std::runtime_error("expected index rejection");
+}
+template<class F> void expect_code(ErrorCode code,F&& f) {
+    try { f(); }
+    catch (const Error& e) {
+        require(e.code()==code,"unexpected error code");
+        return;
+    }
+    throw std::runtime_error("expected anndatapp error");
 }
 void replace_index(hid_t file,const std::vector<std::string>& names,bool fixed,
                    std::size_t width=48,const char* table="/obs") {
@@ -64,6 +76,140 @@ void corrupt_var_index_version(const std::string& path) {
     H5Aclose(attr);H5Sclose(space);H5Tclose(type);H5Dclose(data);
     require(H5Fflush(file,H5F_SCOPE_GLOBAL)>=0,"flush corrupt index version");
     H5Fclose(file);
+}
+void set_string_attr(hid_t object,const char* name,const char* value) {
+    const auto exists=H5Aexists(object,name);
+    require(exists>=0,"inspect X encoding attribute");
+    if(exists) require(H5Adelete(object,name)>=0,"delete X encoding attribute");
+    auto type=H5Tcopy(H5T_C_S1);
+    require(type>=0 && H5Tset_size(type,std::strlen(value))>=0,"set X encoding attribute type");
+    auto space=H5Screate(H5S_SCALAR);
+    auto attr=H5Acreate2(object,name,type,space,H5P_DEFAULT,H5P_DEFAULT);
+    require(space>=0 && attr>=0 && H5Awrite(attr,type,value)>=0,"write X encoding attribute");
+    H5Aclose(attr);H5Sclose(space);H5Tclose(type);
+}
+void write_metadata_component(const std::filesystem::path& path,Layout layout,const char* prefix) {
+    auto data=AnnData::empty(2,3);
+    data.set_obs(Table::with_index({std::string(prefix)+"-0",std::string(prefix)+"-1"}));
+    data.set_var(Table::with_index({"v0","v1","v2"}));
+    if(layout==Layout::dense) data.set_x(Array::zeros<float>({2,3}));
+    else if(layout==Layout::csr) {
+        auto x=Array::csr<float,std::int32_t,std::int32_t>(2,3,2);
+        auto v=x.edit().csr<float,std::int32_t,std::int32_t>();
+        v.values()[0]=1;v.values()[1]=2;v.unsafe_indices()[0]=0;v.unsafe_indices()[1]=1;
+        v.unsafe_offsets()[0]=0;v.unsafe_offsets()[1]=1;v.unsafe_offsets()[2]=2;
+        data.set_x(std::move(x));
+    } else {
+        auto x=Array::csc<float,std::int32_t,std::int32_t>(2,3,2);
+        auto v=x.edit().csc<float,std::int32_t,std::int32_t>();
+        v.values()[0]=1;v.values()[1]=2;v.unsafe_indices()[0]=0;v.unsafe_indices()[1]=1;
+        v.unsafe_offsets()[0]=0;v.unsafe_offsets()[1]=1;v.unsafe_offsets()[2]=1;v.unsafe_offsets()[3]=2;
+        data.set_x(std::move(x));
+    }
+    write_h5ad(path.string(),data);
+}
+void write_metadata_components(const std::filesystem::path& dir,Layout layout) {
+    std::filesystem::create_directories(dir);
+    write_metadata_component(dir/"first.h5ad",layout,"first");
+    write_metadata_component(dir/"second.h5ad",layout,"second");
+}
+void replace_dense_x_shape(hid_t file) {
+    require(H5Ldelete(file,"/X",H5P_DEFAULT)>=0,"replace X shape fixture");
+    hsize_t dims[]{1,3};
+    auto space=H5Screate_simple(2,dims,nullptr);
+    auto x=H5Dcreate2(file,"/X",H5T_IEEE_F32LE,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+    const float values[]{7,8,9};
+    require(space>=0 && x>=0 && H5Dwrite(x,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,values)>=0,
+            "write wrong-shape X fixture");
+    set_string_attr(x,"encoding-type","array");set_string_attr(x,"encoding-version","0.2.0");
+    H5Dclose(x);H5Sclose(space);
+}
+void replace_sparse_indices_length(hid_t file) {
+    require(H5Ldelete(file,"/X/indices",H5P_DEFAULT)>=0,"replace sparse indices fixture");
+    hsize_t n=1;
+    auto space=H5Screate_simple(1,&n,nullptr);
+    auto x=H5Dcreate2(file,"/X/indices",H5T_STD_I32LE,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+    const std::int32_t index=0;
+    require(space>=0 && x>=0 && H5Dwrite(x,H5T_NATIVE_INT32,H5S_ALL,H5S_ALL,H5P_DEFAULT,&index)>=0,
+            "write shortened sparse indices fixture");
+    H5Dclose(x);H5Sclose(space);
+}
+void malformed_unselected_x_metadata(const std::filesystem::path& root) {
+    const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
+    const char* labels[]{"shape","encoding","version","sparse-buffers"};
+    const ErrorCode codes[]{ErrorCode::shape_mismatch,ErrorCode::unsupported_encoding,
+                            ErrorCode::unsupported_version,ErrorCode::invalid_sparse_structure};
+    for(int kind=0;kind<4;++kind) {
+        auto dir=root/(std::string("unselected-x-")+labels[kind]+"-"+std::to_string(stamp));
+        auto layout=kind==3?Layout::csr:Layout::dense;
+        write_metadata_components(dir,layout);
+        auto first=(dir/"first.h5ad").string();
+        auto writable=H5Fopen(first.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+        require(writable>=0,"open X metadata writer before collection");
+        auto data=create_h5ads((dir/"data.h5ads").string(),
+            {{"first","first.h5ad"},{"second","second.h5ad"}},"sample");
+        if(kind==0) replace_dense_x_shape(writable);
+        else if(kind==1 || kind==2) {
+            auto x=H5Dopen2(writable,"/X",H5P_DEFAULT);
+            require(x>=0,"open X encoding fixture");
+            set_string_attr(x,kind==1?"encoding-type":"encoding-version",kind==1?"unknown-array":"9.0.0");
+            H5Dclose(x);
+        } else replace_sparse_indices_length(writable);
+        require(H5Fflush(writable,H5F_SCOPE_GLOBAL)>=0,"flush malformed X metadata");
+
+        auto selected=data.slice(indices{2},all);
+        float dense[3]{-7,-7,-7};
+        if(kind<3) {
+            expect_code(codes[kind],[&] { selected.read_x_into(DenseBuffer::from(dense,{1,3})); });
+            require(dense[0]==-7 && dense[1]==-7 && dense[2]==-7,"malformed X metadata changed dense output");
+        } else {
+            float values[8];std::int32_t positions[8],offsets[8];
+            std::fill_n(values,8,-7);std::fill_n(positions,8,-7);std::fill_n(offsets,8,-7);
+            SparseBuffer out{values,positions,offsets,DType::float32,DType::int32,DType::int32,8,8,8};
+            expect_code(codes[kind],[&] { selected.read_x_into(out); });
+            require(std::all_of(values,values+8,[](float x){return x==-7;}) &&
+                    std::all_of(positions,positions+8,[](std::int32_t x){return x==-7;}) &&
+                    std::all_of(offsets,offsets+8,[](std::int32_t x){return x==-7;}),
+                    "malformed sparse metadata changed output");
+        }
+        data.close();
+        require(H5Fclose(writable)>=0,"close malformed X metadata writer");
+    }
+}
+void unselected_reference_payload_not_scanned(const std::filesystem::path& root) {
+    const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
+    auto dir=root/("unselected-x-payload-"+std::to_string(stamp));
+    write_metadata_components(dir,Layout::csr);
+    auto first=(dir/"first.h5ad").string();
+    auto writable=H5Fopen(first.c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
+    require(writable>=0,"open sparse payload writer before collection");
+    auto data=create_h5ads((dir/"data.h5ads").string(),
+        {{"first","first.h5ad"},{"second","second.h5ad"}},"sample");
+    auto indices_data=H5Dopen2(writable,"/X/indices",H5P_DEFAULT);
+    const std::int32_t bad[]{99,1};
+    require(indices_data>=0 && H5Dwrite(indices_data,H5T_NATIVE_INT32,H5S_ALL,H5S_ALL,H5P_DEFAULT,bad)>=0,
+            "corrupt sparse payload fixture");
+    H5Dclose(indices_data);
+    require(H5Fflush(writable,H5F_SCOPE_GLOBAL)>=0,"flush corrupted sparse payload");
+
+    auto later=data.slice(indices{2},all).prepare_x();
+    auto r=later.requirements();
+    require(r.layout==Layout::csr && r.shape==std::vector<std::size_t>({1,3}) && r.nnz==1,
+            "later-only sparse selection scanned unselected reference payload");
+    float values[2]{-7,-7};std::int32_t positions[2]{-7,-7},offsets[2]{-7,-7};
+    SparseBuffer out{values,positions,offsets,r.dtype,r.index_dtype,r.offset_dtype,2,2,2};
+    later.read_into(out);
+    require(values[0]==1 && positions[0]==0 && offsets[0]==0 && offsets[1]==1,
+            "later-only sparse transfer differs with corrupt unselected payload");
+
+    std::fill_n(values,2,-7);std::fill_n(positions,2,-7);std::fill_n(offsets,2,-7);
+    expect_code(ErrorCode::invalid_sparse_structure,[&] { data.slice(indices{0},all).read_x_into(out); });
+    require(std::all_of(values,values+2,[](float x){return x==-7;}) &&
+            std::all_of(positions,positions+2,[](std::int32_t x){return x==-7;}) &&
+            std::all_of(offsets,offsets+2,[](std::int32_t x){return x==-7;}),
+            "selected malformed sparse payload changed output");
+    data.close();
+    require(H5Fclose(writable)>=0,"close sparse payload writer");
 }
 void empty_dataset_invalid_peer(const std::filesystem::path& root) {
     const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
@@ -129,6 +275,8 @@ int main(int argc,char** argv) {
     try {
         if (argc!=2) throw std::runtime_error("output directory required");
         std::filesystem::create_directories(argv[1]);
+        malformed_unselected_x_metadata(argv[1]);
+        unselected_reference_payload_not_scanned(argv[1]);
         empty_dataset_invalid_peer(argv[1]);
         shorter_var_index_after_snapshot(argv[1]);
         const auto path=(std::filesystem::path(argv[1])/"index.h5ad").string();

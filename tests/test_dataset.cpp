@@ -209,8 +209,38 @@ void check_collection(const fs::path& root, Layout layout) {
     auto d = create_h5ads((dir / "data.h5ads").string(), {{"first", "first.h5ad"}, {"second", "second.h5ad"}}, "sample", options);
     require(d.n_obs() == 4 && d.n_vars() == 3 && d.n_components() == 2 && d.has_x(), "collection shape differs");
     d.validate();
+    // Component 1 is visited first, component 0 late, and component 1 repeats.
     auto selected = d.slice(indices{3, 0, 2, 3}, indices{2, 0, 2});
     check_selected(selected, layout);
+    auto reverse_requirements = d.slice(range{std::nullopt, std::nullopt, -1}, all).prepare_x().requirements();
+    require(reverse_requirements.layout == layout && reverse_requirements.shape == std::vector<std::size_t>({4, 3}),
+            "reverse component requirements differ");
+    if (layout != Layout::dense)
+        require(reverse_requirements.index_dtype == DType::int64 && reverse_requirements.offset_dtype == DType::int64,
+                "late reference component did not promote independent sparse widths");
+
+    auto later_only = d.slice(indices{3, 2, 3}, indices{2, 0, 2}).prepare_x().requirements();
+    require(later_only.layout == layout && later_only.dtype == DType::float32 &&
+            later_only.shape == std::vector<std::size_t>({3, 3}), "later-only requirements differ");
+    if (layout != Layout::dense)
+        require(later_only.index_dtype == DType::int64 && later_only.offset_dtype == DType::int64,
+                "unselected reference widths were not included independently");
+
+    auto empty_rows = d.slice(range{0, 0, 1}, all).prepare_x().requirements();
+    require(empty_rows.layout == layout && empty_rows.dtype == DType::float32 && empty_rows.nnz == 0 &&
+            empty_rows.shape == std::vector<std::size_t>({0, 3}), "empty-row metadata differs");
+    if (layout != Layout::dense)
+        require(empty_rows.index_dtype == DType::int32 && empty_rows.offset_dtype == DType::int64,
+                "empty-row reference sparse widths differ");
+
+    auto empty_later_columns = d.slice(indices{3}, range{0, 0, 1}).prepare_x().requirements();
+    require(empty_later_columns.layout == layout && empty_later_columns.dtype == DType::float32 &&
+            empty_later_columns.nnz == 0 && empty_later_columns.shape == std::vector<std::size_t>({1, 0}),
+            "empty later-component columns differ");
+    if (layout != Layout::dense)
+        require(empty_later_columns.index_dtype == DType::int64 && empty_later_columns.offset_dtype == DType::int64,
+                "empty later-component reference widths were not promoted");
+
     auto duplicate = d.slice("shared", all);
     require(duplicate.n_obs() == 2, "duplicate label selection differs");
     auto duplicate_values = unpack(duplicate.materialize().x());
@@ -255,6 +285,12 @@ void check_collection(const fs::path& root, Layout layout) {
     // this exercises bounded regeneration for all three physical layouts.
     auto narrow = limited.slice(indices{3, 0, 2, 3}, indices{2, 0, 2});
     check_selected(narrow, layout);
+    auto narrow_later = limited.slice(indices{3, 2, 3}, indices{2, 0, 2}).prepare_x().requirements();
+    require(narrow_later.layout == layout && narrow_later.shape == std::vector<std::size_t>({3, 3}),
+            "low-budget later-only requirements differ");
+    if (layout != Layout::dense)
+        require(narrow_later.index_dtype == DType::int64 && narrow_later.offset_dtype == DType::int64,
+                "low-budget fallback lost unselected reference widths");
     limited.close();
     expect_error(ErrorCode::io_error, [&] {
         DatasetOptions missing;

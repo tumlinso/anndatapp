@@ -963,15 +963,27 @@ struct PreparedReadImpl {
     NodePtr node;
     ReadRequirements requirements;
 };
-PreparedRead prepare_backed_x_read(const BackedAnnData& source, ::anndatapp::Selection obs, ::anndatapp::Selection var) {
+static Descriptor describe_backed_x(const BackedAnnData& source, NodePtr& n) {
     source.n_obs();
     const auto& data = BackedAccess::get(source);
     auto info = data->session->backend->inspect("/X");
-    if (backed_detail::encoding(info, "/X") == "null")
+    if (!info.exists || backed_detail::encoding(info, "/X") == "null")
         throw Error(ErrorCode::out_of_bounds, "/X", "dataset has no X");
     const auto shape = backed_detail::logical_shape(*data->session, "/X", info);
-    auto n = backed_detail::node_with_shape(data->session, "/X", shape, {data->obs, data->var});
-    auto d = describe(n, std::move(info));
+    n = backed_detail::node_with_shape(data->session, "/X", shape, {data->obs, data->var});
+    return describe(n, std::move(info));
+}
+ReadRequirements backed_x_metadata(const BackedAnnData& source) {
+    NodePtr n;
+    auto d = describe_backed_x(source, n);
+    ReadRequirements r;
+    r.layout = d.layout; r.dtype = d.data.dtype;
+    if (d.layout != Layout::dense) { r.index_dtype = d.indices.dtype; r.offset_dtype = d.offsets.dtype; }
+    return r;
+}
+PreparedRead prepare_backed_x_read(const BackedAnnData& source, ::anndatapp::Selection obs, ::anndatapp::Selection var) {
+    NodePtr n;
+    auto d = describe_backed_x(source, n);
     d.axes[0] = backed_detail::select_axis(d.axes[0], obs);
     d.axes[1] = backed_detail::select_axis(d.axes[1], var);
     d.shape = {d.axes[0].size, d.axes[1].size};
