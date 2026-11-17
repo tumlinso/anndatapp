@@ -1,13 +1,18 @@
 # Collection execution overhead: investigation and fix plan
 
-The first fix should make collection preparation retain useful execution
+The next fix should make collection preparation retain useful execution
 resources and stop describing the same stored matrix repeatedly. Numerical
 batching is a separate step. Simply routing collections through the existing
 bulk transfer entry point would lose validation and width-conversion behavior.
 
-This is a plan, not an implemented repair. Production code, validation policy,
-mmap and direct-pointer paths are unchanged. The source baseline is `7f8d72a`;
-its library implementation is `32852b6`. The earlier [Python comparison](collection-matrix-performance.md)
+This is a plan for the remaining repair, not its implementation. This
+investigation added no production changes. Its measured source baseline is
+`7f8d72a`, whose library implementation is `32852b6`. While the investigation
+ran, separate work landed the [metadata reuse fix](collection-metadata-reuse.md)
+in `d479d5d`, qualified at `71211bf`. That completes the redundant reference
+getter item below; it leaves repeated preflight and scan-resource ownership
+unchanged. Implement the remaining plan on that newer qualified baseline.
+The earlier [Python comparison](collection-matrix-performance.md)
 locates the comparative deficit after opening. The new
 [counter record](../benchmarks/results/collection-overhead-diagnostic.json)
 separates preparation, explicit preflight and repeated execution.
@@ -42,7 +47,8 @@ remove that per-row pattern.
 The source explains the counts:
 
 - `dataset.cpp` initializes layout/dtypes using four public getters, each of
-  which describes the matrix again. This contributes a fixed acquisition cost.
+  which describes the matrix again in the measured baseline. The separate
+  `d479d5d` fix has already removed this fixed acquisition cost.
 - `PreparedReadImpl` retains a node and requirements, but no execution handles,
   selector lookup or staging workspace.
 - Collection `read_into()` preflights all pieces; each component's subsequent
@@ -57,13 +63,13 @@ The relevant implementations are `src/dataset.cpp` (`prepare_x`,
 because these objects are acquired through `H5Oopen`; zero did not mean no
 dataset acquisition.
 
-## Proposed first implementation
+## Remaining implementation
 
-1. **Fuse checked metadata acquisition.** Obtain the first component's layout,
-   value dtype and independent sparse widths through one checked X binding.
-   Preserve the first-component baseline even when it is unselected, and the
-   current empty-selection behavior. Do not call whole-array requirements or
-   scan an unselected matrix merely to obtain metadata.
+1. **Reuse the completed metadata fix.** Start with `d479d5d`'s shared
+   `describe_backed_x` / `backed_x_metadata` helpers and reuse of the reference
+   component's selected requirements. Preserve the first-component baseline
+   even when it is unselected, and the current empty-selection behavior. Do not
+   repeat that patch or scan an unselected matrix merely to obtain metadata.
 
 2. **Retain worker execution resources using existing owners.** Keep shared,
    copyable `PreparedRead` immutable. Put mutable numeric handles, lookup and
@@ -151,8 +157,9 @@ present evidence.
   checks and the real mmap/physical-pointer audit. Keep mapping implementation,
   eligibility and explicit failure behavior unchanged. Check installed imports
   through both facades and public BMI/consumer rebuild isolation.
-- Freeze before/after libraries and run at most **two 30-second comparison
-  windows**, using the existing fixtures and native SnapATAC2 routes. Prioritize
+- Freeze the current qualified main baseline and the candidate libraries, then
+  run at most **two 30-second comparison windows**, using the existing fixtures
+  and native SnapATAC2 routes. Prioritize
   32 components, reverse/duplicates, both reuse workloads, and one-component /
   contiguous / gzip controls. Primary rows get three observations; auxiliary
   controls may get one. Separate counters from uninstrumented timings and

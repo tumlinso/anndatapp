@@ -525,5 +525,8 @@
     "C++ new excludes other allocators; libc reads include metadata/read-ahead and are not physical I/O or live memory.",
     "HDF5 contiguous-data sieve is a hypothesis for byte amplification, not path-attributed proof.",
     "No production code, new biological fixtures, or Python workloads."
-  ]
+  ],
+  "subsequent_upstream_source_commit": "d479d5d9e0cac161ff5aecb1d4eb0ff84a47836d",
+  "subsequent_upstream_qualification_commit": "71211bf655e0166a3915bab2601b7f4d5df9c6f0",
+  "subsequent_upstream_scope": "The separate metadata reuse fix removes the redundant reference-signature acquisition. Diagnostic counters remain historical32852b6 evidence; repeated preflight and scanner execution-resource paths are unchanged. No new timing was run."
 }
