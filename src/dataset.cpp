@@ -32,6 +32,7 @@ struct AnnDataSetImpl {
     std::vector<std::size_t> offsets;
     std::size_t n_obs = 0, n_vars = 0;
     bool open = true, has_x = false;
+    bool check_axis_names = false;
     std::size_t selector_bytes = 0;
 };
 struct DatasetSegment { std::size_t first, count, component; };
@@ -459,7 +460,7 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
     check(impl_);
     (void)annotations_.n_obs();
     if (!impl_->has_x) fail(ErrorCode::invalid_argument, "AnnDataSet/X", "X is absent");
-    check_selection_indexes(*impl_, obs_, var_);
+    if (impl_->check_axis_names) check_selection_indexes(*impl_, obs_, var_);
     auto p = std::make_unique<Plan>();
     p->owner = impl_; p->annotations = annotations_; p->obs = obs_; p->var = var_;
     auto first = impl_->files.front().x();
@@ -681,6 +682,7 @@ AnnDataSet open_h5ads(std::string_view path, DatasetOptions options) {
 #if ANNDATAPP_HAS_HDF5
     auto name = path_text(path);
     auto p = std::make_shared<Impl>();
+    p->check_axis_names = options.check_axis_names;
     p->manifest = open_manifest(name, options.backed);
     p->n_obs = p->manifest.n_obs(); p->n_vars = p->manifest.n_vars();
     p->components = manifest_components(p->manifest);

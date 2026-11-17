@@ -26,12 +26,16 @@ struct DatasetOptions {
     BackedOptions backed{};
     // Overrides are applied in memory and do not rewrite the manifest.
     std::vector<DatasetComponent> relocate;
+    // Compare selected axis names during preparation. Positional reads trust
+    // manifest alignment by default; structural/numerical validation is separate.
+    bool check_axis_names = false;
 };
 
 namespace detail { struct AnnDataSetImpl; struct PreparedAnnDataSetReadImpl; }
 class AnnDataSet;
 
-// Preparation checks selected axis names and records exact transfer requirements.
+// Preparation records exact transfer requirements and optionally checks selected
+// axis names according to DatasetOptions::check_axis_names.
 // The collection must remain open and its linked component files unchanged.
 // Structural edits to the manifest invalidate the prepared read.
 class PreparedAnnDataSetRead {
@@ -69,8 +73,8 @@ public:
     AnnDataSetView slice(Selection obs = all, Selection var = all) const;
 
     // Selection metadata may allocate; numerical payload is read only by the
-    // explicit transfers. requirements() checks the selected axis names and
-    // reports the stacked output layout. Label selections read axis names.
+    // explicit transfers. Axis-name comparisons are opt-in; structural checks
+    // and exact output requirements remain. Label selections read axis names.
     PreparedAnnDataSetRead prepare_x() const;
     ReadRequirements requirements() const;
     void read_x_into(const DenseBuffer& destination) const;

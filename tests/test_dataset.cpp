@@ -79,6 +79,75 @@ std::vector<float> unpack(ArrayView x) {
     }
     return result;
 }
+void check_mismatched_name_reads(const AnnDataSetView& selected, Layout layout, const float* expected_values) {
+    auto requirements = selected.requirements();
+    auto prepared = selected.prepare_x();
+    auto r = prepared.requirements();
+    require(r.shape == std::vector<std::size_t>({2, 1}) && requirements.shape == r.shape,
+            "mismatched-name requirements differ");
+    require(r.layout == layout && r.dtype == DType::float32, "mismatched-name layout differs");
+    auto check_values = [&](const std::vector<float>& values, const char* message) {
+        require(values.size() == 2 && std::equal(values.begin(), values.end(), expected_values), message);
+    };
+    if (layout == Layout::dense) {
+        std::vector<float> values(2, -1);
+        prepared.read_into(DenseBuffer::from(values.data(), {2, 1}));
+        check_values(values, "prepared read with mismatched names differs");
+        std::fill(values.begin(), values.end(), -1);
+        selected.read_x_into(DenseBuffer::from(values.data(), {2, 1}));
+        check_values(values, "convenience read with mismatched names differs");
+    } else {
+        require(r.index_dtype == DType::int64 && r.offset_dtype == DType::int64,
+                "mismatched-name sparse widths were not promoted");
+        auto read_sparse = [&](auto&& read) {
+            std::vector<float> values(std::max<std::size_t>(r.nnz, 1), -1);
+            std::vector<std::int64_t> indices(std::max<std::size_t>(r.nnz, 1), -1);
+            const auto major = layout == Layout::csr ? r.shape[0] : r.shape[1];
+            std::vector<std::int64_t> offsets(major + 1, -1);
+            SparseBuffer destination{values.data(), indices.data(), offsets.data(), r.dtype, r.index_dtype,
+                                    r.offset_dtype, r.nnz, r.nnz, offsets.size()};
+            read(destination);
+            std::vector<float> dense(2, 0);
+            for (std::size_t m = 0; m < major; ++m) {
+                for (auto i = offsets[m]; i < offsets[m + 1]; ++i) {
+                    auto minor = std::size_t(indices[std::size_t(i)]);
+                    auto row = layout == Layout::csr ? m : minor;
+                    auto col = layout == Layout::csr ? minor : m;
+                    require(row < 2 && col < 1, "mismatched-name sparse coordinate is out of bounds");
+                    dense[row] += values[std::size_t(i)];
+                }
+            }
+            return dense;
+        };
+        check_values(read_sparse([&](const SparseBuffer& dst) { prepared.read_into(dst); }),
+                     "prepared sparse read with mismatched names differs");
+        check_values(read_sparse([&](const SparseBuffer& dst) { selected.read_x_into(dst); }),
+                     "convenience sparse read with mismatched names differs");
+    }
+    auto materialized = selected.materialize();
+    require(materialized.n_obs() == 2 && materialized.n_vars() == 1 && materialized.has_x(),
+            "mismatched-name materialization shape differs");
+    check_values(unpack(materialized.x()), "materialization with mismatched names differs");
+}
+void check_checked_name_rejections(const AnnDataSetView& selected, Layout layout) {
+    expect_error(ErrorCode::shape_mismatch, [&] { (void)selected.prepare_x(); });
+    if (layout == Layout::dense) {
+        float values[]{-7, -7};
+        expect_error(ErrorCode::shape_mismatch, [&] {
+            selected.read_x_into(DenseBuffer::from(values, {2, 1}));
+        });
+        require(values[0] == -7 && values[1] == -7, "checked name mismatch modified dense output");
+    } else {
+        float values[8]; std::int64_t indices[8], offsets[8];
+        std::fill_n(values, 8, -7); std::fill_n(indices, 8, -7); std::fill_n(offsets, 8, -7);
+        SparseBuffer destination{values, indices, offsets, DType::float32, DType::int64, DType::int64, 8, 8, 8};
+        expect_error(ErrorCode::shape_mismatch, [&] { selected.read_x_into(destination); });
+        require(std::all_of(values, values + 8, [](float x) { return x == -7; }) &&
+                std::all_of(indices, indices + 8, [](std::int64_t x) { return x == -7; }) &&
+                std::all_of(offsets, offsets + 8, [](std::int64_t x) { return x == -7; }),
+                "checked name mismatch modified sparse output");
+    }
+}
 void check_selected(const AnnDataSetView& selected, Layout layout) {
     require(selected.n_obs() == 4 && selected.n_vars() == 3, "selected shape differs");
     auto prepared = selected.prepare_x();
@@ -144,6 +213,10 @@ void check_collection(const fs::path& root, Layout layout) {
     check_selected(selected, layout);
     auto duplicate = d.slice("shared", all);
     require(duplicate.n_obs() == 2, "duplicate label selection differs");
+    auto duplicate_values = unpack(duplicate.materialize().x());
+    const float duplicate_expected[]{1, 0, 2, 0, 4, 5};
+    require(std::equal(duplicate_values.begin(), duplicate_values.end(), duplicate_expected),
+            "default duplicate label selection resolved to the wrong rows");
     auto reversed = d.slice(range{std::nullopt, std::nullopt, -1}, range{std::nullopt, std::nullopt, -1}).materialize();
     auto reversed_values = unpack(reversed.x());
     const float reversed_expected[]{0, 0, 6, 5, 4, 0, 0, 3, 0, 2, 0, 1};
@@ -256,33 +329,47 @@ void check_deferred_validation(const fs::path& root, Layout layout) {
     edit.apply();
     second.close();
 
-    auto collection = open_h5ads((dir / "data.h5ads").string());
+    DatasetOptions dataset_options;
+    require(!dataset_options.check_axis_names && dataset_options.backed.validation == Validation::full,
+            "default name-check policy or backed validation changed");
+    auto collection = open_h5ads((dir / "data.h5ads").string(), dataset_options);
     auto selected = collection.slice(indices{3, 0}, indices{0, 2});
     auto good = unpack(selected.materialize().x());
     require(good[0] == 6 && good[1] == 0 && good[2] == 1 && good[3] == 2,
             "unaffected selection failed deferred validation");
     expect_error(ErrorCode::shape_mismatch, [&] { collection.validate(); });
     auto bad_obs = collection.slice(indices{0, 2}, indices{0});
-    auto bad_var = collection.slice(indices{0, 3}, indices{1});
-    if (layout == Layout::dense) {
-        float untouched[]{-1, -1};
-        for (const auto* bad : {&bad_obs, &bad_var}) {
-            expect_error(ErrorCode::shape_mismatch, [&] {
-                bad->read_x_into(DenseBuffer::from(untouched, {2, 1}));
-            });
-            require(untouched[0] == -1 && untouched[1] == -1, "name mismatch modified dense destination");
-        }
-    } else {
-        auto r = collection.slice(indices{0, 3}, indices{0}).requirements();
-        float values[8]; std::int64_t positions[8], offsets[8];
-        std::fill_n(values, 8, -1); std::fill_n(positions, 8, -1); std::fill_n(offsets, 8, -1);
-        SparseBuffer destination{values, positions, offsets, r.dtype, r.index_dtype, r.offset_dtype, 8, 8, 8};
-        for (const auto* bad : {&bad_obs, &bad_var}) {
-            expect_error(ErrorCode::shape_mismatch, [&] { bad->read_x_into(destination); });
-            require(values[0] == -1 && positions[0] == -1 && offsets[0] == -1,
-                    "name mismatch modified sparse destination");
-        }
-    }
+    auto bad_var = collection.slice(indices{1, 3}, indices{1});
+    const float obs_values[]{1, 0}, var_values[]{3, 0};
+    check_mismatched_name_reads(bad_obs, layout, obs_values);
+    check_mismatched_name_reads(bad_var, layout, var_values);
+
+    DatasetOptions checked_options;
+    checked_options.check_axis_names = true;
+    auto checked = open_h5ads((dir / "data.h5ads").string(), checked_options);
+    expect_error(ErrorCode::shape_mismatch, [&] { checked.validate(); });
+    check_checked_name_rejections(checked.slice(indices{0, 2}, indices{0}), layout);
+    check_checked_name_rejections(checked.slice(indices{1, 3}, indices{1}), layout);
+    checked.close();
+}
+void check_create_requires_common_var_names(const fs::path& root) {
+    auto dir = root / "create-common-var-names";
+    fs::create_directories(dir);
+    write_component(dir / "first.h5ad", Layout::dense, false);
+    auto second = AnnData::empty(2, 3);
+    second.set_obs(Table::with_index({"shared", "last"}));
+    second.set_var(Table::with_index({"peak-z", "different", "gene-m"}));
+    second.set_x(Array::zeros<float>({2, 3}));
+    write_h5ad((dir / "second.h5ad").string(), second);
+    DatasetOptions options;
+    options.check_axis_names = false;
+    options.backed.validation = Validation::full;
+    auto manifest = dir / "invalid.h5ads";
+    expect_error(ErrorCode::shape_mismatch, [&] {
+        (void)create_h5ads(manifest.string(), {{"first", "first.h5ad"}, {"second", "second.h5ad"}},
+                           "sample", options);
+    });
+    require(!fs::exists(manifest), "create accepted mismatched common variable names");
 }
 void check_multi_batch_indexes(const fs::path& root) {
     auto dir = root / "multi-batch-indexes";
@@ -304,7 +391,7 @@ void check_multi_batch_indexes(const fs::path& root) {
     auto manifest = dir / "data.h5ads";
     auto created = create_h5ads(manifest.string(), {{"first", "first.h5ad"}, {"second", "second.h5ad"}});
     created.close();
-    DatasetOptions options; options.backed.scratch_bytes = 4096;
+    DatasetOptions options; options.backed.scratch_bytes = 4096; options.check_axis_names = true;
     auto d = open_h5ads(manifest.string(), options);
     auto reversed = d.slice(indices{0, 2}, range{std::nullopt, std::nullopt, -1}).prepare_x();
     std::vector<float> values(2*names.size(), -1);
@@ -358,7 +445,7 @@ void check_streamed_observation_indexes(const fs::path& root) {
     auto manifest = dir / "data.h5ads";
     auto created = create_h5ads(manifest.string(), {{"a", "0.h5ad"}, {"b", "1.h5ad"}, {"c", "2.h5ad"}});
     created.close();
-    DatasetOptions options; options.backed.scratch_bytes = 4096;
+    DatasetOptions options; options.backed.scratch_bytes = 4096; options.check_axis_names = true;
     auto data = open_h5ads(manifest.string(), options);
     std::vector<std::ptrdiff_t> positions;
     for (std::ptrdiff_t j = 47; j >= 0; --j) {
@@ -406,7 +493,7 @@ void check_batched_then_gathered(const fs::path& root) {
     for (std::size_t i = 0; i < 248; ++i)
         components.push_back({"head-" + std::to_string(i), "dense/first.h5ad"});
     components.push_back({"tail", "tail.h5ad"});
-    DatasetOptions options; options.backed.scratch_bytes = 4 * 65536;
+    DatasetOptions options; options.backed.scratch_bytes = 4 * 65536; options.check_axis_names = true;
     auto data = create_h5ads((root / "mixed.h5ads").string(), std::move(components), "sample", options);
     std::vector<std::ptrdiff_t> rows;
     for (std::ptrdiff_t i = 0; i < 248; ++i) rows.push_back(i * 2);
@@ -461,6 +548,7 @@ int main(int argc, char** argv) {
             check_multi_batch_indexes(root);
             check_streamed_observation_indexes(root);
             check_batched_then_gathered(root);
+            check_create_requires_common_var_names(root);
             check_narrow_widths(root, Layout::csr);
             check_narrow_widths(root, Layout::csc);
             check_deferred_validation(root, Layout::dense);

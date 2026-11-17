@@ -80,7 +80,7 @@ void empty_dataset_invalid_peer(const std::filesystem::path& root) {
     // before opening the collection to emulate a separately changed component.
     auto writable=H5Fopen((dir/"dataset-right.h5ad").c_str(),H5F_ACC_RDWR,H5P_DEFAULT);
     require(writable>=0,"open writable component before collection");
-    DatasetOptions options;options.backed.mode=AccessMode::read_write;
+    DatasetOptions options;options.backed.mode=AccessMode::read_write;options.check_axis_names=true;
     auto data=create_h5ads((dir/"empty-peer.h5ads").string(),
         {{"left","dataset-left.h5ad"},{"right","dataset-right.h5ad"}},"sample",options);
     auto selected=data.slice(indices{0,1},range{0,0});

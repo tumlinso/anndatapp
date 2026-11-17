@@ -1,0 +1,927 @@
+{
+  "window_seconds": 13.124254784001096,
+  "record_count": 30,
+  "settings": {
+    "cpu": 0,
+    "thread_limits": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "1",
+      "BLOSC_NTHREADS": "1"
+    },
+    "cache": "normal OS/HDF5 caches, no eviction",
+    "case_timeout_seconds": 5.0,
+    "plan_sha256": "7b7afed7ba8518aaed822a335a13e76063ed5d331d44adf72dc20bc3fa37a5a1",
+    "runner_sha256": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9"
+  },
+  "hashes": {
+    "dataset-small": "bb7805bcc25ffdde",
+    "dataset-10k": "54073d4a0e9be58f"
+  },
+  "metadata": {
+    "dataset-small/baseline": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int32"
+    },
+    "dataset-small/default": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int32"
+    },
+    "dataset-small/checked": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int32"
+    },
+    "dataset-small/python": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 512,
+      "value_dtype": "float32",
+      "native_dtypes": {
+        "data": "float32",
+        "indices": "int32",
+        "indptr": "int32"
+      }
+    },
+    "dataset-10k/baseline": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64"
+    },
+    "dataset-10k/default": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64"
+    },
+    "dataset-10k/checked": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "actual_index_dtype": "int32",
+      "actual_offset_dtype": "int64"
+    },
+    "dataset-10k/python": {
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 17,
+      "value_dtype": "float32",
+      "native_dtypes": {
+        "data": "float32",
+        "indices": "int32",
+        "indptr": "int32"
+      }
+    }
+  },
+  "timings": {
+    "dataset-small/baseline": {
+      "open_ns": {
+        "samples": [
+          6980051,
+          5640903,
+          5462724
+        ],
+        "median": 5640903
+      },
+      "selection_ns": {
+        "samples": [
+          420282,
+          459101,
+          404987
+        ],
+        "median": 420282
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          3857142,
+          3535009,
+          3413330
+        ],
+        "median": 3535009
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          2454,
+          2490,
+          2472
+        ],
+        "median": 2472
+      },
+      "transfer_ns": {
+        "samples": [
+          1286257,
+          1209811,
+          1187618
+        ],
+        "median": 1209811
+      },
+      "end_to_end_ns": {
+        "samples": [
+          12546186,
+          10847314,
+          10471131
+        ],
+        "median": 10847314
+      }
+    },
+    "dataset-small/default": {
+      "open_ns": {
+        "samples": [
+          6698835,
+          5317510,
+          5408115
+        ],
+        "median": 5408115
+      },
+      "selection_ns": {
+        "samples": [
+          419893,
+          409013,
+          431414
+        ],
+        "median": 419893
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          2367236,
+          2042153,
+          2055893
+        ],
+        "median": 2055893
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          2758,
+          2347,
+          2477
+        ],
+        "median": 2477
+      },
+      "transfer_ns": {
+        "samples": [
+          1342469,
+          1191404,
+          1198416
+        ],
+        "median": 1198416
+      },
+      "end_to_end_ns": {
+        "samples": [
+          10831191,
+          8962427,
+          9096315
+        ],
+        "median": 9096315
+      }
+    },
+    "dataset-small/checked": {
+      "open_ns": {
+        "samples": [
+          5848448,
+          5934845,
+          5215057
+        ],
+        "median": 5848448
+      },
+      "selection_ns": {
+        "samples": [
+          438572,
+          419502,
+          411557
+        ],
+        "median": 419502
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          3592846,
+          3554803,
+          3447380
+        ],
+        "median": 3554803
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          2627,
+          2530,
+          2352
+        ],
+        "median": 2530
+      },
+      "transfer_ns": {
+        "samples": [
+          1243489,
+          1211221,
+          1183625
+        ],
+        "median": 1211221
+      },
+      "end_to_end_ns": {
+        "samples": [
+          11125982,
+          11122901,
+          10259971
+        ],
+        "median": 11122901
+      }
+    },
+    "dataset-small/python": {
+      "open_ns": {
+        "samples": [
+          30146948,
+          4666868,
+          4537301
+        ],
+        "median": 4666868
+      },
+      "operation_ns": {
+        "samples": [
+          3943204,
+          1026116,
+          1029343
+        ],
+        "median": 1029343
+      },
+      "end_to_end_ns": {
+        "samples": [
+          34098160,
+          5698192,
+          5571732
+        ],
+        "median": 5698192
+      }
+    },
+    "dataset-10k/baseline": {
+      "open_ns": {
+        "samples": [
+          12942293,
+          11607380,
+          15012529
+        ],
+        "median": 12942293
+      },
+      "selection_ns": {
+        "samples": [
+          351381,
+          357503,
+          397084
+        ],
+        "median": 357503
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          22932972,
+          22702387,
+          25446721
+        ],
+        "median": 22932972
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          331,
+          427,
+          319
+        ],
+        "median": 331
+      },
+      "transfer_ns": {
+        "samples": [
+          4780806,
+          4815911,
+          4865598
+        ],
+        "median": 4815911
+      },
+      "end_to_end_ns": {
+        "samples": [
+          41007783,
+          39483608,
+          45722251
+        ],
+        "median": 41007783
+      }
+    },
+    "dataset-10k/default": {
+      "open_ns": {
+        "samples": [
+          11821557,
+          11919864,
+          11877479
+        ],
+        "median": 11877479
+      },
+      "selection_ns": {
+        "samples": [
+          355976,
+          352048,
+          374707
+        ],
+        "median": 355976
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          5538571,
+          5602890,
+          5563533
+        ],
+        "median": 5563533
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          322,
+          289,
+          324
+        ],
+        "median": 322
+      },
+      "transfer_ns": {
+        "samples": [
+          4937275,
+          5016311,
+          4778121
+        ],
+        "median": 4937275
+      },
+      "end_to_end_ns": {
+        "samples": [
+          22653701,
+          22891402,
+          22594164
+        ],
+        "median": 22653701
+      }
+    },
+    "dataset-10k/checked": {
+      "open_ns": {
+        "samples": [
+          11800368,
+          13199773,
+          11454659
+        ],
+        "median": 11800368
+      },
+      "selection_ns": {
+        "samples": [
+          366261,
+          358313,
+          362735
+        ],
+        "median": 362735
+      },
+      "preparation_requirements_ns": {
+        "samples": [
+          23275070,
+          23529790,
+          22596012
+        ],
+        "median": 23275070
+      },
+      "buffer_allocation_ns": {
+        "samples": [
+          313,
+          494,
+          362
+        ],
+        "median": 362
+      },
+      "transfer_ns": {
+        "samples": [
+          4830079,
+          4927037,
+          4768209
+        ],
+        "median": 4830079
+      },
+      "end_to_end_ns": {
+        "samples": [
+          40272091,
+          42015407,
+          39181977
+        ],
+        "median": 40272091
+      }
+    },
+    "dataset-10k/python": {
+      "open_ns": {
+        "samples": [
+          30757156,
+          30237088,
+          30359765
+        ],
+        "median": 30359765
+      },
+      "operation_ns": {
+        "samples": [
+          6251096,
+          6107246,
+          6241343
+        ],
+        "median": 6241343
+      },
+      "end_to_end_ns": {
+        "samples": [
+          37014399,
+          36350114,
+          36607358
+        ],
+        "median": 36607358
+      }
+    }
+  },
+  "comparisons": {
+    "dataset-small/default": {
+      "buffer_allocation_ns": {
+        "baseline_ns": 2472,
+        "candidate_ns": 2477,
+        "delta_ns": 5,
+        "candidate_over_baseline": 1.0020226537216828,
+        "material": false,
+        "classification": "comparable"
+      },
+      "end_to_end_ns": {
+        "baseline_ns": 10847314,
+        "candidate_ns": 9096315,
+        "delta_ns": -1750999,
+        "candidate_over_baseline": 0.8385776423545958,
+        "material": true,
+        "classification": "faster"
+      },
+      "preparation_requirements_ns": {
+        "baseline_ns": 3535009,
+        "candidate_ns": 2055893,
+        "delta_ns": -1479116,
+        "candidate_over_baseline": 0.5815806975314631,
+        "material": true,
+        "classification": "faster"
+      },
+      "transfer_ns": {
+        "baseline_ns": 1209811,
+        "candidate_ns": 1198416,
+        "delta_ns": -11395,
+        "candidate_over_baseline": 0.9905811734229562,
+        "material": false,
+        "classification": "comparable"
+      },
+      "selection_ns": {
+        "baseline_ns": 420282,
+        "candidate_ns": 419893,
+        "delta_ns": -389,
+        "candidate_over_baseline": 0.9990744309772962,
+        "material": false,
+        "classification": "comparable"
+      },
+      "open_ns": {
+        "baseline_ns": 5640903,
+        "candidate_ns": 5408115,
+        "delta_ns": -232788,
+        "candidate_over_baseline": 0.9587321391628255,
+        "material": false,
+        "classification": "comparable"
+      }
+    },
+    "dataset-small/checked": {
+      "buffer_allocation_ns": {
+        "baseline_ns": 2472,
+        "candidate_ns": 2530,
+        "delta_ns": 58,
+        "candidate_over_baseline": 1.023462783171521,
+        "material": false,
+        "classification": "comparable"
+      },
+      "end_to_end_ns": {
+        "baseline_ns": 10847314,
+        "candidate_ns": 11122901,
+        "delta_ns": 275587,
+        "candidate_over_baseline": 1.0254060129539904,
+        "material": false,
+        "classification": "comparable"
+      },
+      "preparation_requirements_ns": {
+        "baseline_ns": 3535009,
+        "candidate_ns": 3554803,
+        "delta_ns": 19794,
+        "candidate_over_baseline": 1.0055994199731881,
+        "material": false,
+        "classification": "comparable"
+      },
+      "transfer_ns": {
+        "baseline_ns": 1209811,
+        "candidate_ns": 1211221,
+        "delta_ns": 1410,
+        "candidate_over_baseline": 1.001165471300889,
+        "material": false,
+        "classification": "comparable"
+      },
+      "selection_ns": {
+        "baseline_ns": 420282,
+        "candidate_ns": 419502,
+        "delta_ns": -780,
+        "candidate_over_baseline": 0.998144103244964,
+        "material": false,
+        "classification": "comparable"
+      },
+      "open_ns": {
+        "baseline_ns": 5640903,
+        "candidate_ns": 5848448,
+        "delta_ns": 207545,
+        "candidate_over_baseline": 1.0367928680922185,
+        "material": false,
+        "classification": "comparable"
+      }
+    },
+    "dataset-10k/default": {
+      "buffer_allocation_ns": {
+        "baseline_ns": 331,
+        "candidate_ns": 322,
+        "delta_ns": -9,
+        "candidate_over_baseline": 0.972809667673716,
+        "material": false,
+        "classification": "comparable"
+      },
+      "end_to_end_ns": {
+        "baseline_ns": 41007783,
+        "candidate_ns": 22653701,
+        "delta_ns": -18354082,
+        "candidate_over_baseline": 0.5524244263582843,
+        "material": true,
+        "classification": "faster"
+      },
+      "preparation_requirements_ns": {
+        "baseline_ns": 22932972,
+        "candidate_ns": 5563533,
+        "delta_ns": -17369439,
+        "candidate_over_baseline": 0.24259973805401236,
+        "material": true,
+        "classification": "faster"
+      },
+      "transfer_ns": {
+        "baseline_ns": 4815911,
+        "candidate_ns": 4937275,
+        "delta_ns": 121364,
+        "candidate_over_baseline": 1.0252006318223073,
+        "material": false,
+        "classification": "comparable"
+      },
+      "selection_ns": {
+        "baseline_ns": 357503,
+        "candidate_ns": 355976,
+        "delta_ns": -1527,
+        "candidate_over_baseline": 0.995728707171688,
+        "material": false,
+        "classification": "comparable"
+      },
+      "open_ns": {
+        "baseline_ns": 12942293,
+        "candidate_ns": 11877479,
+        "delta_ns": -1064814,
+        "candidate_over_baseline": 0.917726016556726,
+        "material": false,
+        "classification": "comparable"
+      }
+    },
+    "dataset-10k/checked": {
+      "buffer_allocation_ns": {
+        "baseline_ns": 331,
+        "candidate_ns": 362,
+        "delta_ns": 31,
+        "candidate_over_baseline": 1.093655589123867,
+        "material": false,
+        "classification": "comparable"
+      },
+      "end_to_end_ns": {
+        "baseline_ns": 41007783,
+        "candidate_ns": 40272091,
+        "delta_ns": -735692,
+        "candidate_over_baseline": 0.9820596982772758,
+        "material": false,
+        "classification": "comparable"
+      },
+      "preparation_requirements_ns": {
+        "baseline_ns": 22932972,
+        "candidate_ns": 23275070,
+        "delta_ns": 342098,
+        "candidate_over_baseline": 1.014917298987676,
+        "material": false,
+        "classification": "comparable"
+      },
+      "transfer_ns": {
+        "baseline_ns": 4815911,
+        "candidate_ns": 4830079,
+        "delta_ns": 14168,
+        "candidate_over_baseline": 1.0029419148318979,
+        "material": false,
+        "classification": "comparable"
+      },
+      "selection_ns": {
+        "baseline_ns": 357503,
+        "candidate_ns": 362735,
+        "delta_ns": 5232,
+        "candidate_over_baseline": 1.0146348422251001,
+        "material": false,
+        "classification": "comparable"
+      },
+      "open_ns": {
+        "baseline_ns": 12942293,
+        "candidate_ns": 11800368,
+        "delta_ns": -1141925,
+        "candidate_over_baseline": 0.9117679533294448,
+        "material": false,
+        "classification": "comparable"
+      }
+    }
+  },
+  "caveats": [
+    "Python native X selection does not perform the same selected-axis validation as baseline and checked C++; compare boundaries with care.",
+    "Diagnostics count intercepted calls and bytes, not physical I/O; C++ new excludes other allocators. String read counts classify H5Dread memory types.",
+    "Normal caches; three fresh-process observations per geometry and version."
+  ],
+  "baseline_commit": "d41c1f865d6feea899a5296f73555d6a59d6d0ee",
+  "preparation_diagnostics": {
+    "dataset-small/baseline": {
+      "v1_io_slots": [
+        24,
+        39032,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        2,
+        134,
+        0
+      ],
+      "metadata_slots": [
+        105,
+        46,
+        46,
+        40,
+        118,
+        65,
+        6
+      ],
+      "cpp_new_calls": 1295,
+      "cpp_new_bytes": 64066
+    },
+    "dataset-small/default": {
+      "v1_io_slots": [
+        18,
+        25528,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        128,
+        0
+      ],
+      "metadata_slots": [
+        75,
+        28,
+        28,
+        28,
+        73,
+        47,
+        0
+      ],
+      "cpp_new_calls": 945,
+      "cpp_new_bytes": 32730
+    },
+    "dataset-small/checked": {
+      "v1_io_slots": [
+        24,
+        39032,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        2,
+        134,
+        0
+      ],
+      "metadata_slots": [
+        105,
+        46,
+        46,
+        40,
+        118,
+        65,
+        6
+      ],
+      "cpp_new_calls": 1295,
+      "cpp_new_bytes": 64066
+    },
+    "dataset-10k/checked": {
+      "v1_io_slots": [
+        322,
+        10931400,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        146,
+        0
+      ],
+      "metadata_slots": [
+        273,
+        124,
+        124,
+        106,
+        412,
+        167,
+        18
+      ],
+      "cpp_new_calls": 3923,
+      "cpp_new_bytes": 193090
+    },
+    "dataset-10k/default": {
+      "v1_io_slots": [
+        96,
+        2188312,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        128,
+        0
+      ],
+      "metadata_slots": [
+        183,
+        70,
+        70,
+        70,
+        286,
+        113,
+        0
+      ],
+      "cpp_new_calls": 2921,
+      "cpp_new_bytes": 114402
+    },
+    "dataset-10k/baseline": {
+      "v1_io_slots": [
+        322,
+        10931400,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        146,
+        0
+      ],
+      "metadata_slots": [
+        273,
+        124,
+        124,
+        106,
+        412,
+        167,
+        18
+      ],
+      "cpp_new_calls": 3923,
+      "cpp_new_bytes": 193090
+    }
+  },
+  "identity_sha256": {
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/fixtures-family-v3/dataset.h5ads": "863ea92319904a402dfa6e9d61868ca1c27421f84a15546cc842aab862c5c221",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/fixtures-family-v3/dataset-part-0.h5ad": "dc25951ce48b8cdefe095a002b2386cde61cf8178fe6850711b806b3612ef0e5",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-io/fixtures-family-v3/dataset-part-1.h5ad": "d61203df87b9b69ff5adcdd74b460c6df58f2c1d0633185873f6e9ca53cd92ec",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/collection.h5ads": "c307e937e0a8118a6983b75cc5360979f08e8fc259deffcf59514bfabca243b1",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-0.h5ad": "11e3a1ed026447fa44840b79eb993ad31b2c421fb1bb56eb0a6793c317b3b3e5",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-1.h5ad": "41da4407ec069eaba7dcfefec0cc2877bd717c781bc6f56bf5269f42cbf1e5d2",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-2.h5ad": "728407e8853b3ee8c584ee123acc20f0a6323336cf321cb40bcb93dc75526872",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-3.h5ad": "00fea6315c42dc9d494f8a4409d88b24bf75fa6a02908b217b9578a3e8be8acd",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-4.h5ad": "578f275d636ecb4d09972d7404401642d0bde322c5310097e8c43de7918e50ea",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-5.h5ad": "7f8f8fc4095a97c9545fe565fb6edeb080fbecbcbcfd1219a28ada1c2dce2616",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-6.h5ad": "66187a488808ed73f806e82874dee6ac901fab3235fd87ac48152dc6c46918ca",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/format-family-repair/screen/fixtures/10000/part-7.h5ad": "461a9be8fa1f72e4812566d6f661828a28eca1d53552dfa3306385e8f7136a1f",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/release11/python_probe.py": "6684222165e05e471b4bc50ecff544bca946359e6442be3c596502b9b2924a5a",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/python_family.py": "989356b87df5385968672a922f5fe15d9b92420f7b0ed53db9f2324d4e56af06",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/window.py": "219091e5430c1b5f9d0ad1d0e9e8c3fa2bee221951ef63cb695818e3e489deb9",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/reference/python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/optional-axis-validation-2026-11-17/comparison/baseline-consumer/optional-axis-probe": "7fde0d1ae3b913039bcfbcd0e7e4fd38e47928293a795fa2792028381bc59af0",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/optional-axis-validation-2026-11-17/comparison/candidate-consumer/optional-axis-probe": "cbb32c7fb30f5c39903e8a32a428be8659d3315e585e728bf072efb979ecd260",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-prep-fix-2026-11-16/comparison/libmetadata.so": "237c936b857cdacc167984c50e230e31791e70512eababbf112b64199ec117a5",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-preparation-2026-11-16/candidate-profile-v2/build/libcollection-io.so": "6693087eaa14ce56894310a9e59523e4eb23f6f454aaae2f7ff34b284ec7ff65",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-preparation-2026-11-16/candidate-profile-v2/build/libcollection-alloc.so": "52bbbf34e8e454a0f27afbb3f5b7579b41eb7aeaad24d050e4b32dce40ca8744",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/optional-axis-validation/cpp_probe.cpp": "6b5015a69b55479b02d152cdb6883720a71273156fa847aed4134badd1f6908b",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/optional-axis-validation/CMakeLists.txt": "e412322572820cb9257fab918e2dfa86b05507fd7030c7c3c6b51ee28a6a2c79",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/optional-axis-validation/freeze.py": "eca2f4fbc0c48961651de6704c09945bbab0f055cda979528b09998203273dfe",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/optional-axis-validation/summarize.py": "a53eea69318aaef934688ea9452051de39e33946158ac693851e1767aeef0b24",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/tools/format-family-screen/collection-fix/cpp_probe.cpp": "f59640befeadeaa71a3195ba81fea28c939fc7a0f256b386ac987d7c5eb0ffbf",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-prep-fix-2026-11-16/candidate-prefix/lib/libanndatapp.a": "8122de5dd04065111433f305502bf408a960efbd8fcac1b8366b5a423dabaa38",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/collection-prep-fix-2026-11-16/candidate-prefix/lib/libanndatapp_core.a": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/optional-axis-validation-2026-11-17/candidate-prefix/lib/libanndatapp.a": "2678592fc437c3744915c0672943c458a7b7dd2840e113d1f1a4a67abe4be930",
+    "/home/tumlinson/.codex/worktrees/anndata-format-family/anndatapp/build/optional-axis-validation-2026-11-17/candidate-prefix/lib/libanndatapp_core.a": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19"
+  },
+  "raw_artifacts": {
+    "build/optional-axis-validation-2026-11-17/comparison/plan.json": "7b7afed7ba8518aaed822a335a13e76063ed5d331d44adf72dc20bc3fa37a5a1",
+    "build/optional-axis-validation-2026-11-17/comparison/receipt.jsonl": "0209026874c7797eadbc8794d2c3108f9c2d4f8ca9bc85006b83b99539d66a5d",
+    "build/optional-axis-validation-2026-11-17/comparison/summary.json": "3769133cacb8e49b296e2743399e0416d30ffc592491e5b501a80c7d8ad323af"
+  },
+  "qualification": {
+    "debug": "38/38",
+    "asan_ubsan": "7/7",
+    "asan_detect_leaks": false,
+    "installed_facades": "anndatapp and anndata passed in Debug installed_consumer",
+    "mmap_audit": "passed actual read-only shared mappings, retained pointers, file byte/metadata checks",
+    "core_archive_identical": true,
+    "independent_source_review": "no actionable defects",
+    "scope": "focused policy qualification; no repeat of complete release matrix"
+  },
+  "python_versions": {
+    "anndata": "0.13.4",
+    "h5py": "3.16.0",
+    "mudata": "0.4.1",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "pyarrow": "21.0.0",
+    "scipy": "1.17.1",
+    "snapatac2": "2.10.0",
+    "spatialdata": "0.9.0",
+    "treedata": "0.4.0",
+    "zarr": "3.4.2"
+  },
+  "toolchain": {
+    "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+    "cmake": "cmake version 3.28.3",
+    "ninja": "1.11.1"
+  }
+}
