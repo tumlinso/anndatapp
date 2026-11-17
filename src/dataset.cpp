@@ -112,9 +112,10 @@ std::vector<DatasetComponent> manifest_components(const BackedAnnData& manifest)
     auto paths = table.column("file_path").read();
     auto k = keys.view(), p = paths.view();
     std::vector<DatasetComponent> out;
-    out.reserve(table.size());
+    const auto count = table.size();
+    out.reserve(count);
     std::unordered_set<std::string> seen;
-    for (std::size_t i = 0; i < table.size(); ++i) {
+    for (std::size_t i = 0; i < count; ++i) {
         auto key = column_string(k, i, "/uns/AnnDataSet/keys");
         auto path = column_string(p, i, "/uns/AnnDataSet/file_path");
         if (key.empty() || key.find('\0') != std::string::npos || !seen.insert(key).second)
@@ -463,16 +464,21 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
     if (impl_->check_axis_names) check_selection_indexes(*impl_, obs_, var_);
     auto p = std::make_unique<Plan>();
     p->owner = impl_; p->annotations = annotations_; p->obs = obs_; p->var = var_;
-    auto first = impl_->files.front().x();
     auto& out = p->requirements;
-    out.layout = first.layout(); out.dtype = first.dtype(); out.shape = {n_obs(), n_vars()};
-    if (out.layout != Layout::dense) { out.index_dtype = first.index_dtype(); out.offset_dtype = first.offset_dtype(); }
+    out.shape = {n_obs(), n_vars()};
     p->retained = true;
+    bool selected = false, reference_selected = false;
     std::size_t charged = 0;
     for_segments(*impl_, obs_, var_, [&](const Segment& s) {
         reserve_piece_staging(*p, s, var_, false, charged);
         auto read = prepared_x(*impl_, obs_, var_, s);
         auto r = read.requirements();
+        if (!selected) {
+            out.layout = r.layout; out.dtype = r.dtype;
+            out.index_dtype = r.index_dtype; out.offset_dtype = r.offset_dtype;
+            selected = true;
+        }
+        if (s.component == 0) reference_selected = true;
         if (r.layout != out.layout) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "component matrix layouts differ");
         if (r.dtype != out.dtype) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "component matrix dtypes differ");
         if (r.layout != Layout::dense) {
@@ -482,6 +488,20 @@ PreparedAnnDataSetRead AnnDataSetView::prepare_x() const {
         }
         if (out.layout != Layout::csc) retain_piece(*p, s, SIZE_MAX, std::move(read), charged);
     });
+    if (!reference_selected) {
+        auto reference = detail::backed_x_metadata(impl_->files.front());
+        if (!selected) {
+            out.layout = reference.layout; out.dtype = reference.dtype;
+            out.index_dtype = reference.index_dtype; out.offset_dtype = reference.offset_dtype;
+        } else {
+            if (reference.layout != out.layout) fail(ErrorCode::unsupported_layout, "AnnDataSet/X", "component matrix layouts differ");
+            if (reference.dtype != out.dtype) fail(ErrorCode::dtype_mismatch, "AnnDataSet/X", "component matrix dtypes differ");
+            if (out.layout != Layout::dense) {
+                if (reference.index_dtype != out.index_dtype) out.index_dtype = DType::int64;
+                if (reference.offset_dtype != out.offset_dtype) out.offset_dtype = DType::int64;
+            }
+        }
+    }
     if (out.layout != Layout::dense) {
         auto inner = out.layout == Layout::csr ? n_vars() : n_obs();
         if (inner && inner - 1 > integer_max(out.index_dtype)) out.index_dtype = DType::int64;
