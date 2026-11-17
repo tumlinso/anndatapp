@@ -397,8 +397,12 @@ BackedAnnDataView BackedAnnDataView::slice(Selection obs, Selection var) const {
 }
 AnnData BackedAnnDataView::read() const {
     backed_detail::check_dataset_children(*this);
-    auto result=AnnData::empty(n_obs(),n_vars());
-    result.set_obs(obs().read()); result.set_var(var().read());
+    const auto rows = n_obs(), cols = n_vars();
+    auto o = obs().read();
+    if (o.size() != rows) throw Error(ErrorCode::shape_mismatch, "obs", "table length differs from observation axis");
+    auto v = var().read();
+    if (v.size() != cols) throw Error(ErrorCode::shape_mismatch, "var", "table length differs from variable axis");
+    auto result = detail::make_anndata(std::move(o), std::move(v));
     if(has_x()) result.set_x(x().read());
     for(const auto& key:layer_names()) result.set_layer(key,layer(key).read());
     for(const auto& key:obsp_names()) result.set_obsp(key,obsp(key).read());

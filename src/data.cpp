@@ -92,6 +92,10 @@ struct AnnDataImpl {
     std::vector<std::pair<std::string, Element>> obsm, varm;
     Element uns{Element::mapping()};
     std::optional<RawData> raw;
+
+    AnnDataImpl() = default;
+    AnnDataImpl(Table&& obs, Table&& var)
+        : n_obs(obs.size()), n_vars(var.size()), obs(std::move(obs)), var(std::move(var)) {}
 };
 
 struct AnnDataViewImpl {
@@ -1116,14 +1120,16 @@ Element ElementView::copy() const {
 }
 
 AnnData::AnnData() : impl_(std::make_unique<detail::AnnDataImpl>()) {}
+AnnData::AnnData(Table&& obs, Table&& var)
+    : impl_(std::make_unique<detail::AnnDataImpl>(std::move(obs), std::move(var))) {}
+AnnData detail::make_anndata(Table&& obs, Table&& var) {
+    return AnnData(std::move(obs), std::move(var));
+}
 AnnData::~AnnData() = default;
 AnnData::AnnData(AnnData&&) noexcept = default;
 AnnData& AnnData::operator=(AnnData&&) noexcept = default;
 AnnData AnnData::empty(std::size_t n_obs, std::size_t n_vars) {
-    AnnData a;
-    a.impl_->n_obs = n_obs; a.impl_->n_vars = n_vars;
-    a.impl_->obs = Table::numbered(n_obs); a.impl_->var = Table::numbered(n_vars);
-    return a;
+    return AnnData(Table::numbered(n_obs), Table::numbered(n_vars));
 }
 std::size_t AnnData::n_obs() const { return impl_->n_obs; }
 std::size_t AnnData::n_vars() const { return impl_->n_vars; }
@@ -1487,8 +1493,11 @@ AnnDataView AnnDataView::slice(Selection obs_selection, Selection var_selection)
 }
 
 AnnData AnnDataView::copy() const {
-    auto a = AnnData::empty(n_obs(), n_vars());
-    a.set_obs(obs().copy()); a.set_var(var().copy());
+    auto o = obs().copy();
+    if (o.size() != n_obs()) fail(ErrorCode::shape_mismatch, "obs", "table length differs from observation axis");
+    auto v = var().copy();
+    if (v.size() != n_vars()) fail(ErrorCode::shape_mismatch, "var", "table length differs from variable axis");
+    auto a = detail::make_anndata(std::move(o), std::move(v));
     if (has_x()) a.set_x(x().copy());
     if (impl_) {
         for (const auto& [name, v] : impl_->layers) a.set_layer(name, v.copy());

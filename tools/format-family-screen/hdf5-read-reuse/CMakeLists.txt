@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.28)
+project(anndatapp_read_reuse_probe LANGUAGES CXX)
+set(CMAKE_CXX_EXTENSIONS OFF)
+find_package(anndatapp CONFIG REQUIRED)
+add_executable(hdf5_read_reuse cpp_probe.cpp)
+add_executable(collection_read_reuse ../collection-matrix/cpp_probe.cpp)
+target_link_libraries(hdf5_read_reuse PRIVATE anndatapp::anndatapp ${CMAKE_DL_LIBS})
+target_link_libraries(collection_read_reuse PRIVATE anndatapp::anndatapp ${CMAKE_DL_LIBS})

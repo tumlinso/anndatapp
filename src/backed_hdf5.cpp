@@ -987,6 +987,7 @@ public:
                 result.physical.chunks.assign(chunks.begin(), chunks.end());
                 result.physical.inner_chunks = result.physical.chunks;
                 result.codec_tile_shape = result.physical.chunks;
+                result.prefer_chunk_grouping = H5Pget_nfilters(creation) > 0;
             }
             result.physical.write_unit = result.physical.chunks.empty() ? result.shape : result.physical.chunks;
             if (null_encoding && H5Sget_simple_extent_type(space) != H5S_NULL) c_.fail(ErrorCode::unsupported_encoding, path, "null encoding requires an HDF5 null dataspace");

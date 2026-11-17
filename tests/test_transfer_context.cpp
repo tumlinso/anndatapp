@@ -157,11 +157,61 @@ void sparse(BackedAnnData& d) {
     c.read_into({0,1},{4,2},{cv.data(),cj.data(),cp.data(),DType::float64,DType::int64,DType::int32,3,3,3});
     check(cv == std::array<double,3>{1,2,3} && cj == std::array<std::int64_t,3>{0,0,2} && cp == std::array<std::int32_t,3>{0,0,3}, "CSC block differs");
 }
+void ordinary_sparse(BackedAnnData& d) {
+    auto x = d.layer("csr");
+    std::array<float,6> v{};
+    std::array<std::int32_t,6> j{};
+    std::array<std::int64_t,5> p{};
+    x.read_into({v.data(),j.data(),p.data(),DType::float32,DType::int32,DType::int64,6,6,5});
+    check(v==std::array<float,6>{0,2,3,4,5,6} && j==std::array<std::int32_t,6>{2,2,0,4,1,3} &&
+          p==std::array<std::int64_t,5>{0,3,3,5,6}, "ordinary sparse output lost duplicates, zeros, or the empty row");
+    auto gather=x.select({indices{0,1,2,0},indices{2,4,2}});
+    auto prepared=gather.prepare_read();
+    std::array<float,9> gv{};
+    std::array<std::int16_t,9> gj{};
+    std::array<std::uint32_t,5> gp{};
+    prepared.read_into({gv.data(),gj.data(),gp.data(),DType::float32,DType::int16,DType::uint32,9,9,5});
+    check(gv==std::array<float,9>{0,0,2,2,4,0,0,2,2} &&
+          gj==std::array<std::int16_t,9>{0,2,0,2,1,0,2,0,2} &&
+          gp==std::array<std::uint32_t,5>{0,4,4,5,9}, "batched sparse gather changed row order or integer widths");
+    auto empty=x.select({range{0,2},indices{4}});
+    std::array<std::int64_t,3> ep{-1,-1,-1};
+    empty.read_into({nullptr,nullptr,ep.data(),DType::float32,DType::int32,DType::int64,0,0,3});
+    check(ep==std::array<std::int64_t,3>{0,0,0}, "zero-match sparse output differs");
+}
+#if ANNDATAPP_HAS_HDF5
+void check_bad_hdf5_sparse(const std::filesystem::path& path) {
+    auto data=fixture();
+    write_h5ad(path.string(),data);
+    BackedOptions options; options.mode=AccessMode::read_write;
+    auto store=open_hdf5_store(path.string(),options);
+    auto d=store.anndata();
+    auto bad=Array::empty<std::int64_t>({5});
+    auto* p=bad.edit().dense<std::int64_t>().data();
+    p[0]=0; p[1]=3; p[2]=2; p[3]=5; p[4]=6;
+    auto offsets=store.array("/layers/csr/indptr");
+    offsets.write(bad.view());
+    std::array<std::int64_t,5> out{-1,-1,-1,-1,-1};
+    error(ErrorCode::invalid_sparse_structure,[&] {
+        d.layer("csr").read_into({nullptr,nullptr,out.data(),DType::float32,DType::int32,DType::int64,0,0,5});
+    });
+    check(out[0]==-1, "invalid interior offset modified caller output during sizing");
+    p[2]=3;
+    offsets.write(bad.view());
+    auto bad_indices=Array::empty<std::int32_t>({6});
+    auto* j=bad_indices.edit().dense<std::int32_t>().data();
+    j[0]=2; j[1]=2; j[2]=7; j[3]=4; j[4]=1; j[5]=3;
+    store.array("/layers/csr/indices").write(bad_indices.view());
+    error(ErrorCode::invalid_sparse_structure,[&] {
+        d.layer("csr").select({all,indices{2}}).prepare_read();
+    });
+}
+#endif
 template<class Open, class Write> void run(const std::filesystem::path& path, Open open, Write write) {
     auto data = fixture(); write(path.string(),data);
     BackedOptions options; options.mode = AccessMode::read_write;
     auto d = open(path.string(),options);
-    shared_session_readers(d); dense(d); sparse(d);
+    shared_session_readers(d); dense(d); sparse(d); ordinary_sparse(d);
     sparse_width<std::int8_t>(d,"i8"); sparse_width<std::uint8_t>(d,"u8");
     sparse_width<std::int16_t>(d,"i16"); sparse_width<std::uint16_t>(d,"u16");
     sparse_width<std::int32_t>(d,"i32"); sparse_width<std::uint32_t>(d,"u32");
@@ -186,6 +236,7 @@ int main(int argc,char** argv) {
         const auto root = std::filesystem::path(argc > 1 ? argv[1] : "transfer-tests");
         std::filesystem::create_directories(root);
 #if ANNDATAPP_HAS_HDF5
+        check_bad_hdf5_sparse(root / "bad-sparse.h5ad");
         run(root/"transfer.h5ad",[](auto p,auto o){return open_h5ad(p,o);},[](auto p,const auto& d){write_h5ad(p,d);});
 #endif
 #if ANNDATAPP_HAS_ZARR

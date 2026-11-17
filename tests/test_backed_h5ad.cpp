@@ -136,6 +136,16 @@ void check_dense_reads(const BackedAnnData& backed) {
             "strided dense output values differ");
     require(strided[1] == -1 && strided[3] == -1 && strided[5] == -1,
             "strided dense output overwrote padding");
+
+    float reversed[4]{};
+    auto prepared = x.prepare_read();
+    prepared.read_into(DenseBuffer::from(reversed + 3, {2, 2}, {-8, -4}));
+    for (std::size_t i = 0; i < 4; ++i)
+        require(reversed[3-i] == expected[i], "negative-stride prepared dense read differs");
+
+    float aliased[2]{};
+    prepared.read_into(DenseBuffer::from(aliased, {2, 2}, {0, 4}));
+    require(aliased[0] == 6 && aliased[1] == 4, "gather did not preserve aliased destination write order");
 }
 
 void check_sparse_read_into(const BackedAnnData& backed) {
@@ -309,6 +319,10 @@ int main(int argc, char** argv) {
             backed.close();
         }
 
+        check_dense_reads(open_h5ad(gzip_path.string()));
+        BackedOptions tiny;
+        tiny.scratch_bytes = 64;
+        check_dense_reads(open_h5ad(gzip_path.string(), tiny));
         check_mapping_and_close(path);
         check_mapping_file_identity(root);
         check_mapping_rejections(gzip_path, foreign_path);

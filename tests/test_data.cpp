@@ -355,6 +355,9 @@ void anndatapp_slots_alignment_and_aliasing() {
     static_assert(std::is_move_constructible_v<anndatapp::AnnData>);
 
     auto data = anndatapp::AnnData::empty(3, 2);
+    expect(data.obs().names() == std::vector<std::string>({"0", "1", "2"}) &&
+           data.var().names() == std::vector<std::string>({"0", "1"}),
+           "empty AnnData assigns numbered names on both axes");
     data.set_obs(anndatapp::Table::with_index({"c0", "c1", "c2"}, "cell"));
     data.set_var(anndatapp::Table::with_index({"g0", "g1"}, "gene"));
     data.set_x(array_of<std::int32_t>({0, 1, 2, 3, 4, 5}, {3, 2}));
@@ -408,6 +411,10 @@ void anndatapp_slots_alignment_and_aliasing() {
            "raw keeps its own variable axis, matrix values, and varm dimensions");
 
     auto copied = data.copy();
+    expect(copied.obs().names() == data.obs().names() &&
+           copied.var().names() == data.var().names() &&
+           copied.obsm("annotations").table().names() == copied.obs().names(),
+           "AnnData copy keeps the original axis names and aligned table index");
     expect(copied.x().dense<std::int32_t>().data() != data.x().dense<std::int32_t>().data(),
            "AnnData copy owns independent X storage");
     copied.edit_x().dense<std::int32_t>().data()[0] = -10;

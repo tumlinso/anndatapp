@@ -12,6 +12,9 @@ module;
 #include <optional>
 #include <string>
 #include <string_view>
+#if ANNDATAPP_HAS_HDF5
+#include <sys/stat.h>
+#endif
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,6 +30,10 @@ namespace anndatapp {
 namespace detail {
 struct AnnDataSetImpl {
     BackedAnnData manifest;
+#if ANNDATAPP_HAS_HDF5
+    std::filesystem::path manifest_path;
+    struct stat manifest_identity{};
+#endif
     std::vector<DatasetComponent> components;
     std::vector<BackedAnnData> files;
     std::vector<std::size_t> offsets;
@@ -90,6 +97,17 @@ BackedAnnData open_manifest(std::string_view path, BackedOptions options) {
     // confined to collection manifests; ordinary H5AD admission stays strict.
     auto store = open_hdf5_store(path, options);
     return store.anndata("/", true);
+}
+struct stat manifest_identity(const fs::path& path) {
+    struct stat info{};
+    if (::stat(path.c_str(), &info) < 0)
+        fail(ErrorCode::io_error, path.string(), "cannot inspect collection manifest identity");
+    return info;
+}
+void check_manifest_identity(const Impl& p) {
+    auto current = manifest_identity(p.manifest_path);
+    if (current.st_dev != p.manifest_identity.st_dev || current.st_ino != p.manifest_identity.st_ino)
+        fail(ErrorCode::io_error, p.manifest_path.string(), "collection manifest path refers to a different file");
 }
 #endif
 fs::path absolute_path(const fs::path& path, const fs::path& base) {
@@ -838,10 +856,16 @@ AnnDataSet open_h5ads(std::string_view path, DatasetOptions options) {
     auto name = path_text(path);
     auto p = std::make_shared<Impl>();
     p->check_axis_names = options.check_axis_names;
+    // Keep the access spelling in the open handle and pin the path used for byte copies.
+    std::error_code ec;
+    p->manifest_path = fs::absolute(name, ec);
+    if (ec) fail(ErrorCode::io_error, name, "cannot resolve path: " + ec.message());
+    p->manifest_identity = manifest_identity(p->manifest_path);
     p->manifest = open_manifest(name, options.backed);
+    check_manifest_identity(*p);
     p->n_obs = p->manifest.n_obs(); p->n_vars = p->manifest.n_vars();
     p->components = manifest_components(p->manifest);
-    auto manifest_path = absolute_path(name, fs::current_path());
+    const auto& manifest_path = p->manifest_path;
     auto parent = manifest_path.parent_path();
     std::unordered_map<std::string, std::string> overrides;
     for (const auto& o : options.relocate) {
@@ -917,11 +941,9 @@ AnnDataSet create_h5ads(std::string_view path, std::vector<DatasetComponent> com
         obs_names.insert(obs_names.end(), child_obs.begin(), child_obs.end());
         child.close();
     }
-    auto annotation = AnnData::empty(obs_names.size(), vars.size());
     auto obs = Table::with_index(std::move(obs_names));
     obs.set(std::string(sample_column), Column::strings(std::move(samples)));
-    annotation.set_obs(std::move(obs));
-    annotation.set_var(Table::with_index(std::move(vars)));
+    auto annotation = detail::make_anndata(std::move(obs), Table::with_index(std::move(vars)));
     annotation.set_uns("AnnDataSet", Element(component_table(components)));
     WriteOptions write;
     write.mode = WriteMode::exclusive;
@@ -938,16 +960,17 @@ void AnnDataSet::copy_manifest(std::string_view destination, bool overwrite) con
 #if ANNDATAPP_HAS_HDF5
     check(impl_);
     auto output = path_text(destination);
-    auto source = absolute_path(location(), fs::current_path());
+    const auto& source = impl_->manifest_path;
+    check_manifest_identity(*impl_);
     auto dest = absolute_path(output, fs::current_path());
     if (same_path(source, dest)) fail(ErrorCode::invalid_argument, output, "cannot overwrite the open collection manifest");
-    std::vector<DatasetComponent> rebased;
-    rebased.reserve(impl_->components.size());
-    for (const auto& c : impl_->components) {
-        auto component = absolute_path(c.path, source.parent_path());
+    std::vector<std::string> paths;
+    paths.reserve(impl_->files.size());
+    for (const auto& file : impl_->files) {
+        const fs::path component = file.location();
         if (same_path(component, dest)) fail(ErrorCode::invalid_argument, output, "cannot overwrite a linked component");
         auto relative = component.lexically_relative(dest.parent_path());
-        rebased.push_back({c.key, relative.empty() ? component.string() : relative.string()});
+        paths.push_back(relative.empty() ? component.string() : relative.string());
     }
     // SnapATAC2 writes index_type and other backend attributes that are not
     // AnnData encodings. Preserve them byte-for-byte instead of asking the
@@ -959,10 +982,7 @@ void AnnDataSet::copy_manifest(std::string_view destination, bool overwrite) con
         fail(ErrorCode::io_error, output, "cannot copy collection manifest: " + ec.message());
     BackedOptions options;
     options.mode = AccessMode::read_write;
-    auto copy = open_manifest(output, options);
-    std::vector<std::string> paths;
-    paths.reserve(rebased.size());
-    for (const auto& c : rebased) paths.push_back(c.path);
+    auto copy = open_manifest(dest.string(), options);
     // Replace only the path column; preserve the table index, column order,
     // other columns and their backend-specific metadata in the byte copy.
     copy.set("/uns/AnnDataSet/file_path", Element(Column::strings(std::move(paths))));

@@ -766,6 +766,32 @@ void check_batched_then_gathered(const fs::path& root) {
     require(std::all_of(values.begin() + 248*3, values.end(), [](float x) { return x == 0; }),
             "mixed gathered values differ");
 }
+void check_manifest_source(const fs::path& root) {
+    const auto original = fs::absolute(root / "manifest-original"), other = fs::absolute(root / "manifest-other");
+    for (const auto& dir : {original, other}) {
+        fs::create_directories(dir);
+        write_component(dir / "part.h5ad", Layout::dense, dir == other);
+        auto created = create_h5ads((dir / "data.h5ads").string(), {{"part", "part.h5ad"}});
+        created.close();
+    }
+    auto cwd = fs::current_path();
+    struct RestoreDirectory {
+        fs::path path;
+        ~RestoreDirectory() { std::error_code ec; fs::current_path(path, ec); }
+    } restore{cwd};
+    fs::current_path(original);
+    auto source = open_h5ads("data.h5ads");
+    fs::current_path(other);
+    source.copy_manifest("copy.h5ads");
+    auto copy = open_h5ads("copy.h5ads");
+    require(copy.view().annotations().obs().names().at(1) == "first", "manifest copy used unrelated annotations");
+    require(unpack(copy.view().materialize().x())[0] == 1, "manifest copy rebased to unrelated component");
+
+    fs::rename(original / "data.h5ads", original / "old.h5ads");
+    fs::copy_file(other / "data.h5ads", original / "data.h5ads");
+    expect_error(ErrorCode::io_error, [&] { source.copy_manifest("replaced.h5ads"); });
+    require(!fs::exists("replaced.h5ads"), "replaced source created destination");
+}
 void check_reference(const fs::path& input, const fs::path& output) {
     auto d = open_h5ads(input.string());
     require(d.n_obs() == 4 && d.n_vars() == 3, "reference shape differs");
@@ -800,6 +826,7 @@ int main(int argc, char** argv) {
             const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
             auto root = fs::path(argv[1]) / std::to_string(stamp);
             fs::create_directories(root);
+            check_manifest_source(root);
             check_collection(root, Layout::dense);
             check_collection(root, Layout::csr);
             check_collection(root, Layout::csc);

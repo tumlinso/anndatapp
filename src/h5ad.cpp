@@ -752,8 +752,7 @@ AnnData read_dataset(Context& c, hid_t root) {
         c.fail(ErrorCode::unsupported_encoding, "/", "obs and var require dataframe encoding");
     auto obs = read_table(c, obs_object, "/obs");
     auto var = read_table(c, var_object, "/var");
-    auto data = AnnData::empty(obs.size(), var.size());
-    data.set_obs(std::move(obs)); data.set_var(std::move(var));
+    auto data = detail::make_anndata(std::move(obs), std::move(var));
     if (exists(c, root, "X", "/X")) {
         auto x = open_object(c, root, "X", "/X");
         auto code = encoding(c, x, "/X");

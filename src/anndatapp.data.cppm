@@ -357,7 +357,12 @@ private:
     friend class AnnDataView;
 };
 
+class AnnData;
 class AnnDataView;
+namespace detail {
+// Internal construction from already-materialized axis tables.
+AnnData make_anndata(Table&& obs, Table&& var);
+}
 
 class AnnData {
 public:
@@ -434,6 +439,8 @@ public:
     AnnData copy() const;
     void validate() const;
 private:
+    AnnData(Table&& obs, Table&& var);
+    friend AnnData detail::make_anndata(Table&&, Table&&);
     std::unique_ptr<detail::AnnDataImpl> impl_;
 };
 

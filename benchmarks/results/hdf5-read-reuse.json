@@ -1,0 +1,391 @@
+{
+  "baseline_commit": "63ac501b9057110a0b395d34453cc5b762903b21",
+  "candidate_source_sha256": {
+    "src/anndatapp.data.cppm": "8835300aff2409ffabe2aa9bbe5528daf1dd6832ec17bb9245c8150b3b62878e",
+    "src/backed.cpp": "6a8e57ac53260034ee22731d2ddc9beedc73bf7336dbd62b7390b97e9718551e",
+    "src/backed_array.cpp": "c5c64e9c909deef86ff4556d7456a329d40d5fd33c344e2120225e7bbf92936e",
+    "src/backed_hdf5.cpp": "b1ab032db6fea75c0f1c4ee673959161bbce37d57f2dc939cc94d26fc897c81c",
+    "src/data.cpp": "bd49fe73b6ff2cd6adf4d8ba7e701807dae03236355c34d095271f5988d50632",
+    "src/dataset.cpp": "11373df1b6d85440779a2cbd7944983c191d2bda02bf785bb8af0dcc42084b06",
+    "src/h5ad.cpp": "5c0d8a737a12c658f53cc1696583c9b92b2005976d239ee50bb091c66baf17a0"
+  },
+  "release_archives_sha256": {
+    "before": {
+      "libanndatapp.a": "281590c42702550c809435feead466519143b2db08410e3e1f63f04b8bc2df08",
+      "libanndatapp_core.a": "2b37603ef8c56078002abf05c5dd7ba2a295196ffe15bae5ed45d2554caeef19"
+    },
+    "after": {
+      "libanndatapp.a": "49488ab1eb97f10d8f47b97605d82b341527071b49964df74285bc4aa4a40abd",
+      "libanndatapp_core.a": "29d79ba1364802a85d7656a2ee8133e3d3dc6fbbf48b3d8736cc349ccc9d6363"
+    }
+  },
+  "compiler": "Clang 18.1.3",
+  "compile_flags": "-O3 -DNDEBUG",
+  "hdf5": "1.10.10",
+  "validation": "full",
+  "cache_policy": "normal OS and backend caches, no eviction",
+  "cpu_affinity": [
+    2
+  ],
+  "timing_pairs_per_workload": 7,
+  "diagnostic_pairs_per_workload": 1,
+  "processes_checked": 128,
+  "elapsed_s": 7.5764020400001755,
+  "probe": "tools/format-family-screen/hdf5-read-reuse",
+  "raw_evidence": "/tmp/anndatapp-io-fix.XK629v0V/receipts",
+  "raw_evidence_sha256": {
+    "plan.json": "74bffcd12e168327d5a0cdf0b239b77ab8f64d08261d0b26d37c9cadad58ccbc",
+    "samples.jsonl": "5ca477ea7131c9f9947d186433236277b882ad97343a2420ff9da55ddf24231d",
+    "summary.json": "e5413a5ff59c3dfa6c222d8ce57bb05683e20fb3304ba8b124d3c82691a970b9"
+  },
+  "workloads": {
+    "axis-copy": {
+      "oracle_fnv1a64": "b2b0310e68f80738",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 0,
+          "transfer_ns": 6416913,
+          "operation_ns": 6416913
+        },
+        "transfer": {
+          "h5dread": 0,
+          "h5oopen": 0,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 19,
+          "cpp_new_requested_bytes": 6401384
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 0,
+          "transfer_ns": 2761264,
+          "operation_ns": 2761264
+        },
+        "transfer": {
+          "h5dread": 0,
+          "h5oopen": 0,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 9,
+          "cpp_new_requested_bytes": 3200776
+        }
+      }
+    },
+    "collection-gather": {
+      "oracle_fnv1a64": "1f124212d0964798",
+      "before": {
+        "median_ns": {
+          "preparation_requirements_ns": 8079630,
+          "transfer_ns": 3439613,
+          "end_to_end_ns": 26277790,
+          "repeat_transfer_ns": 2244872.0
+        },
+        "transfer": {
+          "h5dread": 192,
+          "h5oopen": 80,
+          "intercepted_read_bytes": 544256,
+          "cpp_new_calls": 680,
+          "cpp_new_requested_bytes": 22696
+        },
+        "preparation": {
+          "h5dread": 128,
+          "h5oopen": 144,
+          "intercepted_read_bytes": 629384,
+          "cpp_new_calls": 18000,
+          "cpp_new_requested_bytes": 799288
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_requirements_ns": 7106712,
+          "transfer_ns": 2759025,
+          "end_to_end_ns": 24630277,
+          "repeat_transfer_ns": 1689266.0
+        },
+        "transfer": {
+          "h5dread": 192,
+          "h5oopen": 80,
+          "intercepted_read_bytes": 544256,
+          "cpp_new_calls": 680,
+          "cpp_new_requested_bytes": 22696
+        },
+        "preparation": {
+          "h5dread": 128,
+          "h5oopen": 144,
+          "intercepted_read_bytes": 629384,
+          "cpp_new_calls": 18000,
+          "cpp_new_requested_bytes": 799352
+        }
+      }
+    },
+    "csc-run": {
+      "oracle_fnv1a64": "c10d55eb02a6cbf7",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 559998,
+          "transfer_ns": 704189,
+          "operation_ns": 1283907
+        },
+        "transfer": {
+          "h5dread": 180,
+          "h5oopen": 22,
+          "intercepted_read_bytes": 2152,
+          "cpp_new_calls": 107,
+          "cpp_new_requested_bytes": 3228
+        },
+        "preparation": {
+          "h5dread": 120,
+          "h5oopen": 19,
+          "intercepted_read_bytes": 1348,
+          "cpp_new_calls": 97,
+          "cpp_new_requested_bytes": 2807
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 370598,
+          "transfer_ns": 410214,
+          "operation_ns": 786562
+        },
+        "transfer": {
+          "h5dread": 3,
+          "h5oopen": 22,
+          "intercepted_read_bytes": 2152,
+          "cpp_new_calls": 105,
+          "cpp_new_requested_bytes": 3204
+        },
+        "preparation": {
+          "h5dread": 2,
+          "h5oopen": 19,
+          "intercepted_read_bytes": 1348,
+          "cpp_new_calls": 97,
+          "cpp_new_requested_bytes": 3515
+        }
+      }
+    },
+    "csr-gzip-run": {
+      "oracle_fnv1a64": "0100d21e11791c72",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 1566906,
+          "transfer_ns": 2148008,
+          "operation_ns": 3712298
+        },
+        "transfer": {
+          "h5dread": 768,
+          "h5oopen": 14,
+          "intercepted_read_bytes": 17913,
+          "cpp_new_calls": 123,
+          "cpp_new_requested_bytes": 4121
+        },
+        "preparation": {
+          "h5dread": 512,
+          "h5oopen": 12,
+          "intercepted_read_bytes": 14982,
+          "cpp_new_calls": 114,
+          "cpp_new_requested_bytes": 3646
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 768544,
+          "transfer_ns": 793474,
+          "operation_ns": 1559566
+        },
+        "transfer": {
+          "h5dread": 3,
+          "h5oopen": 14,
+          "intercepted_read_bytes": 17913,
+          "cpp_new_calls": 121,
+          "cpp_new_requested_bytes": 3993
+        },
+        "preparation": {
+          "h5dread": 2,
+          "h5oopen": 12,
+          "intercepted_read_bytes": 14982,
+          "cpp_new_calls": 114,
+          "cpp_new_requested_bytes": 19966
+        }
+      }
+    },
+    "csr-zero-matches": {
+      "oracle_fnv1a64": "943cf28841434e75",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 323650,
+          "transfer_ns": 335103,
+          "operation_ns": 655463
+        },
+        "transfer": {
+          "h5dread": 24,
+          "h5oopen": 14,
+          "intercepted_read_bytes": 164,
+          "cpp_new_calls": 90,
+          "cpp_new_requested_bytes": 2893
+        },
+        "preparation": {
+          "h5dread": 16,
+          "h5oopen": 12,
+          "intercepted_read_bytes": 100,
+          "cpp_new_calls": 81,
+          "cpp_new_requested_bytes": 2540
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 286169,
+          "transfer_ns": 336708,
+          "operation_ns": 628320
+        },
+        "transfer": {
+          "h5dread": 2,
+          "h5oopen": 14,
+          "intercepted_read_bytes": 100,
+          "cpp_new_calls": 89,
+          "cpp_new_requested_bytes": 2997
+        },
+        "preparation": {
+          "h5dread": 2,
+          "h5oopen": 12,
+          "intercepted_read_bytes": 100,
+          "cpp_new_calls": 81,
+          "cpp_new_requested_bytes": 2596
+        }
+      }
+    },
+    "dense-gather": {
+      "oracle_fnv1a64": "6be77828b23dd825",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 362,
+          "transfer_ns": 333307066,
+          "operation_ns": 333307428
+        },
+        "transfer": {
+          "h5dread": 1024,
+          "h5oopen": 1025,
+          "intercepted_read_bytes": 20595712,
+          "cpp_new_calls": 8224,
+          "cpp_new_requested_bytes": 115474
+        },
+        "preparation": {
+          "h5dread": 0,
+          "h5oopen": 0,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 0,
+          "cpp_new_requested_bytes": 0
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 539,
+          "transfer_ns": 584667,
+          "operation_ns": 585208
+        },
+        "transfer": {
+          "h5dread": 1,
+          "h5oopen": 2,
+          "intercepted_read_bytes": 20113,
+          "cpp_new_calls": 50,
+          "cpp_new_requested_bytes": 67948
+        },
+        "preparation": {
+          "h5dread": 0,
+          "h5oopen": 0,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 0,
+          "cpp_new_requested_bytes": 0
+        }
+      }
+    },
+    "dense-prepared-gather": {
+      "oracle_fnv1a64": "6be77828b23dd825",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 62085,
+          "transfer_ns": 330474512,
+          "operation_ns": 330534766
+        },
+        "transfer": {
+          "h5dread": 1024,
+          "h5oopen": 1025,
+          "intercepted_read_bytes": 20595712,
+          "cpp_new_calls": 8224,
+          "cpp_new_requested_bytes": 115474
+        },
+        "preparation": {
+          "h5dread": 0,
+          "h5oopen": 1,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 27,
+          "cpp_new_requested_bytes": 770
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 62456,
+          "transfer_ns": 573756,
+          "operation_ns": 635770
+        },
+        "transfer": {
+          "h5dread": 1,
+          "h5oopen": 2,
+          "intercepted_read_bytes": 20113,
+          "cpp_new_calls": 50,
+          "cpp_new_requested_bytes": 67948
+        },
+        "preparation": {
+          "h5dread": 0,
+          "h5oopen": 1,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 27,
+          "cpp_new_requested_bytes": 770
+        }
+      }
+    },
+    "dense-rectangle": {
+      "oracle_fnv1a64": "27693263222cbc25",
+      "before": {
+        "median_ns": {
+          "preparation_ns": 397,
+          "transfer_ns": 473254,
+          "operation_ns": 473632
+        },
+        "transfer": {
+          "h5dread": 1,
+          "h5oopen": 2,
+          "intercepted_read_bytes": 20113,
+          "cpp_new_calls": 38,
+          "cpp_new_requested_bytes": 866
+        },
+        "preparation": {
+          "h5dread": 0,
+          "h5oopen": 0,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 0,
+          "cpp_new_requested_bytes": 0
+        }
+      },
+      "after": {
+        "median_ns": {
+          "preparation_ns": 335,
+          "transfer_ns": 490936,
+          "operation_ns": 491357
+        },
+        "transfer": {
+          "h5dread": 1,
+          "h5oopen": 2,
+          "intercepted_read_bytes": 20113,
+          "cpp_new_calls": 38,
+          "cpp_new_requested_bytes": 866
+        },
+        "preparation": {
+          "h5dread": 0,
+          "h5oopen": 0,
+          "intercepted_read_bytes": 0,
+          "cpp_new_calls": 0,
+          "cpp_new_requested_bytes": 0
+        }
+      }
+    }
+  }
+}
