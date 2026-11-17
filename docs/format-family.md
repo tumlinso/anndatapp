@@ -6,6 +6,8 @@ The prepared-collection and gathered-metadata changes, bounded pre-extension com
 
 The opt-in collection axis-name policy and its bounded C++/Python comparison are recorded in [optional-axis-validation.md](optional-axis-validation.md).
 
+The subsequent reference-metadata reuse change and bounded before/after comparison are recorded in [collection-metadata-reuse.md](collection-metadata-reuse.md).
+
 The C++ facade can be imported with either `import anndata;` or `import anndatapp;`. Both export the same types in namespace `anndatapp`. The package, CMake target, and repository remain named `anndatapp`. The format modules can also be imported directly: `anndatapp.mudata`, `anndatapp.treedata`, `anndatapp.dataset`, and `anndatapp.spatialdata`.
 
 The [native example](../examples/format_family.cpp) demonstrates construction and selection with `import anndata;`, plus optional backed inspection of an existing `.h5ads` manifest. CMake builds it as `anndatapp_format_family_example` when examples are enabled.
