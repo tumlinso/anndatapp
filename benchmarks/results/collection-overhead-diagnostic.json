@@ -1,0 +1,529 @@
+{
+  "source_commit": "7f8d72af02cd5b5b1cfc7de3c019658baa6e230b",
+  "measured_library_commit": "32852b6b65d0ab6d8204f3cb5ebb7cc584be0def",
+  "window_seconds": 0.5255176719983865,
+  "runner_wall_seconds": 0.6867780800021137,
+  "cpu": 2,
+  "cache": "normal OS/HDF5 caches, no eviction",
+  "thread_limits": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "NUMBA_NUM_THREADS": "1",
+    "BLOSC_NTHREADS": "1"
+  },
+  "frozen_files": 94,
+  "plan_sha256": "e82695d3df01c87857d1ff9bfeee347c747fed188982ed94fbd274e55ee732fd",
+  "receipt_sha256": "9955e7a1b438b6f219f7ce54a2a01484eb06ac2c21e63770923b427e7d4a601d",
+  "scope": "Separate interposed diagnostic; one process per case, no timings or physical-I/O claims. Read phases include whole-plan preflight.",
+  "schema": "anndatapp.collection-overhead-diagnostic.v1",
+  "summary_sha256": "26f4eca502cae1727cb65acae1023c0a2e936e89ba9b0a8d1d89412b6f17a526",
+  "raw_evidence": "build/collection-overhead-2026-11-17/",
+  "cases": {
+    "components-1": {
+      "components": 1,
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 34,
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "phases": {
+        "open": {
+          "h5_object_opens": 92,
+          "h5dread_calls": 4,
+          "cpp_new_calls": 982,
+          "cpp_new_bytes": 40452,
+          "observed_read_calls": 76,
+          "observed_read_bytes": 363045
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "prepare": {
+          "h5_object_opens": 57,
+          "h5dread_calls": 128,
+          "cpp_new_calls": 706,
+          "cpp_new_bytes": 25926,
+          "observed_read_calls": 17,
+          "observed_read_bytes": 584800
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 792,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "preflight": {
+          "h5_object_opens": 8,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 75,
+          "cpp_new_bytes": 2328,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "first_read": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 319,
+          "cpp_new_bytes": 11322,
+          "observed_read_calls": 18,
+          "observed_read_bytes": 1099792
+        },
+        "repeat_1": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 319,
+          "cpp_new_bytes": 11322,
+          "observed_read_calls": 18,
+          "observed_read_bytes": 1099792
+        },
+        "repeat_2": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 319,
+          "cpp_new_bytes": 11322,
+          "observed_read_calls": 18,
+          "observed_read_bytes": 1099792
+        },
+        "repeat_3": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 319,
+          "cpp_new_bytes": 11322,
+          "observed_read_calls": 18,
+          "observed_read_bytes": 1099792
+        }
+      }
+    },
+    "components-8": {
+      "components": 8,
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 34,
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "phases": {
+        "open": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 4,
+          "cpp_new_calls": 2234,
+          "cpp_new_bytes": 117837,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "prepare": {
+          "h5_object_opens": 183,
+          "h5dread_calls": 128,
+          "cpp_new_calls": 2921,
+          "cpp_new_bytes": 111970,
+          "observed_read_calls": 72,
+          "observed_read_bytes": 574656
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 792,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "preflight": {
+          "h5_object_opens": 64,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 600,
+          "cpp_new_bytes": 18624,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "first_read": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 2552,
+          "cpp_new_bytes": 90576,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248
+        },
+        "repeat_1": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 2552,
+          "cpp_new_bytes": 90576,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248
+        },
+        "repeat_2": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 2552,
+          "cpp_new_bytes": 90576,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248
+        },
+        "repeat_3": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 2552,
+          "cpp_new_bytes": 90576,
+          "observed_read_calls": 24,
+          "observed_read_bytes": 1053248
+        }
+      }
+    },
+    "components-32": {
+      "components": 32,
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 34,
+      "output_fnv1a64": "d60079b9ac5aa14c",
+      "phases": {
+        "open": {
+          "h5_object_opens": 464,
+          "h5dread_calls": 4,
+          "cpp_new_calls": 6512,
+          "cpp_new_bytes": 384059,
+          "observed_read_calls": 1130,
+          "observed_read_bytes": 3037669
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "prepare": {
+          "h5_object_opens": 615,
+          "h5dread_calls": 128,
+          "cpp_new_calls": 10507,
+          "cpp_new_bytes": 407042,
+          "observed_read_calls": 288,
+          "observed_read_bytes": 515328
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 792,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "preflight": {
+          "h5_object_opens": 256,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 2400,
+          "cpp_new_bytes": 74496,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "first_read": {
+          "h5_object_opens": 704,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544
+        },
+        "repeat_1": {
+          "h5_object_opens": 704,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544
+        },
+        "repeat_2": {
+          "h5_object_opens": 704,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544
+        },
+        "repeat_3": {
+          "h5_object_opens": 704,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 10208,
+          "cpp_new_bytes": 362400,
+          "observed_read_calls": 96,
+          "observed_read_bytes": 844544
+        }
+      }
+    },
+    "contiguous-one-component": {
+      "components": 8,
+      "shape": [
+        256,
+        128
+      ],
+      "nnz": 259,
+      "output_fnv1a64": "17064116932e1db5",
+      "phases": {
+        "open": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 4,
+          "cpp_new_calls": 2234,
+          "cpp_new_bytes": 117837,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 184,
+          "cpp_new_bytes": 6632,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "prepare": {
+          "h5_object_opens": 57,
+          "h5dread_calls": 512,
+          "cpp_new_calls": 568,
+          "cpp_new_bytes": 18902,
+          "observed_read_calls": 9,
+          "observed_read_bytes": 75864
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 4136,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "preflight": {
+          "h5_object_opens": 8,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 75,
+          "cpp_new_bytes": 2328,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "first_read": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 187,
+          "cpp_new_bytes": 6426,
+          "observed_read_calls": 3,
+          "observed_read_bytes": 139272
+        },
+        "repeat_1": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 187,
+          "cpp_new_bytes": 6426,
+          "observed_read_calls": 3,
+          "observed_read_bytes": 139272
+        },
+        "repeat_2": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 187,
+          "cpp_new_bytes": 6426,
+          "observed_read_calls": 3,
+          "observed_read_bytes": 139272
+        },
+        "repeat_3": {
+          "h5_object_opens": 22,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 187,
+          "cpp_new_bytes": 6426,
+          "observed_read_calls": 3,
+          "observed_read_bytes": 139272
+        }
+      }
+    },
+    "reverse-duplicates": {
+      "components": 8,
+      "shape": [
+        64,
+        64
+      ],
+      "nnz": 704,
+      "output_fnv1a64": "c41355d7a44f4635",
+      "phases": {
+        "open": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 4,
+          "cpp_new_calls": 2234,
+          "cpp_new_bytes": 117837,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 192,
+          "cpp_new_bytes": 8840,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "prepare": {
+          "h5_object_opens": 1047,
+          "h5dread_calls": 128,
+          "cpp_new_calls": 12444,
+          "cpp_new_bytes": 496258,
+          "observed_read_calls": 140,
+          "observed_read_bytes": 2369984
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 6152,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "preflight": {
+          "h5_object_opens": 448,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 4200,
+          "cpp_new_bytes": 130368,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "first_read": {
+          "h5_object_opens": 1232,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160
+        },
+        "repeat_1": {
+          "h5_object_opens": 1232,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160
+        },
+        "repeat_2": {
+          "h5_object_opens": 1232,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160
+        },
+        "repeat_3": {
+          "h5_object_opens": 1232,
+          "h5dread_calls": 192,
+          "cpp_new_calls": 12320,
+          "cpp_new_bytes": 433776,
+          "observed_read_calls": 168,
+          "observed_read_bytes": 4460160
+        }
+      }
+    },
+    "reuse-higher-density": {
+      "components": 8,
+      "shape": [
+        256,
+        2048
+      ],
+      "nnz": 32768,
+      "output_fnv1a64": "b666b44706c498a9",
+      "phases": {
+        "open": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 4,
+          "cpp_new_calls": 2263,
+          "cpp_new_bytes": 118791,
+          "observed_read_calls": 314,
+          "observed_read_bytes": 1119205
+        },
+        "selection": {
+          "h5_object_opens": 12,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 188,
+          "cpp_new_bytes": 10808,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "prepare": {
+          "h5_object_opens": 183,
+          "h5dread_calls": 512,
+          "cpp_new_calls": 1841,
+          "cpp_new_bytes": 71074,
+          "observed_read_calls": 128,
+          "observed_read_bytes": 4208504
+        },
+        "allocate": {
+          "h5_object_opens": 0,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 3,
+          "cpp_new_bytes": 264200,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "preflight": {
+          "h5_object_opens": 64,
+          "h5dread_calls": 0,
+          "cpp_new_calls": 600,
+          "cpp_new_bytes": 18624,
+          "observed_read_calls": 0,
+          "observed_read_bytes": 0
+        },
+        "first_read": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200
+        },
+        "repeat_1": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200
+        },
+        "repeat_2": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200
+        },
+        "repeat_3": {
+          "h5_object_opens": 176,
+          "h5dread_calls": 768,
+          "cpp_new_calls": 1496,
+          "cpp_new_bytes": 58768,
+          "observed_read_calls": 136,
+          "observed_read_bytes": 8318200
+        }
+      }
+    }
+  },
+  "limits": [
+    "One instrumented process per case; operation durations are not speed evidence.",
+    "C++ new excludes other allocators; libc reads include metadata/read-ahead and are not physical I/O or live memory.",
+    "HDF5 contiguous-data sieve is a hypothesis for byte amplification, not path-attributed proof.",
+    "No production code, new biological fixtures, or Python workloads."
+  ]
+}
