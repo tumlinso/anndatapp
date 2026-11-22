@@ -31,3 +31,8 @@ cmake --build "$bench_root/bin" --parallel 2
 ```
 
 Set `ANNDATAPP_DEPENDENCY_PREFIX` during configuration if the compiler needs a private dependency prefix. Choose four distinct available physical cores from one NUMA node. The first supplies the one-worker comparison. A timed window ends within 30 seconds, including driver setup, verification, and cleanup. The runner retains block verification status, the exact inputs, raw samples, and a checkpoint after each accepted case.
+
+For a native regression comparison, build the same C++ driver against both
+frozen revisions and add `--baseline-cpp PATH --baseline-source PATH` to the
+run command. The runner interleaves the two native drivers and the Python
+driver in each of five pairs and reports candidate-to-baseline time ratios.

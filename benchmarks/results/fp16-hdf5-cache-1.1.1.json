@@ -1,0 +1,215 @@
+{
+  "case": "prepared-read-h5-gzip",
+  "payload_bytes": 4194304,
+  "cpu": 16,
+  "benchmark_sha256": "768363ea3247672b1553de0e6766d4b0c11ad8f453a47bccc44f2d26aebb65f1",
+  "driver_sha256": "e15afcfac24642dd1b53ff93b471a3a75fb7219f3135b16e937330fa817d6e9f",
+  "shared_runner_sha256": "15eaafad0acdd80b3c00409f2654283f222a1eb56dcbd5086daa32444284d2f1",
+  "fixture": {
+    "bytes": 8632648,
+    "sha256": "756b8218fee3e0259917cd90e00831b230d7c49f1470640821cb1814907bc3d1"
+  },
+  "native_raw_chunk_cache": {
+    "slots": 521,
+    "bytes": 1048576,
+    "preemption": 0.75
+  },
+  "samples": {
+    "native16": [
+      {
+        "setup_s": 0.002751108,
+        "runtime_s": 0.069012368,
+        "payload_bytes": 4194304
+      },
+      {
+        "setup_s": 0.002689203,
+        "runtime_s": 0.087373709,
+        "payload_bytes": 4194304
+      },
+      {
+        "setup_s": 0.004056307,
+        "runtime_s": 0.099109844,
+        "payload_bytes": 4194304
+      },
+      {
+        "setup_s": 0.002663536,
+        "runtime_s": 0.069329492,
+        "payload_bytes": 4194304
+      },
+      {
+        "setup_s": 0.002258968,
+        "runtime_s": 0.06981586,
+        "payload_bytes": 4194304
+      }
+    ],
+    "python16_default": [
+      {
+        "setup_s": 0.0009755199998835451,
+        "runtime_s": 0.027220356999805517,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 8191,
+          "bytes": 8388608,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.001161847000275884,
+        "runtime_s": 0.031396960000165564,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 8191,
+          "bytes": 8388608,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0009193839996441966,
+        "runtime_s": 0.026462511999852723,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 8191,
+          "bytes": 8388608,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0009494129999438883,
+        "runtime_s": 0.02653152199991382,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 8191,
+          "bytes": 8388608,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0011332580002090253,
+        "runtime_s": 0.027311629999985598,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 8191,
+          "bytes": 8388608,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      }
+    ],
+    "python16_matched": [
+      {
+        "setup_s": 0.0010073150001517206,
+        "runtime_s": 0.07643321400018976,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 521,
+          "bytes": 1048576,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0010262300002068514,
+        "runtime_s": 0.08382660899997063,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 521,
+          "bytes": 1048576,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0008978700002444384,
+        "runtime_s": 0.07722048599998743,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 521,
+          "bytes": 1048576,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0009324879997620883,
+        "runtime_s": 0.07664809099969716,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 521,
+          "bytes": 1048576,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      },
+      {
+        "setup_s": 0.0008924009998736437,
+        "runtime_s": 0.08052844400026515,
+        "payload_bytes": 4194304,
+        "raw_chunk_cache": {
+          "slots": 521,
+          "bytes": 1048576,
+          "preemption": 0.75
+        },
+        "hdf5": [
+          2,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "window_s": 11.571354557000177,
+  "medians_s": {
+    "native16": {
+      "runtime_s": 0.06981586,
+      "setup_s": 0.002689203
+    },
+    "python16_default": {
+      "runtime_s": 0.027220356999805517,
+      "setup_s": 0.0009755199998835451
+    },
+    "python16_matched": {
+      "runtime_s": 0.07722048599998743,
+      "setup_s": 0.0009324879997620883
+    }
+  }
+}

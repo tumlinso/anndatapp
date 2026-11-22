@@ -111,7 +111,8 @@ def check_receipt(path):
     source = receipt["source"]
     if source != manifest(source["root"]):
         raise RuntimeError("library source changed since build")
-    if receipt["driver"] != manifest(ROOT, driver=True):
+    driver = receipt["driver"]
+    if driver != manifest(driver["root"], driver=True) or driver["sha256"] != manifest(ROOT, driver=True)["sha256"]:
         raise RuntimeError("driver source changed since build")
     return receipt
 
@@ -295,7 +296,7 @@ def summarize(raw, diagnostics, receipts, fixture, raw_path):
 
 def execute(args):
     receipts = {"baseline": check_receipt(args.baseline), "candidate": check_receipt(args.candidate)}
-    if receipts["baseline"]["driver"] != receipts["candidate"]["driver"]:
+    if receipts["baseline"]["driver"]["sha256"] != receipts["candidate"]["driver"]["sha256"]:
         raise RuntimeError("baseline and candidate must use identical driver source")
     if receipts["baseline"]["toolchain"] != receipts["candidate"]["toolchain"]:
         raise RuntimeError("baseline and candidate toolchains differ")

@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.28)
+project(anndatapp_fp16_benchmark LANGUAGES C CXX)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(ANNDATAPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ANNDATAPP_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ANNDATAPP_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+if(NOT ANNDATAPP_SOURCE)
+  message(FATAL_ERROR "Set ANNDATAPP_SOURCE to the immutable candidate source")
+endif()
+add_subdirectory("${ANNDATAPP_SOURCE}" anndatapp-build)
+
+add_executable(fp16_benchmark cpp_driver.cpp)
+target_compile_features(fp16_benchmark PRIVATE cxx_std_20)
+target_link_libraries(fp16_benchmark PRIVATE anndatapp::anndatapp ${CMAKE_DL_LIBS})
+
+# Keep the same diagnostic observers as the standard release benchmark.
+add_library(fp16_alloc_counters SHARED ../v1/alloc_counters.cpp)
+target_compile_features(fp16_alloc_counters PRIVATE cxx_std_20)
+add_library(fp16_io_counters SHARED ../v1/io_counters.c)
+target_link_libraries(fp16_io_counters PRIVATE ${CMAKE_DL_LIBS})

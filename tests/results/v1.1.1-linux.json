@@ -1,0 +1,238 @@
+{
+  "schema": "anndatapp-v1.1.1-linux-qualification/1",
+  "package_version": "1.1.1",
+  "platform": "Linux x86-64",
+  "status": "passed",
+  "candidate_head_at_summary": "cb4a0db233d657c62ecf15e7c7a43cc07869292a",
+  "local_evidence_directory": "/tmp/anndatapp-1.1.1-qualification-LzAipt/candidate-final",
+  "source_inputs": {
+    "path": "source-sha256.json",
+    "sha256": "7aded1509a39dbb2814da1ed65cf0c61a139978f7651bca558b85059a5096613",
+    "file_count": 248,
+    "verified_after_execution": true,
+    "production_commit": "cb4a0db233d657c62ecf15e7c7a43cc07869292a"
+  },
+  "environment": {
+    "path": "environment.json",
+    "sha256": "f5fc03dec0a0da3abf0133ce4de49d3c7cd717c9ea8708ae7c67bcae046e0a93"
+  },
+  "native_totals": {
+    "passed": 284,
+    "failed": 0,
+    "skipped": 0,
+    "total": 284
+  },
+  "configurations": {
+    "debug": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "total": 39,
+        "junit_sha256": "14468c3cf48479b5764e545567ac9115bb8d89e7de981b88c31957028fddd89d"
+      },
+      "receipt": {
+        "path": "debug/result.json",
+        "sha256": "4b8ccf3dcfab1e33e9c32f808f35ce0ee67fd1683d5053a336c9a771a66cfd7c"
+      }
+    },
+    "release": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "total": 39,
+        "junit_sha256": "020cd4f55da821d81272ab9dd5ea7079c59297a84e336178158a04c620a183c9"
+      },
+      "receipt": {
+        "path": "release/result.json",
+        "sha256": "d8dff8a864fd32bdd517fca04abff87d3c2c9b65f95f6b015d9d7608b2624cd8"
+      },
+      "exact_core": {
+        "requested_version": "1.1.1 EXACT",
+        "modules": [
+          "anndatapp.core-arrays.pcm",
+          "anndatapp.core-data.pcm",
+          "anndatapp.core-records.pcm",
+          "anndatapp.core-strings.pcm",
+          "anndatapp.core.pcm"
+        ]
+      },
+      "exact_facades": {
+        "requested_version": "1.1.1 EXACT",
+        "modules": [
+          "anndata.pcm",
+          "anndatapp.backed.pcm",
+          "anndatapp.core-arrays.pcm",
+          "anndatapp.core-data.pcm",
+          "anndatapp.core-records.pcm",
+          "anndatapp.core-strings.pcm",
+          "anndatapp.core.pcm",
+          "anndatapp.dataset.pcm",
+          "anndatapp.h5ad.pcm",
+          "anndatapp.mudata.pcm",
+          "anndatapp.pcm",
+          "anndatapp.spatialdata.pcm",
+          "anndatapp.streaming.pcm",
+          "anndatapp.treedata.pcm",
+          "anndatapp.zarr.pcm"
+        ]
+      }
+    },
+    "sanitizers": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "total": 39,
+        "junit_sha256": "332a461c039a5120f5be2fbae2d182097ea76372a91e7a43f038ce636cb3f396"
+      },
+      "receipt": {
+        "path": "sanitizers/result.json",
+        "sha256": "3250d733e082244d47c741344c9d4008a2991cdecb47df7a86922d54fb0e755f"
+      }
+    },
+    "thread-sanitizers": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "total": 4,
+        "junit_sha256": "08adddcc67828b703987edaf1b9d3e26d368f639c070079d75f0ebda38fa4b23"
+      },
+      "receipt": {
+        "path": "thread-sanitizers/result.json",
+        "sha256": "eec37a20c051a6e6ece16a1891ae4bfb83652ccce351860a6e1731195a4b3866"
+      }
+    },
+    "core-only": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0,
+        "total": 22,
+        "junit_sha256": "5e506e9fad0a7f06aa82f6378f2a4808e4d15cf62b703108b5271a6f068fde72"
+      },
+      "receipt": {
+        "path": "core-only/result.json",
+        "sha256": "5cd561b561de40109d42a9b0eb40a7d9a395c1cd018b073dc23234e6ea1d109b"
+      }
+    },
+    "hdf5-only": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 33,
+        "failed": 0,
+        "skipped": 0,
+        "total": 33,
+        "junit_sha256": "e539a804b99c35a332f7ad128a1fb0d0638f6987e7d96e932e71f0cdadacc972"
+      },
+      "receipt": {
+        "path": "hdf5-only/result.json",
+        "sha256": "cae91ebb14afa91ab822b14fb3bc87aa3f2105528d47b8da7635a384c4b8b33c"
+      }
+    },
+    "zarr-only": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 30,
+        "failed": 0,
+        "skipped": 0,
+        "total": 30,
+        "junit_sha256": "ed07c3d5be9f1e82377329c654767212ce9de21891d91b012093ab6eed053923"
+      },
+      "receipt": {
+        "path": "zarr-only/result.json",
+        "sha256": "a6cc0e7a3073a29dcf99fde33a1b41ab35d268a43f5dafeb10cd7a75e80bfa6e"
+      }
+    },
+    "shared": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "total": 39,
+        "junit_sha256": "30a766c2b3afcef27046d6d233b8ab54bca81fdd1d03a55e29c487f16e1a0f08"
+      },
+      "receipt": {
+        "path": "shared/result.json",
+        "sha256": "4794a1cc589f1434c963b15ddfe43a9f0dc6a5004713bd33514d64c781435d9a"
+      }
+    },
+    "shared-release": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "total": 39,
+        "junit_sha256": "494ff5e28d0df5bf93966615e10d6dfaa48c9fbf2faef7b3a4dca53b3d484713"
+      },
+      "receipt": {
+        "path": "shared-release/result.json",
+        "sha256": "c692f2bb0a5d71d97a3f19b2ea3154893f1d626bd0685de80ef0d54a958fd5a7"
+      }
+    },
+    "interop": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0,
+        "total": 55,
+        "junit_sha256": "8ee00d68b40816273b657c55a4f3f5cf1113681f900397418173c54934d03b5f"
+      },
+      "receipt": {
+        "path": "interop/result.json",
+        "sha256": "2f535f787521d27873d6df3f7c885715fbf812295a8363d8122768a3433c51e6"
+      },
+      "superseded_attempts": {
+        "reason": "Earlier rerun encountered outputs from a superseded build; current results were generated in the cleared destination.",
+        "logs": [
+          "mudata-legacy-hdf5.log",
+          "mudata-legacy-zarr.log",
+          "mudata-legacy-reopen.log"
+        ],
+        "evidence": "mudata-legacy-superseded-output"
+      },
+      "supplemental_checks": {
+        "spatial-fixture-02-before": true,
+        "spatial-fixture-03-before": true,
+        "scanpy-records": true,
+        "hdf5-links": true,
+        "mudata-legacy-generate": true,
+        "spatial-fixture-02-after": true,
+        "spatial-fixture-03-after": true,
+        "mudata-legacy-hdf5-clean": true,
+        "mudata-legacy-zarr-clean": true,
+        "mudata-legacy-reopen-clean": true
+      }
+    },
+    "shared-parquet": {
+      "outcome": "passed",
+      "tests": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "total": 3,
+        "junit_sha256": "c502746a69dc1813405e7b36050949f77e20e955eced4a7320b9eab0fd61da2d"
+      },
+      "receipt": {
+        "path": "shared-parquet/result.json",
+        "sha256": "793843d55ef15ca8874ebd77c246d1eb0ca313574ebee9ab6b940cbd080b39b3"
+      },
+      "installed_arrow_dependency_resolution": true
+    }
+  },
+  "limits": [
+    "Linux x86-64 only",
+    "ASan leak detection disabled",
+    "ThreadSanitizer focused on streaming and prepared transfers"
+  ]
+}

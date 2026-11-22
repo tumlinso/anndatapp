@@ -1,0 +1,2559 @@
+{
+  "schema": "anndatapp.fp16-performance.v1",
+  "machine": {
+    "system": "Linux",
+    "node": "testlsserver",
+    "release": "6.8.0-149-generic",
+    "version": "#149-Ubuntu SMP PREEMPT_DYNAMIC Fri Oct 23 13:21:10 UTC 2026",
+    "machine": "x86_64",
+    "processor": "x86_64"
+  },
+  "cpu_affinity": [
+    16
+  ],
+  "cache_policy": "ordinary OS cache, no eviction; validated inputs are warm",
+  "candidate_hdf5": "1.10.10",
+  "candidate_compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "reference_versions": {
+    "anndata": "0.13.4",
+    "h5py": "3.16.0",
+    "numpy": "2.2.6",
+    "zarr": "3.4.2"
+  },
+  "source_head": "cb4a0db233d657c62ecf15e7c7a43cc07869292a",
+  "source_sha256": {
+    "CMakeLists.txt": "f95162c0a731a1efac252d9e6cf1499b8d59e19614270e54fdd37b0f86f9d64c",
+    "benchmarks/fp16/CMakeLists.txt": "a70c366d30156934bb1f30adf9855bfa4e4c5753305f74497369225c129a959c",
+    "benchmarks/fp16/README.md": "8caec92d7558ae83013d9f8bf01ed50f914f3ef49095a6235e20dd596c867941",
+    "benchmarks/fp16/cpp_driver.cpp": "fe5521e302b7ff51cab81d5fcb9638acc4c1fbef638f2c10774b08bf14fea595",
+    "benchmarks/fp16/h5_cache_control.py": "e15afcfac24642dd1b53ff93b471a3a75fb7219f3135b16e937330fa817d6e9f",
+    "benchmarks/fp16/run.py": "15eaafad0acdd80b3c00409f2654283f222a1eb56dcbd5086daa32444284d2f1",
+    "benchmarks/v1/alloc_counters.cpp": "70b8ac0c8553e5cadffa5557745ab4c2cde5876a80c4ef8556b056ac9557ed43",
+    "benchmarks/v1/dyld_interpose.h": "560da772ddaac92a5c16f43ebed25d61b29afd55ba729733c3d63e68a336c194",
+    "benchmarks/v1/io_counters.c": "ee84db5e1691162ae68fd882c921fee7a4fb539366b2e1b899451669417671c3",
+    "cmake/FindArrowParquet.cmake": "814bddcb6cb8debcaa3ad86d1e3c50524964d78c401180168b3f25f0542bd30f",
+    "cmake/FindBlosc.cmake": "f165d11616a18f4c14b270ce2cdecafdc727b36ae910cd036d81a83ae65ac022",
+    "cmake/anndatappConfig.cmake.in": "89dee9c83848315f572aba0b5bb84bc5bbedc8575bbbaf630520f813b15b87c0",
+    "cmake/anndatappModuleProvider.cmake": "881c63fc3ba474d970682279d62106c60694f37e3fe4d3b7c5b78200dc5bbd68",
+    "cmake/test-installed-consumer.cmake": "0613b2a315514b91bad25aac91c00fda5b10f3237b9b9269561628b5e31b46e8",
+    "src/anndata.cppm": "adcd33e3b65110b16bcba9a2d848090c67771285c834c325332f36395d110dd5",
+    "src/anndatapp.arrays.cppm": "69fe7657f1940390e64a15022559893306209eb7dd883397914bc287d5677fd4",
+    "src/anndatapp.backed.cppm": "b1b890293d96383185ddfa4cffa52489fbc3ed43d917a07d0829fd69e5006978",
+    "src/anndatapp.backed.storage.cppm": "f3544277bce03a67522fd9932fd2411ef155d3460e3c8a019bc1bb78196114b2",
+    "src/anndatapp.core.cppm": "715a25b39c33254135c710035e9c3aad4a524da543618904c454e485972e934d",
+    "src/anndatapp.cppm": "f6655ce8634b5cffead436a8745257d68ea0479e4f023671fb49ed691aef64a9",
+    "src/anndatapp.data.cppm": "8835300aff2409ffabe2aa9bbe5528daf1dd6832ec17bb9245c8150b3b62878e",
+    "src/anndatapp.dataset.cppm": "82fca02ba84fcb836f13b2cf58ead3b4bf8eb37bbf76cbdffaff8945b953b156",
+    "src/anndatapp.h5ad.cppm": "3306950261f04543e8673e9de40828b375e7be30967434597075df5adcdb7798",
+    "src/anndatapp.mudata.cppm": "c72ec3087926aadeb848803190cd6f362abd0be32b74a8eb10aea48d26bde5c9",
+    "src/anndatapp.records.cppm": "58b425897bd39311e2294963a1070aa97e2c62693d17389da0a7bdba8cef280b",
+    "src/anndatapp.spatialdata.cppm": "d77dbe7581c3c560f786135fe10bf587403c3063bc0c639cc6e9a83b56bf3685",
+    "src/anndatapp.streaming.cppm": "bb57c31c02cdccb2d5b734f125011c8298a898d32a73229c3cf01c2334448c57",
+    "src/anndatapp.strings.cppm": "624346a578f6ae093de10c3e1e8d9ceaa1684ad734ee09a3dd19ee1d9d3bbab1",
+    "src/anndatapp.treedata.cppm": "de48e7cf93e04b4dd5ef8b7fd243b710540edf8b9ec0bb16319f8dc45bf92daf",
+    "src/anndatapp.zarr.cppm": "d281314ed487a320384f63c3b470bff922d409f158892e72de08f29d4235ed17",
+    "src/arrays.cpp": "e24eaf9fa4e705caf7d4b60c32761a34b00c958e17cf5020dac058d6b5edca96",
+    "src/backed.cpp": "8e68b23731a6b52f949215d696071b314466ebfb95c973c6b7002f59da5cd3f6",
+    "src/backed_array.cpp": "1998f8cb479c15b511a52c06a9be0f0cff1b407f78fc0c0f070304c2432380db",
+    "src/backed_category.cpp": "6d0399e7b4f91b845a5aec8217bef824c1dbd3bf26d6a298924c58aed0e29360",
+    "src/backed_codec.cpp": "d4902b404d14b8970efd16d147ed6a8df8aa8a225eec68ad240e2476d5e8350d",
+    "src/backed_colors.cpp": "35356c22d40312456984b222a295b17f9715d81a9eb4ecf8345307e14ee89eee",
+    "src/backed_copy.cpp": "5ad603bf265e04a8a5f11d7f6b7bb1737d1f84c29132474bbbdc51e46f5ecb79",
+    "src/backed_geometry.cpp": "cb08f9bda617d4c656a2ddddedec628c82ac05fbbfd5ca8d6467ea1f189034cb",
+    "src/backed_hdf5.cpp": "021aa6c803df3c560f0e30eda8ac25619e312050453803f3a9707d13a0eb0981",
+    "src/backed_index.cpp": "da37379ed7bbe94692a959298f4b5d2d8a8afa7e3a48e3a300b17548c00e0d97",
+    "src/backed_records.cpp": "e3c67b8beae5102657fee512f615155cbcc7869843f2cd758fe4193866e3cd95",
+    "src/backed_structure.cpp": "33bf6f915bf974d401d2dc4d33a72672d494f03405148cd910a5a09a5dd58e32",
+    "src/backed_writer.cpp": "56ab7b12156e5614e096db69e1fe92393980e62c7f76aac50e595919b3835011",
+    "src/backed_zarr.cpp": "c30901e179e6160b2d9e92be6168c8b9a390d9d23cbd8b7802ec69df90a52286",
+    "src/data.cpp": "e068e62a04520e0e764b35d51bf110603057f7c6c37f62190fb9da7ba248b4c8",
+    "src/dataset.cpp": "6548982cb43ec8e5f458e716111dda8d2fd300239653cdb5f2e423d28b1d20e5",
+    "src/float16.cpp": "4a2cb737285557ec94c139ee153d76c8e3574e151929983fbca02dd73823fa6b",
+    "src/h5ad.cpp": "0fe01c763aca8ea07678001687a0e3fd58e306ffe5c39e4ef3617a55ab711367",
+    "src/h5ad_binary16.hpp": "adf2f2e2534036aed2bd661f5dd3f09344ee2b8318301fc28d0f02ee3ffe8588",
+    "src/h5ad_object.hpp": "b93856777a470763fcc80e535cfb6d31656393cca834a1f5c7b7d92fcd1b110f",
+    "src/h5ad_record_scratch.hpp": "b429a1f1de2d68f025ffc4097185900e190ab084e6be86f35b5426c10149c993",
+    "src/h5ad_text.hpp": "483cb95fede7a2cf90bc046ac9ba365db4858172dad23e7ae1d48244edf8e308",
+    "src/mudata.cpp": "c22e6a0ce326bf2b7fa2d7986f5eed0168c442b8756789e9118f46a166593fd0",
+    "src/records.cpp": "dc31c1f4dc4593bf34e98c494ba0b5f7e87091537aa4791987209c19fcec2d47",
+    "src/spatialdata.cpp": "21bcd94d01554b476738233e3ceb2b6395199ce618e052cf436fc0d59ceeb671",
+    "src/spatialdata_io.cpp": "603b9210b3e9b66ec44bc8ef66dc2044c5cbce290b189508bd8988d57e1bec08",
+    "src/spatialdata_names.hpp": "772fef02d56faa1e15ff393766b92fb6627e946733d410edf3a97aa4bb23c5cb",
+    "src/spatialdata_parquet.cpp": "075e8497acb43a70e20f9f2e61819b28b0fc96d279db56765dc104c35f2e2e2b",
+    "src/spatialdata_parquet.hpp": "c5dddd36fd09c8c024099bccb566802d6203ec3580a067a8e893aabfed5082e6",
+    "src/spatialdata_transform.cpp": "fb3d4ca6e149eb9c9cb109cb30544d86c00c5a9ad9ea869b69d21cbdb0a06483",
+    "src/spatialdata_wkb.hpp": "de19caf82dca2aa7127fab7df80eeea756872f587b51b24223f6347fe56cc91a",
+    "src/store.cpp": "d93f46d39eda9e9b2385d6fd84474e58c4f31e2e76d2c1c46bec10a4ffdaca05",
+    "src/streaming.cpp": "b884fd124ca30002de5e56fee3fc9cd81a1e71c88ff029e910e54a32ee2a08b9",
+    "src/strings.cpp": "661a5e244f6a33ff062887c327f796d0aa81281acf4c951b1eaef5ad918e87e5",
+    "src/treedata.cpp": "e492150e719a9530dc656d828fb43b48be706ce1ece342df208714235cfcedb7",
+    "src/treedata_io.cpp": "519efb5bdedc596dbc47702e4c19081487d9f7f1ec41cd74a343a7532afad3a5",
+    "src/treedata_json.hpp": "d09e55ebb4c6b4f440ec8fa84b7bca3737ab9357ceb2ab92c5eaeac81fdbdfd3",
+    "src/utf8.hpp": "6bfe2ed98be36a2f79d14dd83e2d0fa03636196342de41d03903e85a5af06536",
+    "src/zarr.cpp": "28e581ddde702fcd6e65e08b0c78efc623b7cf6995f6b7023d345d3e3ce7d318",
+    "src/zarr_codecs.cpp": "670f669074c2cb2b79b8353a1d7031d8c64a7cbded66785211ac7e05424ce7d4",
+    "src/zarr_engine.cpp": "923f4b23f75a48f0cf7899c000e871c3c9d1b7610f2d0dbcfd0c3b0d712dc031",
+    "src/zarr_engine.hpp": "eef509352b89e32be20383ef269c31162f918b2470415f0658a872253787a2b8",
+    "src/zarr_sharding.cpp": "81231a18b43bc642f085f1a1696f3ccd82ec89992de7cb383dec44df9aa52ae8"
+  },
+  "bench_sha256": "768363ea3247672b1553de0e6766d4b0c11ad8f453a47bccc44f2d26aebb65f1",
+  "observer_sha256": {
+    "libfp16_alloc_counters.so": "390432a468046a617352c324b1b30103c21ffa9ea3e45eaf0637e7f5a6916f2c",
+    "libfp16_io_counters.so": "fa5e0625ceb88d3918ea4c67bf3f793e6d1b0b33e49dccaa3cd9a6f1ce4112a2"
+  },
+  "fixtures": {
+    "h5-contiguous-f16.h5ad": {
+      "bytes": 8616832,
+      "sha256": "a164b30cb8d1301355de717a014d66b12d96260d5b99857d95736cc51b263364",
+      "chunks": null,
+      "compression": null,
+      "itemsize": 2
+    },
+    "h5-gzip-f16.h5ad": {
+      "bytes": 8632648,
+      "sha256": "756b8218fee3e0259917cd90e00831b230d7c49f1470640821cb1814907bc3d1",
+      "chunks": [
+        128,
+        128
+      ],
+      "compression": "gzip",
+      "itemsize": 2
+    },
+    "zarr2-f16.zarr": {
+      "bytes": 6474981,
+      "files": 284,
+      "tree_sha256": "00534f4de8074c0f092f6eddf1bfb76222dba1e2a463cbe5c4630d603d70ded2",
+      "chunks": [
+        128,
+        128
+      ],
+      "shards": null,
+      "compression": [
+        "Zstd(level=3)"
+      ],
+      "itemsize": 2
+    },
+    "zarr3-f16.zarr": {
+      "bytes": 6458879,
+      "files": 271,
+      "tree_sha256": "61cfa0242aba6b1ff82cb7f089cd30df54ee8ee6fa606567d6e8a841bc8a90f2",
+      "chunks": [
+        128,
+        128
+      ],
+      "shards": null,
+      "compression": [
+        "ZstdCodec(level=3, checksum=False)"
+      ],
+      "itemsize": 2
+    },
+    "zarr3-sharded-f16.zarr": {
+      "bytes": 6463610,
+      "files": 47,
+      "tree_sha256": "d159412253edc83d57a346147f3568c8bed6b7eb4695d5c0593a35a1511f7cb0",
+      "chunks": [
+        128,
+        128
+      ],
+      "shards": [
+        256,
+        512
+      ],
+      "compression": [
+        "ZstdCodec(level=3, checksum=False)"
+      ],
+      "itemsize": 2
+    },
+    "h5-contiguous-f32.h5ad": {
+      "bytes": 17005440,
+      "sha256": "52077c0c0e25478fb704ff9fc3855b95e20f46b7ce5e8a97710d036e97dad99d",
+      "chunks": null,
+      "compression": null,
+      "itemsize": 4
+    },
+    "h5-gzip-f32.h5ad": {
+      "bytes": 17021256,
+      "sha256": "bf7fca0ecff49645c19c5c3f76f31cb4f6a82b515039d7b6eb1782c296e586d4",
+      "chunks": [
+        128,
+        128
+      ],
+      "compression": "gzip",
+      "itemsize": 4
+    },
+    "zarr2-f32.zarr": {
+      "bytes": 7038901,
+      "files": 284,
+      "tree_sha256": "55250e7e6764114060d40ced0dd5667d113323970c48f7bd2f7874477bd5e545",
+      "chunks": [
+        128,
+        128
+      ],
+      "shards": null,
+      "compression": [
+        "Zstd(level=3)"
+      ],
+      "itemsize": 4
+    },
+    "zarr3-f32.zarr": {
+      "bytes": 7022799,
+      "files": 271,
+      "tree_sha256": "3e0a4aba4fd163971a9d4bdba256e66fae15bfae2ecb37d46ad543875be94286",
+      "chunks": [
+        128,
+        128
+      ],
+      "shards": null,
+      "compression": [
+        "ZstdCodec(level=3, checksum=False)"
+      ],
+      "itemsize": 4
+    },
+    "zarr3-sharded-f32.zarr": {
+      "bytes": 7027530,
+      "files": 47,
+      "tree_sha256": "5340dd00140d8ce4c90f3e35e6eded9a3e102312e09f106b6f5bbb58a892c883",
+      "chunks": [
+        128,
+        128
+      ],
+      "shards": [
+        256,
+        512
+      ],
+      "compression": [
+        "ZstdCodec(level=3, checksum=False)"
+      ],
+      "itemsize": 4
+    }
+  },
+  "cases": {
+    "copy-memory": {
+      "passes": 32,
+      "validated": [
+        "native16",
+        "native32"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.057178304,
+            "runtime_s": 0.020991123,
+            "payload_bytes": 268435456
+          },
+          {
+            "setup_s": 0.054010393,
+            "runtime_s": 0.01982568,
+            "payload_bytes": 268435456
+          },
+          {
+            "setup_s": 0.054344749,
+            "runtime_s": 0.019795593,
+            "payload_bytes": 268435456
+          },
+          {
+            "setup_s": 0.054649251,
+            "runtime_s": 0.019620878,
+            "payload_bytes": 268435456
+          },
+          {
+            "setup_s": 0.054093091,
+            "runtime_s": 0.02050187,
+            "payload_bytes": 268435456
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.017218956,
+            "runtime_s": 0.041663093,
+            "payload_bytes": 536870912
+          },
+          {
+            "setup_s": 0.01539263,
+            "runtime_s": 0.037793201,
+            "payload_bytes": 536870912
+          },
+          {
+            "setup_s": 0.019227393,
+            "runtime_s": 0.045835421,
+            "payload_bytes": 536870912
+          },
+          {
+            "setup_s": 0.017344549,
+            "runtime_s": 0.041107139,
+            "payload_bytes": 536870912
+          },
+          {
+            "setup_s": 0.017025107,
+            "runtime_s": 0.042130504,
+            "payload_bytes": 536870912
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.01982568,
+          "setup_s": 0.054344749
+        },
+        "native32": {
+          "runtime_s": 0.041663093,
+          "setup_s": 0.017218956
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.0543092,
+          "runtime_s": 0,
+          "payload_bytes": 268435456,
+          "new_calls": 64,
+          "requested_bytes": 1024,
+          "libc_read_calls": 0,
+          "libc_read_bytes": 0,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 0.017140723,
+          "runtime_s": 0,
+          "payload_bytes": 536870912,
+          "new_calls": 64,
+          "requested_bytes": 1024,
+          "libc_read_calls": 0,
+          "libc_read_bytes": 0,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 1.1205162319997726
+    },
+    "eager-read-h5-contiguous": {
+      "passes": 2,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 1.909e-05,
+            "runtime_s": 0.017295031,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 8.925e-06,
+            "runtime_s": 0.016286185,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.0931e-05,
+            "runtime_s": 0.015167852,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.0868e-05,
+            "runtime_s": 0.014156788,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.2294e-05,
+            "runtime_s": 0.012679887,
+            "payload_bytes": 16777216
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 1.3599e-05,
+            "runtime_s": 0.029308775,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.2171e-05,
+            "runtime_s": 0.029280376,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.498e-06,
+            "runtime_s": 0.029882348,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.7261e-05,
+            "runtime_s": 0.028583323,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.122e-06,
+            "runtime_s": 0.02693217,
+            "payload_bytes": 33554432
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 2.6460002118255943e-06,
+            "runtime_s": 0.03788962699991316,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 3.256000127294101e-06,
+            "runtime_s": 0.035842759999923146,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.478999704180751e-06,
+            "runtime_s": 0.034235622999858606,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.6379998416814487e-06,
+            "runtime_s": 0.03483574999972916,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.095999661833048e-06,
+            "runtime_s": 0.0315300299998853,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.015167852,
+          "setup_s": 1.0931e-05
+        },
+        "native32": {
+          "runtime_s": 0.029280376,
+          "setup_s": 1.2171e-05
+        },
+        "python16": {
+          "runtime_s": 0.03483574999972916,
+          "setup_s": 2.6379998416814487e-06
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 8.72e-06,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 216,
+          "requested_bytes": 17193510,
+          "libc_read_calls": 124,
+          "libc_read_bytes": 17250560,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 6,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 1.2556e-05,
+          "runtime_s": 0,
+          "payload_bytes": 33554432,
+          "new_calls": 216,
+          "requested_bytes": 33970726,
+          "libc_read_calls": 124,
+          "libc_read_bytes": 34027776,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 6,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 6.666661978999855
+    },
+    "eager-read-h5-gzip": {
+      "passes": 2,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 1.9937e-05,
+            "runtime_s": 0.120233707,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 8.795e-06,
+            "runtime_s": 0.113046979,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.2959e-05,
+            "runtime_s": 0.123196282,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.3878e-05,
+            "runtime_s": 0.121097383,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.2464e-05,
+            "runtime_s": 0.112791693,
+            "payload_bytes": 16777216
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 1.3775e-05,
+            "runtime_s": 0.219140777,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.7325e-05,
+            "runtime_s": 0.222323596,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.966e-06,
+            "runtime_s": 0.238443795,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.8713e-05,
+            "runtime_s": 0.21431148,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.734e-06,
+            "runtime_s": 0.209948972,
+            "payload_bytes": 33554432
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 2.255999788758345e-06,
+            "runtime_s": 0.1397333280001476,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 3.04000013784389e-06,
+            "runtime_s": 0.1493824939998376,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.3610000425833277e-06,
+            "runtime_s": 0.1471744740001668,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.3630000214325264e-06,
+            "runtime_s": 0.1356966419998571,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.5289996301580686e-06,
+            "runtime_s": 0.1392549440001858,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.120233707,
+          "setup_s": 1.2959e-05
+        },
+        "native32": {
+          "runtime_s": 0.219140777,
+          "setup_s": 1.3775e-05
+        },
+        "python16": {
+          "runtime_s": 0.1397333280001476,
+          "setup_s": 2.3630000214325264e-06
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 1.3451e-05,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 216,
+          "requested_bytes": 17193498,
+          "libc_read_calls": 646,
+          "libc_read_bytes": 12314476,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 6,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 1.0342e-05,
+          "runtime_s": 0,
+          "payload_bytes": 33554432,
+          "new_calls": 216,
+          "requested_bytes": 33970714,
+          "libc_read_calls": 646,
+          "libc_read_bytes": 16100492,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 6,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 8.655918673999622
+    },
+    "eager-read-zarr2": {
+      "passes": 2,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 1.273e-05,
+            "runtime_s": 0.042111163,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.3621e-05,
+            "runtime_s": 0.042883715,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.2357e-05,
+            "runtime_s": 0.04240017,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.1384e-05,
+            "runtime_s": 0.04508974,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.25e-05,
+            "runtime_s": 0.042408652,
+            "payload_bytes": 16777216
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 1.1423e-05,
+            "runtime_s": 0.094500696,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.3109e-05,
+            "runtime_s": 0.091079143,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.0369e-05,
+            "runtime_s": 0.083736171,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 4.418e-05,
+            "runtime_s": 0.093893637,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.1325e-05,
+            "runtime_s": 0.089808482,
+            "payload_bytes": 33554432
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 2.3970001166162547e-06,
+            "runtime_s": 0.18039287600004172,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.204999873356428e-06,
+            "runtime_s": 0.18148500200004491,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.5450003704463597e-06,
+            "runtime_s": 0.17956995600025039,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 3.253000159020303e-06,
+            "runtime_s": 0.17905744599966056,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.610999672469916e-06,
+            "runtime_s": 0.1799447139997028,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.042408652,
+          "setup_s": 1.25e-05
+        },
+        "native32": {
+          "runtime_s": 0.091079143,
+          "setup_s": 1.1423e-05
+        },
+        "python16": {
+          "runtime_s": 0.1799447139997028,
+          "setup_s": 2.5450003704463597e-06
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 8.93e-06,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 32862,
+          "requested_bytes": 102570816,
+          "libc_read_calls": 972,
+          "libc_read_bytes": 12972496,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 6.364e-06,
+          "runtime_s": 0,
+          "payload_bytes": 33554432,
+          "new_calls": 32862,
+          "requested_bytes": 138380928,
+          "libc_read_calls": 972,
+          "libc_read_bytes": 14100336,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 7.719161034000081
+    },
+    "eager-read-zarr3": {
+      "passes": 2,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 1.7745e-05,
+            "runtime_s": 0.077410203,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.1955e-05,
+            "runtime_s": 0.069655002,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.1122e-05,
+            "runtime_s": 0.073071596,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.606e-05,
+            "runtime_s": 0.076161301,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.3648e-05,
+            "runtime_s": 0.076720629,
+            "payload_bytes": 16777216
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 8.14e-06,
+            "runtime_s": 0.129752782,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.5036e-05,
+            "runtime_s": 0.122710241,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 9.739e-06,
+            "runtime_s": 0.125798436,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.7106e-05,
+            "runtime_s": 0.131548761,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.622e-06,
+            "runtime_s": 0.120700614,
+            "payload_bytes": 33554432
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 2.4739997570577543e-06,
+            "runtime_s": 0.1476881499997944,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.9499998415994924e-06,
+            "runtime_s": 0.1343868650001241,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.2609997358813416e-06,
+            "runtime_s": 0.13570410900001662,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.4209998628066387e-06,
+            "runtime_s": 0.14773425000021234,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.0259999473637436e-06,
+            "runtime_s": 0.1375817250000182,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.076161301,
+          "setup_s": 1.3648e-05
+        },
+        "native32": {
+          "runtime_s": 0.125798436,
+          "setup_s": 9.739e-06
+        },
+        "python16": {
+          "runtime_s": 0.1375817250000182,
+          "setup_s": 2.2609997358813416e-06
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 8.633e-06,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 38392,
+          "requested_bytes": 102175476,
+          "libc_read_calls": 784,
+          "libc_read_bytes": 12958604,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 5.857e-06,
+          "runtime_s": 0,
+          "payload_bytes": 33554432,
+          "new_calls": 38392,
+          "requested_bytes": 137985588,
+          "libc_read_calls": 784,
+          "libc_read_bytes": 14086444,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 7.6675970739997865
+    },
+    "eager-read-zarr3-sharded": {
+      "passes": 2,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 1.8894e-05,
+            "runtime_s": 0.074551068,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 8.55e-06,
+            "runtime_s": 0.079159437,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.2495e-05,
+            "runtime_s": 0.072223059,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 8.334e-06,
+            "runtime_s": 0.076549489,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 1.6581e-05,
+            "runtime_s": 0.081688314,
+            "payload_bytes": 16777216
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 8.364e-06,
+            "runtime_s": 0.124000917,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.6192e-05,
+            "runtime_s": 0.127190516,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.494e-06,
+            "runtime_s": 0.125952518,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 1.3308e-05,
+            "runtime_s": 0.13356293,
+            "payload_bytes": 33554432
+          },
+          {
+            "setup_s": 8.905e-06,
+            "runtime_s": 0.13741301,
+            "payload_bytes": 33554432
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 2.2520002858072985e-06,
+            "runtime_s": 0.11201099799973235,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.446000053168973e-06,
+            "runtime_s": 0.11378790300022956,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.021000000240747e-06,
+            "runtime_s": 0.11231697699986398,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 2.4139999368344434e-06,
+            "runtime_s": 0.11410872199985533,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 3.591000222513685e-06,
+            "runtime_s": 0.11326618400016741,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.076549489,
+          "setup_s": 1.2495e-05
+        },
+        "native32": {
+          "runtime_s": 0.127190516,
+          "setup_s": 8.905e-06
+        },
+        "python16": {
+          "runtime_s": 0.11326618400016741,
+          "setup_s": 2.4139999368344434e-06
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 7.728e-06,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 90046,
+          "requested_bytes": 100457992,
+          "libc_read_calls": 1296,
+          "libc_read_bytes": 13031258,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 6.242e-06,
+          "runtime_s": 0,
+          "payload_bytes": 33554432,
+          "new_calls": 90046,
+          "requested_bytes": 136268104,
+          "libc_read_calls": 1296,
+          "libc_read_bytes": 14159098,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 7.38786755000001
+    },
+    "prepared-read-h5-contiguous": {
+      "passes": 4,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.002727505,
+            "runtime_s": 0.002585706,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.002168948,
+            "runtime_s": 0.002459566,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.002121609,
+            "runtime_s": 0.001777945,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.002297413,
+            "runtime_s": 0.002541042,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.002348551,
+            "runtime_s": 0.00207814,
+            "payload_bytes": 4194304
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.002646579,
+            "runtime_s": 0.00493992,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.003300333,
+            "runtime_s": 0.005148625,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.002721332,
+            "runtime_s": 0.003580282,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.002959267,
+            "runtime_s": 0.004870464,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.002787484,
+            "runtime_s": 0.004376476,
+            "payload_bytes": 8388608
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 0.0009706180003377085,
+            "runtime_s": 0.008828052999888314,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0009241030002158368,
+            "runtime_s": 0.00830410300022777,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0008823950001897174,
+            "runtime_s": 0.008747778999804723,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0009046440000020084,
+            "runtime_s": 0.008579955999721278,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0008837880000100995,
+            "runtime_s": 0.008473813999898994,
+            "payload_bytes": 4194304
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.002459566,
+          "setup_s": 0.002297413
+        },
+        "native32": {
+          "runtime_s": 0.004870464,
+          "setup_s": 0.002787484
+        },
+        "python16": {
+          "runtime_s": 0.008579955999721278,
+          "setup_s": 0.0009046440000020084
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.003023975,
+          "runtime_s": 0,
+          "payload_bytes": 4194304,
+          "new_calls": 385,
+          "requested_bytes": 6160,
+          "libc_read_calls": 256,
+          "libc_read_bytes": 16777216,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 64,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 4194304,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 1,
+          "transfer_retained_scratch_bytes": 2048
+        },
+        "native32": {
+          "setup_s": 0.00267822,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 385,
+          "requested_bytes": 6160,
+          "libc_read_calls": 512,
+          "libc_read_bytes": 33554432,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 64,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 8388608,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 1,
+          "transfer_retained_scratch_bytes": 4096
+        }
+      },
+      "window_s": 5.268291076999958
+    },
+    "prepared-read-h5-gzip": {
+      "passes": 4,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.002608133,
+            "runtime_s": 0.068290002,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.002294588,
+            "runtime_s": 0.067888029,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.00224048,
+            "runtime_s": 0.06812461,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003931052,
+            "runtime_s": 0.092717975,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003048148,
+            "runtime_s": 0.089689229,
+            "payload_bytes": 4194304
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.00267259,
+            "runtime_s": 0.13259495,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.003260773,
+            "runtime_s": 0.132195328,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.002766851,
+            "runtime_s": 0.13425352,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.004836376,
+            "runtime_s": 0.191985407,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.004413271,
+            "runtime_s": 0.171230216,
+            "payload_bytes": 8388608
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 0.0009312559996033087,
+            "runtime_s": 0.02661391299989191,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0009844989999692189,
+            "runtime_s": 0.026913948000128585,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0010530240001571656,
+            "runtime_s": 0.030782023000028857,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0009737740001583006,
+            "runtime_s": 0.034537151000222366,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0009635119999984454,
+            "runtime_s": 0.026288443000339612,
+            "payload_bytes": 4194304
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.068290002,
+          "setup_s": 0.002608133
+        },
+        "native32": {
+          "runtime_s": 0.13425352,
+          "setup_s": 0.003260773
+        },
+        "python16": {
+          "runtime_s": 0.026913948000128585,
+          "setup_s": 0.0009737740001583006
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.002757781,
+          "runtime_s": 0,
+          "payload_bytes": 4194304,
+          "new_calls": 385,
+          "requested_bytes": 6160,
+          "libc_read_calls": 376,
+          "libc_read_bytes": 8674372,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 64,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 4194304,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 1,
+          "transfer_retained_scratch_bytes": 2048
+        },
+        "native32": {
+          "setup_s": 0.002886643,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 385,
+          "requested_bytes": 6160,
+          "libc_read_calls": 376,
+          "libc_read_bytes": 11458764,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 64,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 8388608,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 1,
+          "transfer_retained_scratch_bytes": 4096
+        }
+      },
+      "window_s": 6.982389521999721
+    },
+    "prepared-read-zarr2": {
+      "passes": 4,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.001150891,
+            "runtime_s": 0.017755372,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.000986785,
+            "runtime_s": 0.018067062,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.000981451,
+            "runtime_s": 0.017604928,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001010012,
+            "runtime_s": 0.018403369,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.000990565,
+            "runtime_s": 0.017618849,
+            "payload_bytes": 4194304
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.001483456,
+            "runtime_s": 0.041829904,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001628886,
+            "runtime_s": 0.041919847,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.00144518,
+            "runtime_s": 0.042862582,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001628492,
+            "runtime_s": 0.041862556,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001483746,
+            "runtime_s": 0.041912868,
+            "payload_bytes": 8388608
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 0.003165466000154993,
+            "runtime_s": 0.1312959880001472,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003757094999855326,
+            "runtime_s": 0.13616713300007177,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003163186999699974,
+            "runtime_s": 0.12847830400005478,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0030643439999948896,
+            "runtime_s": 0.1279391289999694,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0031588050001118972,
+            "runtime_s": 0.1291524340003889,
+            "payload_bytes": 4194304
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.017755372,
+          "setup_s": 0.000990565
+        },
+        "native32": {
+          "runtime_s": 0.041912868,
+          "setup_s": 0.001483746
+        },
+        "python16": {
+          "runtime_s": 0.1291524340003889,
+          "setup_s": 0.003163186999699974
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.001151632,
+          "runtime_s": 0,
+          "payload_bytes": 4194304,
+          "new_calls": 6408,
+          "requested_bytes": 4016832,
+          "libc_read_calls": 384,
+          "libc_read_bytes": 9673292,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 4194304,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 9,
+          "transfer_retained_scratch_bytes": 125861
+        },
+        "native32": {
+          "setup_s": 0.001485226,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 6409,
+          "requested_bytes": 4090281,
+          "libc_read_calls": 384,
+          "libc_read_bytes": 10527452,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 8388608,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 10,
+          "transfer_retained_scratch_bytes": 162956
+        }
+      },
+      "window_s": 6.1103457599997455
+    },
+    "prepared-read-zarr3": {
+      "passes": 4,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.001120931,
+            "runtime_s": 0.018177365,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001437861,
+            "runtime_s": 0.024155452,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001108454,
+            "runtime_s": 0.019190727,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001008771,
+            "runtime_s": 0.018759663,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001091913,
+            "runtime_s": 0.01837429,
+            "payload_bytes": 4194304
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.001428145,
+            "runtime_s": 0.0443,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001612797,
+            "runtime_s": 0.047655215,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001573118,
+            "runtime_s": 0.05213599,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001611143,
+            "runtime_s": 0.042401433,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001452354,
+            "runtime_s": 0.041742579,
+            "payload_bytes": 8388608
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 0.003147782000269217,
+            "runtime_s": 0.13531862499985436,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003125796999938757,
+            "runtime_s": 0.14122077699994406,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003231227000014769,
+            "runtime_s": 0.13758990199994514,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0030853999996907078,
+            "runtime_s": 0.13845868799990058,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.00322464900000341,
+            "runtime_s": 0.13636659099984172,
+            "payload_bytes": 4194304
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.018759663,
+          "setup_s": 0.001108454
+        },
+        "native32": {
+          "runtime_s": 0.0443,
+          "setup_s": 0.001573118
+        },
+        "python16": {
+          "runtime_s": 0.13758990199994514,
+          "setup_s": 0.003147782000269217
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.001145291,
+          "runtime_s": 0,
+          "payload_bytes": 4194304,
+          "new_calls": 6792,
+          "requested_bytes": 4093632,
+          "libc_read_calls": 384,
+          "libc_read_bytes": 9673292,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 4194304,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 9,
+          "transfer_retained_scratch_bytes": 125861
+        },
+        "native32": {
+          "setup_s": 0.00172792,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 6793,
+          "requested_bytes": 4167081,
+          "libc_read_calls": 384,
+          "libc_read_bytes": 10527452,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 8388608,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 10,
+          "transfer_retained_scratch_bytes": 162956
+        }
+      },
+      "window_s": 6.318288768000002
+    },
+    "prepared-read-zarr3-sharded": {
+      "passes": 4,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.001180253,
+            "runtime_s": 0.046177644,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001039666,
+            "runtime_s": 0.045097701,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001043433,
+            "runtime_s": 0.044864921,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001039032,
+            "runtime_s": 0.045845463,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.001021319,
+            "runtime_s": 0.045800211,
+            "payload_bytes": 4194304
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.001527794,
+            "runtime_s": 0.078746502,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001753775,
+            "runtime_s": 0.076090694,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001453549,
+            "runtime_s": 0.076221753,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001778745,
+            "runtime_s": 0.079585787,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.001431098,
+            "runtime_s": 0.075344638,
+            "payload_bytes": 8388608
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 0.003322085000036168,
+            "runtime_s": 0.22623536599985528,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0033208299996658752,
+            "runtime_s": 0.2236182629999348,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0035803529999611783,
+            "runtime_s": 0.2238042009998935,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.003452558999924804,
+            "runtime_s": 0.2222759359997326,
+            "payload_bytes": 4194304
+          },
+          {
+            "setup_s": 0.0034554200001366553,
+            "runtime_s": 0.2186801339998965,
+            "payload_bytes": 4194304
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.045800211,
+          "setup_s": 0.001039666
+        },
+        "native32": {
+          "runtime_s": 0.076221753,
+          "setup_s": 0.001527794
+        },
+        "python16": {
+          "runtime_s": 0.2236182629999348,
+          "setup_s": 0.003452558999924804
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.001582676,
+          "runtime_s": 0,
+          "payload_bytes": 4194304,
+          "new_calls": 57088,
+          "requested_bytes": 60163608,
+          "libc_read_calls": 768,
+          "libc_read_bytes": 9723980,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 4194304,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 1,
+          "transfer_retained_scratch_bytes": 2048
+        },
+        "native32": {
+          "setup_s": 0.001794919,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 57088,
+          "requested_bytes": 74454840,
+          "libc_read_calls": 768,
+          "libc_read_bytes": 10578140,
+          "libc_write_calls": 0,
+          "libc_write_bytes": 0,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 64,
+          "transfer_read_bytes": 8388608,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 1,
+          "transfer_retained_scratch_bytes": 4096
+        }
+      },
+      "window_s": 7.019955281000421
+    },
+    "eager-write-h5-contiguous": {
+      "passes": 1,
+      "validated": [
+        "native16",
+        "native32"
+      ],
+      "verified_outputs": {
+        "native16": {
+          "bytes": 8617378,
+          "sha256": "271ea09b5b53b29d29a80a505304298b2f44bd8ec091530d43771b71ea8bf391",
+          "chunks": null,
+          "compression": null,
+          "itemsize": 2
+        },
+        "native32": {
+          "bytes": 17005986,
+          "sha256": "c7be6ff240dd6ebe5e8eadf8c2aff022e1ff37bf6d00bfcac5d8e94830918400",
+          "chunks": null,
+          "compression": null,
+          "itemsize": 4
+        }
+      },
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.051913265,
+            "runtime_s": 0.012528485,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.057266575,
+            "runtime_s": 0.011919189,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050944705,
+            "runtime_s": 0.031094867,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.051092911,
+            "runtime_s": 0.011478555,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.05048286,
+            "runtime_s": 0.035495524,
+            "payload_bytes": 8388608
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.016219203,
+            "runtime_s": 0.019233743,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015898495,
+            "runtime_s": 0.05463612,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.016120205,
+            "runtime_s": 0.019075268,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015901592,
+            "runtime_s": 0.150837645,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.016886462,
+            "runtime_s": 0.01944954,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.012528485,
+          "setup_s": 0.051092911
+        },
+        "native32": {
+          "runtime_s": 0.01944954,
+          "setup_s": 0.016120205
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.050790073,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 86,
+          "requested_bytes": 206977,
+          "libc_read_calls": 0,
+          "libc_read_bytes": 0,
+          "libc_write_calls": 23,
+          "libc_write_bytes": 8617364,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 3,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 0.015892039,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 86,
+          "requested_bytes": 206977,
+          "libc_read_calls": 0,
+          "libc_read_bytes": 0,
+          "libc_write_calls": 23,
+          "libc_write_bytes": 17005972,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 3,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 1.189096563000021
+    },
+    "eager-write-h5-gzip": {
+      "passes": 1,
+      "validated": [
+        "native16",
+        "native32"
+      ],
+      "verified_outputs": {
+        "native16": {
+          "bytes": 5221825,
+          "sha256": "a6cf90b1c3bd499430b3a3bbfbd6bf313cb5cfd295fd433584415bd0c7a8ba1b",
+          "chunks": [
+            512,
+            1024
+          ],
+          "compression": "gzip",
+          "itemsize": 2
+        },
+        "native32": {
+          "bytes": 7486821,
+          "sha256": "913e940702b6edc7a703433cb117b5910698de9a6975d2b42e2f481f7f506fc0",
+          "chunks": [
+            512,
+            512
+          ],
+          "compression": "gzip",
+          "itemsize": 4
+        }
+      },
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.052430277,
+            "runtime_s": 0.16089605,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050238561,
+            "runtime_s": 0.159871008,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050174727,
+            "runtime_s": 0.156236775,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.051910422,
+            "runtime_s": 0.15754984,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050757134,
+            "runtime_s": 0.159631841,
+            "payload_bytes": 8388608
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.016247652,
+            "runtime_s": 0.325610112,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015658276,
+            "runtime_s": 0.316755795,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015414185,
+            "runtime_s": 0.319358227,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.016621879,
+            "runtime_s": 0.335652072,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015762525,
+            "runtime_s": 0.321048106,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.159631841,
+          "setup_s": 0.050757134
+        },
+        "native32": {
+          "runtime_s": 0.321048106,
+          "setup_s": 0.015762525
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.050944744,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 89,
+          "requested_bytes": 207003,
+          "libc_read_calls": 0,
+          "libc_read_bytes": 0,
+          "libc_write_calls": 34,
+          "libc_write_bytes": 5221710,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 3,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 0.015878104,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 89,
+          "requested_bytes": 207003,
+          "libc_read_calls": 0,
+          "libc_read_bytes": 0,
+          "libc_write_calls": 42,
+          "libc_write_bytes": 7486706,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 3,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 3.4279318379999495
+    },
+    "eager-write-zarr2": {
+      "passes": 1,
+      "validated": [
+        "native16",
+        "native32"
+      ],
+      "verified_outputs": {
+        "native16": {
+          "bytes": 2607929,
+          "files": 37,
+          "tree_sha256": "5ea81c830e0c5bf1ed58458e86efc2b46f7d2839dcd3f774b8d06cf695e414f1",
+          "chunks": [
+            512,
+            1024
+          ],
+          "shards": null,
+          "compression": [
+            "Zstd(level=3)"
+          ],
+          "itemsize": 2
+        },
+        "native32": {
+          "bytes": 3998971,
+          "files": 45,
+          "tree_sha256": "7ac47684d1154f64746c0fed9328db97ef12b86b15e327aa16e8ed22ea2e896b",
+          "chunks": [
+            512,
+            512
+          ],
+          "shards": null,
+          "compression": [
+            "Zstd(level=3)"
+          ],
+          "itemsize": 4
+        }
+      },
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.050763456,
+            "runtime_s": 0.053572092,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050852704,
+            "runtime_s": 0.052332274,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.051010684,
+            "runtime_s": 0.051866872,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050324771,
+            "runtime_s": 0.052011718,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.052600778,
+            "runtime_s": 0.053218964,
+            "payload_bytes": 8388608
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.016196327,
+            "runtime_s": 0.126911422,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.01539407,
+            "runtime_s": 0.123263054,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015360926,
+            "runtime_s": 0.12392472,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015342724,
+            "runtime_s": 0.122849249,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015650536,
+            "runtime_s": 0.126888057,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.052332274,
+          "setup_s": 0.050852704
+        },
+        "native32": {
+          "runtime_s": 0.12392472,
+          "setup_s": 0.01539407
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.054455654,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 5389,
+          "requested_bytes": 26935638,
+          "libc_read_calls": 76,
+          "libc_read_bytes": 4015,
+          "libc_write_calls": 38,
+          "libc_write_bytes": 2607931,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 0.015400434,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 5981,
+          "requested_bytes": 52255070,
+          "libc_read_calls": 76,
+          "libc_read_bytes": 4013,
+          "libc_write_calls": 46,
+          "libc_write_bytes": 3998973,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 1.5822390509997604
+    },
+    "eager-write-zarr3": {
+      "passes": 1,
+      "validated": [
+        "native16",
+        "native32"
+      ],
+      "verified_outputs": {
+        "native16": {
+          "bytes": 2611519,
+          "files": 23,
+          "tree_sha256": "836230ff5aab0d0833525f5303423c42f9863fe26178557ea7a50dfeb566dd0e",
+          "chunks": [
+            512,
+            1024
+          ],
+          "shards": null,
+          "compression": [
+            "ZstdCodec(level=3, checksum=False)"
+          ],
+          "itemsize": 2
+        },
+        "native32": {
+          "bytes": 4002561,
+          "files": 31,
+          "tree_sha256": "36526588c44912ce0e49ea863c7173d08d1c065e6fafaea0a97689b1678afd50",
+          "chunks": [
+            512,
+            512
+          ],
+          "shards": null,
+          "compression": [
+            "ZstdCodec(level=3, checksum=False)"
+          ],
+          "itemsize": 4
+        }
+      },
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.050839752,
+            "runtime_s": 0.053526396,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050521579,
+            "runtime_s": 0.052391364,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050405546,
+            "runtime_s": 0.051987245,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.052566208,
+            "runtime_s": 0.054034786,
+            "payload_bytes": 8388608
+          },
+          {
+            "setup_s": 0.050282158,
+            "runtime_s": 0.052161691,
+            "payload_bytes": 8388608
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.016071181,
+            "runtime_s": 0.124867483,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.01530097,
+            "runtime_s": 0.125009775,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015359222,
+            "runtime_s": 0.124413694,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.015318811,
+            "runtime_s": 0.124403943,
+            "payload_bytes": 16777216
+          },
+          {
+            "setup_s": 0.01557649,
+            "runtime_s": 0.125054329,
+            "payload_bytes": 16777216
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.052391364,
+          "setup_s": 0.050521579
+        },
+        "native32": {
+          "runtime_s": 0.124867483,
+          "setup_s": 0.015359222
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.050371583,
+          "runtime_s": 0,
+          "payload_bytes": 8388608,
+          "new_calls": 6901,
+          "requested_bytes": 26963862,
+          "libc_read_calls": 90,
+          "libc_read_bytes": 10449,
+          "libc_write_calls": 25,
+          "libc_write_bytes": 2611718,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        },
+        "native32": {
+          "setup_s": 0.015275429,
+          "runtime_s": 0,
+          "payload_bytes": 16777216,
+          "new_calls": 7517,
+          "requested_bytes": 52290918,
+          "libc_read_calls": 90,
+          "libc_read_bytes": 10447,
+          "libc_write_calls": 33,
+          "libc_write_bytes": 4002760,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 0,
+          "transfer_write_bytes": 0,
+          "transfer_scratch_events": 0,
+          "transfer_retained_scratch_bytes": 0
+        }
+      },
+      "window_s": 1.5764566540001397
+    },
+    "prepared-write-zarr3-sharded": {
+      "passes": 1,
+      "validated": [
+        "native16",
+        "native32",
+        "python16"
+      ],
+      "verified_outputs": {
+        "native16": {
+          "bytes": 6464052,
+          "files": 47,
+          "tree_sha256": "88a51e48f0068a2a44c3ad04cbc13b805c1fc9f6d11ea08aed2b729661584dac",
+          "chunks": [
+            128,
+            128
+          ],
+          "shards": [
+            256,
+            512
+          ],
+          "compression": [
+            "ZstdCodec(level=3, checksum=False)"
+          ],
+          "itemsize": 2
+        },
+        "native32": {
+          "bytes": 7029633,
+          "files": 47,
+          "tree_sha256": "74e10db401bbc6f5b93c09d06968b9c305664eabfb3b96d4d0666c61c9cbafa0",
+          "chunks": [
+            128,
+            128
+          ],
+          "shards": [
+            256,
+            512
+          ],
+          "compression": [
+            "ZstdCodec(level=3, checksum=False)"
+          ],
+          "itemsize": 4
+        },
+        "python16": {
+          "bytes": 6463610,
+          "files": 47,
+          "tree_sha256": "d159412253edc83d57a346147f3568c8bed6b7eb4695d5c0593a35a1511f7cb0",
+          "chunks": [
+            128,
+            128
+          ],
+          "shards": [
+            256,
+            512
+          ],
+          "compression": [
+            "ZstdCodec(level=3, checksum=False)"
+          ],
+          "itemsize": 2
+        }
+      },
+      "samples": {
+        "native16": [
+          {
+            "setup_s": 0.00260555,
+            "runtime_s": 0.009054237,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.002330194,
+            "runtime_s": 0.007099914,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.002245149,
+            "runtime_s": 0.006933479,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.00265004,
+            "runtime_s": 0.007641799,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.00254483,
+            "runtime_s": 0.008230676,
+            "payload_bytes": 262144
+          }
+        ],
+        "native32": [
+          {
+            "setup_s": 0.001253019,
+            "runtime_s": 0.02251559,
+            "payload_bytes": 524288
+          },
+          {
+            "setup_s": 0.001228677,
+            "runtime_s": 0.020132331,
+            "payload_bytes": 524288
+          },
+          {
+            "setup_s": 0.00113874,
+            "runtime_s": 0.019351161,
+            "payload_bytes": 524288
+          },
+          {
+            "setup_s": 0.001933524,
+            "runtime_s": 0.02378237,
+            "payload_bytes": 524288
+          },
+          {
+            "setup_s": 0.001218928,
+            "runtime_s": 0.019725465,
+            "payload_bytes": 524288
+          }
+        ],
+        "python16": [
+          {
+            "setup_s": 0.1665875219996451,
+            "runtime_s": 0.03122595500008174,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.16515490699976,
+            "runtime_s": 0.031432430999757344,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.16381337900020299,
+            "runtime_s": 0.031985409000299114,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.16345311500026583,
+            "runtime_s": 0.032022992000293016,
+            "payload_bytes": 262144
+          },
+          {
+            "setup_s": 0.17125031599971408,
+            "runtime_s": 0.033756529000129376,
+            "payload_bytes": 262144
+          }
+        ]
+      },
+      "medians_s": {
+        "native16": {
+          "runtime_s": 0.007641799,
+          "setup_s": 0.00254483
+        },
+        "native32": {
+          "runtime_s": 0.020132331,
+          "setup_s": 0.001228677
+        },
+        "python16": {
+          "runtime_s": 0.031985409000299114,
+          "setup_s": 0.16515490699976
+        }
+      },
+      "diagnostic": {
+        "native16": {
+          "setup_s": 0.002901764,
+          "runtime_s": 0,
+          "payload_bytes": 262144,
+          "new_calls": 1493,
+          "requested_bytes": 1347856,
+          "libc_read_calls": 81,
+          "libc_read_bytes": 1820850,
+          "libc_write_calls": 81,
+          "libc_write_bytes": 1821292,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 4,
+          "transfer_write_bytes": 262144,
+          "transfer_scratch_events": 7,
+          "transfer_retained_scratch_bytes": 1149236
+        },
+        "native32": {
+          "setup_s": 0.001264503,
+          "runtime_s": 0,
+          "payload_bytes": 524288,
+          "new_calls": 1493,
+          "requested_bytes": 1448328,
+          "libc_read_calls": 81,
+          "libc_read_bytes": 1975826,
+          "libc_write_calls": 81,
+          "libc_write_bytes": 1977929,
+          "hdf5_read_calls": 0,
+          "hdf5_write_calls": 0,
+          "transfer_read_calls": 0,
+          "transfer_read_bytes": 0,
+          "transfer_write_calls": 4,
+          "transfer_write_bytes": 524288,
+          "transfer_scratch_events": 7,
+          "transfer_retained_scratch_bytes": 1249700
+        }
+      },
+      "window_s": 5.396360942999763
+    }
+  }
+}

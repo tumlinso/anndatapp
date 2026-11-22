@@ -103,7 +103,11 @@ def measure(a, env, backend, workers, observations):
     name, blocks, logical_bytes = CASES[backend]
     path = a.fixtures.resolve() / name
     cpus = a.cpus[:workers]
-    languages = {"cpp": [str(a.cpp.resolve())], "python": [str(a.python.absolute()), str(HERE / "python_driver.py")]}
+    languages = {}
+    if a.baseline_cpp:
+        languages["baseline_cpp"] = [str(a.baseline_cpp.resolve())]
+    languages["cpp"] = [str(a.cpp.resolve())]
+    languages["python"] = [str(a.python.absolute()), str(HERE / "python_driver.py")]
     deadline = monotonic() + WINDOW_SECONDS
     start = monotonic()
     drivers, ready, samples = {}, {}, {key: [] for key in languages}
@@ -149,20 +153,35 @@ def measure(a, env, backend, workers, observations):
             driver.stop(completed)
 
     medians = {lang: statistics.median(nums) for lang, nums in samples.items()}
-    return {"workers": workers, "cpus": cpus, "blocks": blocks, "bytes_per_pass": logical_bytes,
-            "window_seconds": monotonic() - start, "median_ns": medians,
-            "mib_per_second": {lang: logical_bytes*1e9/(elapsed*1024**2) for lang, elapsed in medians.items()},
-            "cpp_to_python_throughput": medians["python"] / medians["cpp"],
-            "sample_ranges_ns": {lang: [min(nums), max(nums)] for lang, nums in samples.items()},
-            "worker_setup_ns": {lang: item["setup_ns"] for lang, item in ready.items()},
-            "verification_ns": {lang: item["verification_ns"] for lang, item in ready.items()},
-            "native_runtime": {key: value for key, value in ready["cpp"].items()
-                               if key.startswith("verification_") and key != "verification_ns"
-                               or key in {"worker_model", "buffer_bytes_per_worker"}},
-            "python_runtime": {key: value for key, value in ready["python"].items()
-                               if key in {"versions", "worker_model", "hdf5_cache", "cached_offset_bytes_per_worker",
-                                          "buffer_bytes_per_worker"}
-                               or key.startswith("zarr_")}}
+    result = {"workers": workers, "cpus": cpus, "blocks": blocks, "bytes_per_pass": logical_bytes,
+              "window_seconds": monotonic() - start, "median_ns": medians,
+              "mib_per_second": {lang: logical_bytes*1e9/(elapsed*1024**2) for lang, elapsed in medians.items()},
+              "cpp_to_python_throughput": medians["python"] / medians["cpp"],
+              "sample_ranges_ns": {lang: [min(nums), max(nums)] for lang, nums in samples.items()},
+              "worker_setup_ns": {lang: item["setup_ns"] for lang, item in ready.items()},
+              "verification_ns": {lang: item["verification_ns"] for lang, item in ready.items()},
+              "native_runtime": native_runtime(ready["cpp"]),
+              "python_runtime": {key: value for key, value in ready["python"].items()
+                                 if key in {"versions", "worker_model", "hdf5_cache", "cached_offset_bytes_per_worker",
+                                            "buffer_bytes_per_worker"}
+                                 or key.startswith("zarr_")}}
+    if a.baseline_cpp:
+        baseline = samples["baseline_cpp"]
+        candidate = samples["cpp"]
+        ratio = statistics.median(new / old for old, new in zip(baseline, candidate))
+        result["candidate_to_baseline"] = {
+            "paired_median_ratio": ratio,
+            "regression_requires_investigation": min(candidate) > max(baseline) and ratio > 1.05,
+            "samples_ns": {"baseline": baseline, "candidate": candidate},
+            "baseline_runtime": native_runtime(ready["baseline_cpp"]),
+        }
+    return result
+
+
+def native_runtime(item):
+    return {key: value for key, value in item.items()
+            if key.startswith("verification_") and key != "verification_ns"
+            or key in {"worker_model", "buffer_bytes_per_worker"}}
 
 
 def cpu_ids(arg):
@@ -179,14 +198,39 @@ def cpu_ids(arg):
     return cpus
 
 
+def source_inputs(root):
+    implementation = [root / "CMakeLists.txt", *sorted((root / "src").rglob("*")),
+                      *sorted((root / "cmake").glob("*.cmake*"))]
+    return {path.relative_to(root).as_posix(): sha(path) for path in implementation if path.is_file()}
+
+
+def native_build(executable):
+    cache = executable.resolve().parent / "CMakeCache.txt"
+    config = {}
+    if cache.is_file():
+        for line in cache.read_text().splitlines():
+            if line.startswith(("CMAKE_BUILD_TYPE:", "CMAKE_CXX_FLAGS_RELEASE:", "ANNDATAPP_HDF5_VERSION:",
+                                "ANNDATAPP_ZSTD_VERSION:")):
+                key, value = line.split("=", 1)
+                config[key.split(":", 1)[0]] = value
+        config["cache_sha256"] = sha(cache)
+    return config
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--cpp", type=Path, required=True)
+    p.add_argument("--baseline-cpp", type=Path, help="optional native baseline executable")
+    p.add_argument("--baseline-source", type=Path, help="immutable library source used to build the baseline")
     p.add_argument("--python", type=Path, required=True)
     p.add_argument("--fixtures", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--cpus", type=cpu_ids, required=True, help="four distinct allowed physical core IDs")
     a = p.parse_args()
+    if bool(a.baseline_cpp) != bool(a.baseline_source):
+        p.error("--baseline-cpp and --baseline-source must be supplied together")
+    if a.baseline_cpp and sha(a.baseline_source / "benchmarks/parallel_streaming/cpp_driver.cpp") != sha(HERE / "cpp_driver.cpp"):
+        p.error("baseline and candidate must use the same C++ driver source")
     a.output.mkdir(parents=True, exist_ok=False)
     fixture_identity = fixtures(a.fixtures)
     env = os.environ.copy()
@@ -198,36 +242,37 @@ def main():
     env.update(thread_limits)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
-    implementation = [ROOT / "CMakeLists.txt", *sorted((ROOT / "src").rglob("*")),
-                      *sorted((ROOT / "cmake").glob("*.cmake*"))]
-    inputs = {path.relative_to(ROOT).as_posix(): sha(path) for path in implementation if path.is_file()}
+    inputs = source_inputs(ROOT)
     (a.output / "source-sha256.json").write_text(json.dumps(inputs, indent=2) + "\n")
-    cache = a.cpp.parent / "CMakeCache.txt"
-    config = {}
-    if cache.is_file():
-        for line in cache.read_text().splitlines():
-            if line.startswith(("CMAKE_BUILD_TYPE:", "CMAKE_CXX_FLAGS_RELEASE:", "ANNDATAPP_HDF5_VERSION:",
-                                "ANNDATAPP_ZSTD_VERSION:")):
-                key, value = line.split("=", 1)
-                config[key.split(":", 1)[0]] = value
-        config["cache_sha256"] = sha(cache)
     info = subprocess.check_output(["lscpu", "--json"], text=True)
     (a.output / "cpu.json").write_text(info)
     host = {item["field"].strip(":"): item["data"] for item in json.loads(info)["lscpu"]}
     manifest = {"fixture_identity": fixture_identity, "max_seconds_per_window": WINDOW_SECONDS,
                 "pairs": PAIRS, "host": {key: host[key] for key in ("Architecture", "Model name")},
-                "thread_limits": thread_limits, "native_build": config, "case_results": {}}
+                "thread_limits": thread_limits, "native_build": native_build(a.cpp), "case_results": {}}
     manifest["source_inputs_sha256"] = sha(a.output / "source-sha256.json")
     manifest["driver_sha256"] = {"cpp_binary": sha(a.cpp), "cpp_source": sha(HERE / "cpp_driver.cpp"),
                                  "python_source": sha(HERE / "python_driver.py"), "runner": sha(Path(__file__))}
+    if a.baseline_cpp:
+        baseline_inputs = source_inputs(a.baseline_source)
+        baseline_manifest = a.output / "baseline-source-sha256.json"
+        baseline_manifest.write_text(json.dumps(baseline_inputs, indent=2) + "\n")
+        manifest["baseline_build"] = native_build(a.baseline_cpp)
+        manifest["baseline_source_inputs_sha256"] = sha(baseline_manifest)
+        manifest["driver_sha256"]["baseline_cpp_binary"] = sha(a.baseline_cpp)
     with (a.output / "observations.jsonl").open("x", buffering=1) as observations:
         for backend in CASES:
             for workers in (1, 4):
                 key = f"{backend}-{workers}"
                 manifest["case_results"][key] = measure(a, env, backend, workers, observations)
                 (a.output / "checkpoint.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    if fixtures(a.fixtures) != fixture_identity or any(sha(ROOT / path) != value for path, value in inputs.items()):
+    if fixtures(a.fixtures) != fixture_identity or source_inputs(ROOT) != inputs:
         raise ValueError("fixture or implementation inputs changed during the campaign")
+    if sha(a.cpp) != manifest["driver_sha256"]["cpp_binary"]:
+        raise ValueError("candidate executable changed during the campaign")
+    if a.baseline_cpp and (source_inputs(a.baseline_source) != baseline_inputs
+                           or sha(a.baseline_cpp) != manifest["driver_sha256"]["baseline_cpp_binary"]):
+        raise ValueError("baseline inputs or executable changed during the campaign")
     manifest["observations_sha256"] = sha(a.output / "observations.jsonl")
     (a.output / "summary.json").write_text(json.dumps(manifest, indent=2) + "\n")
 
