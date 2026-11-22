@@ -74,7 +74,7 @@ target_sources(anndatapp_core
   PUBLIC FILE_SET CXX_MODULES BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES
     src/anndatapp.core.cppm src/anndatapp.arrays.cppm src/anndatapp.strings.cppm
     src/anndatapp.records.cppm src/anndatapp.data.cppm
-  PRIVATE src/arrays.cpp src/strings.cpp src/records.cpp src/data.cpp)
+  PRIVATE src/arrays.cpp src/strings.cpp src/records.cpp src/data.cpp src/float16.cpp)
 
 add_library(anndatapp)
 add_library(anndatapp::anndatapp ALIAS anndatapp)

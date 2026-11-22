@@ -446,6 +446,7 @@ std::shared_ptr<ar::Array> numeric_array(const ColumnView& col, std::string_view
     case DType::uint64: return numeric_array<std::uint64_t, ar::UInt64Builder>(col, path, budget);
     case DType::float32: return numeric_array<float, ar::FloatBuilder>(col, path, budget);
     case DType::float64: return numeric_array<double, ar::DoubleBuilder>(col, path, budget);
+    case DType::float16: break;
     }
     fail(path, "unsupported native numerical type", ErrorCode::unsupported_dtype);
 }
