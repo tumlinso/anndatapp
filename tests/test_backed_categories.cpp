@@ -163,6 +163,7 @@ void require_equal_category_dictionary(ColumnView actual, ColumnView expected,
     case DType::uint64: require_equal_dense<std::uint64_t>(actual_values, expected_values, message); break;
     case DType::float32: require_equal_dense<float>(actual_values, expected_values, message); break;
     case DType::float64: require_equal_dense<double>(actual_values, expected_values, message); break;
+    case DType::float16: throw std::runtime_error("FP16 category dictionary is unsupported");
     }
 }
 

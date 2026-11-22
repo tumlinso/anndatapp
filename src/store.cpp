@@ -122,15 +122,17 @@ std::string_view element_encoding_attribute(ElementView attrs) {
     const auto value = attrs.at("encoding-type");
     return value.kind() == ElementKind::string ? value.string() : std::string_view{};
 }
+void check_stored_float16(Backend& backend, std::string_view path, const NodeInfo& info) {
+    if (info.dtype != DType::float16) return;
+    const auto attr = info.attrs.find("encoding-type");
+    const auto* code = attr == info.attrs.end() ? nullptr : std::get_if<std::string>(&attr->second);
+    require_dense_float16(backend, path, code ? std::string_view(*code) : std::string_view{});
+}
 std::shared_ptr<detail::BackedNode> raw_node(std::shared_ptr<Session> session, std::string path, bool strings) {
     const auto info = session->backend->inspect(path);
     if (!info.exists) fail(ErrorCode::out_of_bounds, path, "stored array does not exist");
     if (info.group || info.record || info.strings != strings) fail(ErrorCode::unsupported_encoding, path, "stored payload has the wrong array kind");
-    if (info.dtype == DType::float16) {
-        const auto attr = info.attrs.find("encoding-type");
-        const auto* code = attr == info.attrs.end() ? nullptr : std::get_if<std::string>(&attr->second);
-        require_dense_float16(*session->backend, path, code ? std::string_view(*code) : std::string_view{});
-    }
+    check_stored_float16(*session->backend, path, info);
     auto& revision = session->revisions[path]; if (!revision) revision = std::make_shared<Revision>();
     auto node = std::make_shared<detail::BackedNode>(); node->session = std::move(session); node->path = std::move(path);
     node->revision = revision; node->observed_revision = revision->value; node->raw_array = true;
@@ -290,7 +292,11 @@ std::string BackedStore::read_string(std::string_view path) const {
     return a.string(0);
 }
 BackedElement BackedStore::element(std::string_view path) const {
-    return detail::BackedAccess::element(backed_detail::node(store_session(impl_), checked_path(path)));
+    auto s = store_session(impl_); auto p = checked_path(path);
+    const auto info = s->backend->inspect(p);
+    backed_detail::check_stored_float16(*s->backend, p, info);
+    const auto shape = backed_detail::logical_shape(*s, p, info);
+    return detail::BackedAccess::element(backed_detail::node_with_shape(std::move(s), std::move(p), shape));
 }
 void BackedStore::write_array(std::string_view path, ArrayView value, ElementView attrs) {
     auto s = store_session(impl_); const auto p = checked_path(path);
@@ -342,6 +348,8 @@ void BackedStore::write_string(std::string_view path, std::string_view value, El
 void BackedStore::write_element(std::string_view path, ElementView value) {
     auto s = store_session(impl_); const auto p = checked_path(path);
     if (p == "/") throw Error(ErrorCode::invalid_argument, p, "use write_anndata for a dataset root");
+    if (value.kind() == ElementKind::array && value.array().dtype() == DType::float16)
+        backed_detail::require_dense_float16(*s->backend, p, "array");
     backed_detail::validate_serializable(value, p);
     backed_detail::replace(s, p, [&](const std::string& temporary) { backed_detail::write_element(*s->backend, temporary, value, s->options.scratch_bytes); });
 }

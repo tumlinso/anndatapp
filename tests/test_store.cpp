@@ -242,8 +242,21 @@ void raw_float16(BackedStore store) {
                 "raw creation accepted FP16 sparse values");
     unsupported([&] { store.write_array("/sparse/X/data", copy.view()); },
                 "raw write accepted FP16 sparse values");
-    require(store.anndata("/sparse").x().dtype() == DType::float32,
-            "rejected raw FP16 write replaced valid sparse values");
+    auto half_element = Element(std::move(copy));
+    unsupported([&] { store.write_element("/sparse/X/data", half_element.view()); },
+                "element write accepted FP16 sparse values");
+    unsupported([&] { store.write_element("/sparse/obs/half", half_element.view()); },
+                "element write accepted an FP16 dataframe column");
+    require(store.anndata("/sparse").x().dtype() == DType::float32 &&
+            !store.exists("/sparse/obs/half"), "rejected FP16 element write changed the dataset");
+
+    // Emulate a malformed external sparse group containing an encoded FP16 array.
+    store.write_element("/external/data", half_element.view());
+    attrs.set("encoding-type", Element("csr_matrix"));
+    attrs.set("encoding-version", Element("0.1.0"));
+    store.set_attributes("/external", attrs.view());
+    unsupported([&] { (void)store.element("/external/data").array().read(); },
+                "direct element read accepted FP16 sparse values");
 }
 void raw_read_only(BackedStore store) {
     auto array = store.array("/X"); require(!array.storage_geometry().writable, "read-only raw geometry is writable");
