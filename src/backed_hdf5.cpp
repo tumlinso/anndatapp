@@ -1,5 +1,6 @@
 module;
 #include <hdf5.h>
+#include "h5ad_binary16.hpp"
 #include "h5ad_object.hpp"
 #include "h5ad_text.hpp"
 #include "utf8.hpp"
@@ -34,6 +35,10 @@ namespace {
 using ::anndatapp::detail::Utf8Error;
 using ::anndatapp::detail::utf8_error;
 using ::anndatapp_h5ad_detail::ObjectInfo;
+using ::anndatapp_h5ad_detail::binary16_file_type;
+using ::anndatapp_h5ad_detail::binary16_native_type;
+using ::anndatapp_h5ad_detail::is_binary16;
+using ::anndatapp_h5ad_detail::native_order;
 using ::anndatapp_h5ad_detail::object_info;
 
 class H5Handle {
@@ -118,7 +123,7 @@ H5Handle boolean_type(const H5Context& c, std::string_view path) {
     return type;
 }
 
-DType dtype_of_h5(const H5Context& c, hid_t type, std::string_view path) {
+DType dtype_of_h5(const H5Context& c, hid_t type, std::string_view path, bool dense_float16 = false) {
     const auto kind = H5Tget_class(type);
     const auto width = H5Tget_size(type);
     if (kind == H5T_ENUM) {
@@ -138,6 +143,7 @@ DType dtype_of_h5(const H5Context& c, hid_t type, std::string_view path) {
         if (width == 8) return s ? DType::int64 : DType::uint64;
     }
     if (kind == H5T_FLOAT) {
+        if (dense_float16 && width == 2 && is_binary16(type)) return DType::float16;
         if (H5Tequal(type, H5T_IEEE_F32LE) > 0 || H5Tequal(type, H5T_IEEE_F32BE) > 0) return DType::float32;
         if (H5Tequal(type, H5T_IEEE_F64LE) > 0 || H5Tequal(type, H5T_IEEE_F64BE) > 0) return DType::float64;
     }
@@ -157,8 +163,17 @@ hid_t native_type(DType type) {
         case DType::uint64: return H5T_NATIVE_UINT64;
         case DType::float32: return H5T_NATIVE_FLOAT;
         case DType::float64: return H5T_NATIVE_DOUBLE;
+        case DType::float16: break;
     }
     return -1;
+}
+
+H5Handle dense_memory_type(const H5Context& c, DType type, hid_t file, std::string_view path) {
+    if (type == DType::boolean || (type == DType::float16 && H5Tget_order(file) == native_order))
+        return {file, nullptr};
+    if (type == DType::float16)
+        return {c.id(binary16_native_type(file), path, "create binary16 memory datatype"), H5Tclose};
+    return {native_type(type), nullptr};
 }
 
 hid_t file_type(DType type, ByteOrder order) {
@@ -175,6 +190,7 @@ hid_t file_type(DType type, ByteOrder order) {
         case DType::uint64: return little ? H5T_STD_U64LE : H5T_STD_U64BE;
         case DType::float32: return little ? H5T_IEEE_F32LE : H5T_IEEE_F32BE;
         case DType::float64: return little ? H5T_IEEE_F64LE : H5T_IEEE_F64BE;
+        case DType::float16: break;
     }
     return -1;
 }
@@ -356,6 +372,7 @@ Array metadata_array(DType type, const std::vector<std::size_t>& shape) {
     case DType::uint64: return Array::empty<std::uint64_t>(shape);
     case DType::float32: return Array::empty<float>(shape);
     case DType::float64: return Array::empty<double>(shape);
+    case DType::float16: break;
     }
     throw Error(ErrorCode::unsupported_dtype, "metadata", "unsupported datatype");
 }
@@ -376,6 +393,7 @@ Element metadata_scalar(DType type, const void* data) {
     case DType::uint64: return scalar_from_buffer<std::uint64_t>(data);
     case DType::float32: return scalar_from_buffer<float>(data);
     case DType::float64: return scalar_from_buffer<double>(data);
+    case DType::float16: break;
     }
     throw Error(ErrorCode::unsupported_dtype, "metadata", "unsupported datatype");
 }
@@ -437,6 +455,7 @@ void prepare_scalar(NativeAttribute& attr, ElementView value) {
     case DType::uint64: append_scalar<std::uint64_t>(attr, value); break;
     case DType::float32: append_scalar<float>(attr, value); break;
     case DType::float64: append_scalar<double>(attr, value); break;
+    case DType::float16: break;
     }
 }
 void write_native_metadata(const H5Context& c, hid_t object, std::string_view path, ElementView attrs) {
@@ -458,6 +477,7 @@ void write_native_metadata(const H5Context& c, hid_t object, std::string_view pa
         case ElementKind::array: {
             auto v = value.array();
             if (v.layout() != Layout::dense) c.fail(ErrorCode::unsupported_layout, attr_path, "attribute arrays must be dense");
+            if (v.dtype() == DType::float16) c.fail(ErrorCode::unsupported_dtype, attr_path, "binary16 attributes are unsupported");
             attr.dtype = v.dtype(); for (std::size_t i = 0; i < v.rank(); ++i) attr.shape.push_back(v.extent(i));
             auto owned = v.copy(); auto b = owned.view().bytes(); const auto n = product(c, attr.shape, attr_path);
             if (n > static_cast<std::size_t>(PTRDIFF_MAX) / dtype_size(attr.dtype)) c.fail(ErrorCode::invalid_argument, attr_path, "attribute is too large");
@@ -466,6 +486,7 @@ void write_native_metadata(const H5Context& c, hid_t object, std::string_view pa
         }
         default: c.fail(ErrorCode::unsupported_encoding, attr_path, "value cannot be represented as an HDF5 attribute");
         }
+        if (attr.dtype == DType::float16) c.fail(ErrorCode::unsupported_dtype, attr_path, "binary16 attributes are unsupported");
         if (attr.shape.size() > H5S_MAX_RANK) c.fail(ErrorCode::unsupported_layout, attr_path, "rank exceeds HDF5 maximum");
         for (const auto& s : attr.text) {
             if (s.find('\0') != std::string::npos) c.fail(ErrorCode::invalid_argument, attr_path, "embedded NUL in string attribute");
@@ -823,7 +844,8 @@ public:
     Hdf5Numeric(H5Context c, std::string path, H5Handle dataset, bool writable, std::size_t cache_bytes = 0)
         : c_(std::move(c)), path_(std::move(path)), dataset_(std::move(dataset)), writable_(writable), cache_bytes_(cache_bytes) {
         type_ = H5Handle(c_.id(H5Dget_type(dataset_), path_, "inspect numerical datatype"), H5Tclose);
-        dtype_ = dtype_of_h5(c_, type_, path_);
+        dtype_ = dtype_of_h5(c_, type_, path_, true);
+        memory_type_ = dense_memory_type(c_, dtype_, type_, path_);
         file_space_ = H5Handle(c_.id(H5Dget_space(dataset_), path_, "inspect transfer dataspace"), H5Sclose);
         if (H5Sget_simple_extent_type(file_space_) == H5S_NULL)
             c_.fail(ErrorCode::unsupported_encoding, path_, "null dataspace has no transferable values");
@@ -835,8 +857,7 @@ public:
         const auto n = select(start, count);
         if (!n) return;
         if (!out) c_.fail(ErrorCode::invalid_argument, path_, "null numerical destination");
-        const auto memory = dtype_ == DType::boolean ? static_cast<hid_t>(type_) : native_type(dtype_);
-        c_.check(H5Dread(dataset_, memory, memory_space_, file_space_, H5P_DEFAULT, out), path_, "read numerical rectangle");
+        c_.check(H5Dread(dataset_, memory_type_, memory_space_, file_space_, H5P_DEFAULT, out), path_, "read numerical rectangle");
         ++stats_.read_calls; stats_.read_bytes += n * dtype_size(dtype_);
     }
     void write(const std::vector<std::size_t>& start, const std::vector<std::size_t>& count, const void* in) override {
@@ -845,8 +866,7 @@ public:
         if (!n) return;
         if (!in) c_.fail(ErrorCode::invalid_argument, path_, "null numerical source");
         if (!write_checked_) { check_filters(c_, dataset_, path_, true); write_checked_ = true; }
-        const auto memory = dtype_ == DType::boolean ? static_cast<hid_t>(type_) : native_type(dtype_);
-        c_.check(H5Dwrite(dataset_, memory, memory_space_, file_space_, H5P_DEFAULT, in), path_, "write numerical rectangle");
+        c_.check(H5Dwrite(dataset_, memory_type_, memory_space_, file_space_, H5P_DEFAULT, in), path_, "write numerical rectangle");
         ++stats_.write_calls; stats_.write_bytes += n * dtype_size(dtype_);
     }
     NumericTransferStats stats() const override { return stats_; }
@@ -876,7 +896,7 @@ private:
     }
     H5Context c_;
     std::string path_;
-    H5Handle dataset_, type_, file_space_, memory_space_;
+    H5Handle dataset_, type_, memory_type_, file_space_, memory_space_;
     std::vector<std::size_t> shape_, memory_shape_;
     std::vector<hsize_t> begin_, size_;
     DType dtype_ = DType::float64;
@@ -969,7 +989,8 @@ public:
         result.group = H5Iget_type(object) == H5I_GROUP;
         result.attrs = read_attributes(c_, object, path, result.has_opaque_attrs);
         const auto encoding = result.attrs.find("encoding-type");
-        const bool null_encoding = encoding != result.attrs.end() && std::get_if<std::string>(&encoding->second) && std::get<std::string>(encoding->second) == "null";
+        const auto* code = encoding != result.attrs.end() ? std::get_if<std::string>(&encoding->second) : nullptr;
+        const bool null_encoding = code && *code == "null";
         if (result.group && null_encoding) c_.fail(ErrorCode::unsupported_encoding, path, "null encoding requires an HDF5 dataset with a null dataspace");
         if (!result.group) {
             if (H5Iget_type(object) != H5I_DATASET) c_.fail(ErrorCode::unsupported_encoding, path, "only groups and datasets are supported");
@@ -998,7 +1019,10 @@ public:
                 result.strings = kind == H5T_STRING;
                 result.record = kind == H5T_COMPOUND;
                 if (result.record) result.fields = record_fields(c_, type, path);
-                else if (!result.strings) { result.dtype = dtype_of_h5(c_, type, path); result.byte_order = byte_order(type); }
+                else if (!result.strings) {
+                    result.dtype = dtype_of_h5(c_, type, path, !code || *code != "numeric-scalar");
+                    result.byte_order = byte_order(type);
+                }
             }
         }
         return result;
@@ -1027,12 +1051,12 @@ public:
         ensure_open();
         auto dataset = numeric_dataset(path);
         H5Handle type(c_.id(H5Dget_type(dataset), path, "inspect numeric datatype"), H5Tclose);
-        const auto dtype = dtype_of_h5(c_, type, path);
+        const auto dtype = dtype_of_h5(c_, type, path, true);
         auto r = rectangle(c_, dataset, start, count, path);
         if (!r.elements) return;
         if (!destination) c_.fail(ErrorCode::invalid_argument, path, "null numerical destination");
         check_filters(c_, dataset, path);
-        const hid_t memory_type = dtype == DType::boolean ? static_cast<hid_t>(type) : native_type(dtype);
+        auto memory_type = dense_memory_type(c_, dtype, type, path);
         c_.check(H5Dread(dataset, memory_type, r.memory_space, r.file_space, H5P_DEFAULT, destination), path, "read numerical rectangle");
         // Preserve enum bytes here. The shared transfer layer canonicalizes
         // full-validation boolean selections exactly once before typed access,
@@ -1044,12 +1068,12 @@ public:
         ensure_writable();
         auto dataset = numeric_dataset(path);
         H5Handle type(c_.id(H5Dget_type(dataset), path, "inspect numeric datatype"), H5Tclose);
-        const auto dtype = dtype_of_h5(c_, type, path);
+        const auto dtype = dtype_of_h5(c_, type, path, true);
         auto r = rectangle(c_, dataset, start, count, path);
         if (!r.elements) return;
         if (!source) c_.fail(ErrorCode::invalid_argument, path, "null numerical source");
         check_filters(c_, dataset, path, true);
-        const hid_t memory_type = dtype == DType::boolean ? static_cast<hid_t>(type) : native_type(dtype);
+        auto memory_type = dense_memory_type(c_, dtype, type, path);
         c_.check(H5Dwrite(dataset, memory_type, r.memory_space, r.file_space, H5P_DEFAULT, source), path, "write numerical rectangle");
     }
 
@@ -1282,16 +1306,25 @@ public:
                         const Attributes& attrs, ByteOrder order) override {
         ensure_writable();
         const auto encoding = attrs.find("encoding-type");
-        if (encoding != attrs.end() && std::get_if<std::string>(&encoding->second) && std::get<std::string>(encoding->second) == "null") {
+        const auto* code = encoding != attrs.end() ? std::get_if<std::string>(&encoding->second) : nullptr;
+        if (code && *code == "null") {
             create_null(path, attrs);
             return;
         }
+        if (dtype == DType::float16 && code && *code == "numeric-scalar")
+            c_.fail(ErrorCode::unsupported_dtype, path, "binary16 scalar elements are unsupported");
         auto [parent, name] = parent_for(path);
         auto space = space_for(c_, shape, path);
         auto properties = dataset_properties(shape, dtype_size(dtype), path);
         auto links = link_properties(path);
-        H5Handle boolean;
-        const hid_t type = dtype == DType::boolean ? static_cast<hid_t>(boolean = boolean_type(c_, path)) : file_type(dtype, order_override_.value_or(order));
+        order = order_override_.value_or(order);
+        H5Handle type;
+        if (dtype == DType::boolean) type = boolean_type(c_, path);
+        else if (dtype == DType::float16) {
+            const auto endian = order == ByteOrder::native ? native_order :
+                order == ByteOrder::little ? H5T_ORDER_LE : H5T_ORDER_BE;
+            type = H5Handle(c_.id(binary16_file_type(endian), path, "create binary16 file datatype"), H5Tclose);
+        } else type = H5Handle(file_type(dtype, order), nullptr);
         H5Handle dataset(c_.id(H5Dcreate2(parent, name.c_str(), type, space, links, properties, H5P_DEFAULT), path, "create numeric dataset"), H5Dclose);
         write_attributes(c_, dataset, attrs, path);
     }
@@ -1439,8 +1472,10 @@ public:
         auto dataset = numeric_dataset(path);
         H5Handle type(c_.id(H5Dget_type(dataset), path, "inspect mapped datatype"), H5Tclose);
         if (H5Tget_class(type) == H5T_STRING || H5Tis_variable_str(type) > 0) return std::nullopt;
-        const auto dtype = dtype_of_h5(c_, type, path);
-        if (dtype != DType::boolean && H5Tequal(type, native_type(dtype)) <= 0) return std::nullopt;
+        const auto dtype = dtype_of_h5(c_, type, path, true);
+        if (dtype == DType::float16) {
+            if (H5Tget_order(type) != native_order) return std::nullopt;
+        } else if (dtype != DType::boolean && H5Tequal(type, native_type(dtype)) <= 0) return std::nullopt;
         H5Handle space(c_.id(H5Dget_space(dataset), path, "inspect mapped dataspace"), H5Sclose);
         if (H5Sget_simple_extent_type(space) == H5S_NULL) return std::nullopt;
         auto shape = shape_of(c_, space, path);

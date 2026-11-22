@@ -24,7 +24,8 @@ The implementation follows the [AnnData encoding specification](https://anndata.
 |---|---|---|
 | `anndata`, `raw` | 0.1.0 | Standard slots and raw's independent variable axis; optional X |
 | `dict`, `null` | 0.1.0 | Nested mappings and distinct null elements |
-| `array`, `numeric-scalar` | 0.2.0 | bool, signed/unsigned 8–64-bit integers, float32/64 |
+| `array` | 0.2.0 | bool, signed/unsigned 8–64-bit integers, float16/32/64 |
+| `numeric-scalar` | 0.2.0 | bool, signed/unsigned 8–64-bit integers, float32/64 |
 | `string`, `string-array` | 0.2.0 | UTF-8 scalar text and dense n-dimensional packed strings |
 | `rec-array` | 0.2.0 | Ordered primitive numerical and text fields with a common outer shape |
 | `csr_matrix`, `csc_matrix` | 0.1.0 | Values, indices, indptr, orientation and independent integer widths |
@@ -47,8 +48,8 @@ Numerical widths, field order, shape, values, and serialization byte order are
 preserved. Original member offsets, padding, and fixed-string capacity are
 normalized rather than preserved as a binary layout.
 
-Unknown encodings or versions, legacy unversioned data, complex and
-half-precision arrays, ragged/Awkward data, and nullable floating-point columns
+Unknown encodings or versions, legacy unversioned data, complex arrays,
+half-precision sparse arrays, ragged/Awkward data, and nullable floating-point columns
 produce contextual errors. Such data is not silently removed or converted into
 a different encoding. Eager loading into the in-memory model does not retain
 arbitrary extra HDF5 attributes, matching ordinary AnnData loading behavior.

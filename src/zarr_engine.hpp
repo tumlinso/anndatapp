@@ -17,7 +17,7 @@ namespace anndatapp_zarr {
 using Json = nlohmann::json;
 using Shape = std::vector<std::size_t>;
 using Bytes = std::vector<std::byte>;
-enum class Type { boolean, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, string };
+enum class Type { boolean, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, string, float16 };
 enum class Failure { io, encoding, version, dtype, codec, argument };
 struct Error : std::runtime_error {
     Failure failure;

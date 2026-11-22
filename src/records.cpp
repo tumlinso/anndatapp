@@ -85,6 +85,7 @@ template<class F> decltype(auto) visit_numeric(DType t, F&& f) {
     case DType::uint64: return f.template operator()<std::uint64_t>();
     case DType::float32: return f.template operator()<float>();
     case DType::float64: return f.template operator()<double>();
+    case DType::float16: fail(ErrorCode::unsupported_dtype, {}, "float16 is unsupported for record fields");
     }
     fail(ErrorCode::unsupported_dtype, {}, "unknown numerical field dtype");
 }

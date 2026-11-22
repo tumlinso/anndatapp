@@ -1,5 +1,6 @@
 module;
 #include <hdf5.h>
+#include "h5ad_binary16.hpp"
 #include "h5ad_object.hpp"
 #include "h5ad_record_scratch.hpp"
 #include "h5ad_text.hpp"
@@ -29,6 +30,10 @@ namespace {
 using ::anndatapp::detail::Utf8Error;
 using ::anndatapp::detail::utf8_error;
 using ::anndatapp_h5ad_detail::ObjectInfo;
+using ::anndatapp_h5ad_detail::binary16_file_type;
+using ::anndatapp_h5ad_detail::binary16_native_type;
+using ::anndatapp_h5ad_detail::is_binary16;
+using ::anndatapp_h5ad_detail::native_order;
 using ::anndatapp_h5ad_detail::object_info;
 
 // No backend object is retained by an eager read. These handles, datatypes,
@@ -282,7 +287,7 @@ ByteOrder byte_order(hid_t type) {
     return order == H5T_ORDER_LE ? ByteOrder::little : order == H5T_ORDER_BE ? ByteOrder::big : ByteOrder::native;
 }
 
-DType dtype(const Context& c, hid_t type, std::string_view path) {
+DType dtype(const Context& c, hid_t type, std::string_view path, bool dense_float16 = false) {
     const auto kind = H5Tget_class(type);
     const auto width = H5Tget_size(type);
     if (kind == H5T_ENUM) {
@@ -301,6 +306,7 @@ DType dtype(const Context& c, hid_t type, std::string_view path) {
         if (width == 8) return sign ? DType::int64 : DType::uint64;
     }
     if (kind == H5T_FLOAT) {
+        if (dense_float16 && width == 2 && is_binary16(type)) return DType::float16;
         if (H5Tequal(type, H5T_IEEE_F32LE) > 0 || H5Tequal(type, H5T_IEEE_F32BE) > 0) return DType::float32;
         if (H5Tequal(type, H5T_IEEE_F64LE) > 0 || H5Tequal(type, H5T_IEEE_F64BE) > 0) return DType::float64;
     }
@@ -320,6 +326,7 @@ hid_t native_type(DType type) {
         case DType::uint64: return H5T_NATIVE_UINT64;
         case DType::float32: return H5T_NATIVE_FLOAT;
         case DType::float64: return H5T_NATIVE_DOUBLE;
+        case DType::float16: break; // binary16 has an owned HDF5 memory type when swapping bytes
     }
     return -1;
 }
@@ -337,8 +344,22 @@ template<class F> decltype(auto) visit_dtype(DType type, F&& f) {
         case DType::uint64: return f.template operator()<std::uint64_t>();
         case DType::float32: return f.template operator()<float>();
         case DType::float64: return f.template operator()<double>();
+        case DType::float16: break;
     }
     throw Error(ErrorCode::unsupported_dtype, "", "unknown numeric dtype");
+}
+
+template<class F> decltype(auto) visit_dense_dtype(DType type, F&& f) {
+    if (type == DType::float16) return f.template operator()<Float16>();
+    return visit_dtype(type, f);
+}
+
+Handle dense_memory_type(const Context& c, DType type, hid_t file, std::string_view path) {
+    if (type == DType::boolean || (type == DType::float16 && H5Tget_order(file) == native_order))
+        return {file, nullptr};
+    if (type == DType::float16)
+        return {c.id(binary16_native_type(file), path, "create binary16 memory datatype"), H5Tclose};
+    return {native_type(type), nullptr};
 }
 
 void check_filters(const Context& c, hid_t dataset, std::string_view path) {
@@ -355,24 +376,24 @@ void check_filters(const Context& c, hid_t dataset, std::string_view path) {
     }
 }
 
-Array read_numeric(Context& c, hid_t object, std::string_view path) {
+Array read_numeric(Context& c, hid_t object, std::string_view path, bool dense_float16 = false) {
     require_kind(c, object, H5I_DATASET, path);
     Handle type(c.id(H5Dget_type(object), path, "inspect datatype"), H5Tclose);
     Handle space(c.id(H5Dget_space(object), path, "inspect dataspace"), H5Sclose);
     if (H5Sget_simple_extent_type(space) == H5S_NULL)
         c.fail(ErrorCode::unsupported_encoding, path, "numeric array cannot use a null dataspace");
     const auto shape = shape_of(c, space, path);
-    const auto type_id = dtype(c, type, path);
+    const auto type_id = dtype(c, type, path, dense_float16);
     const auto count = count_of(c, shape, path);
     multiply(c, count, dtype_size(type_id), path);
-    auto array = visit_dtype(type_id, [&]<class T> { return Array::empty<T>(shape); });
+    auto array = visit_dense_dtype(type_id, [&]<class T> { return Array::empty<T>(shape); });
     array.set_serialization_byte_order(byte_order(type));
     if (count) {
         check_filters(c, object, path);
         // An identical enum transfer preserves its raw byte. Mapping malformed
         // enum values through another enum can instead produce 0xff, which is
         // not a C++ bool representation. Inspect bytes before any bool load.
-        const hid_t memory_type = type_id == DType::boolean ? static_cast<hid_t>(type) : native_type(type_id);
+        auto memory_type = dense_memory_type(c, type_id, type, path);
         herr_t status;
         auto* data = array.edit().bytes().data();
         H5E_BEGIN_TRY { status = H5Dread(object, memory_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data); } H5E_END_TRY;
@@ -573,7 +594,7 @@ std::vector<std::size_t> sparse_shape(const Context& c, hid_t object, std::strin
 }
 
 Array read_array(Context& c, hid_t object, std::string_view path, std::string_view code) try {
-    if (code == "array") return read_numeric(c, object, path);
+    if (code == "array") return read_numeric(c, object, path, true);
     if (code != "csr_matrix" && code != "csc_matrix")
         c.fail(ErrorCode::unsupported_encoding, path, "expected numerical array, found '" + std::string(code) + "'");
     require_kind(c, object, H5I_GROUP, path);
@@ -876,6 +897,7 @@ hid_t file_numeric_type(DType type, ByteOrder order) {
         case DType::uint64: return little ? H5T_STD_U64LE : H5T_STD_U64BE;
         case DType::float32: return little ? H5T_IEEE_F32LE : H5T_IEEE_F32BE;
         case DType::float64: return little ? H5T_IEEE_F64LE : H5T_IEEE_F64BE;
+        case DType::float16: break;
     }
     return -1;
 }
@@ -968,7 +990,7 @@ void write_dense_data(Context& c, hid_t dataset, ArrayView array, hid_t memory_t
     const auto tile_elements = std::max<std::size_t>(1, 1048576 / width);
     const auto columns = shape.back();
     const auto outer_count = count / columns;
-    auto packed = visit_dtype(array.dtype(),[&]<class T> { return Array::empty<T>({std::min(columns,tile_elements)}); });
+    auto packed = visit_dense_dtype(array.dtype(),[&]<class T> { return Array::empty<T>({std::min(columns,tile_elements)}); });
     auto* output = packed.edit().bytes().data();
     TileWriter writer(c,dataset,shape,path);
     std::vector<Axis> axes(bytes ? 0 : shape.size());
@@ -994,7 +1016,7 @@ void write_dense_data(Context& c, hid_t dataset, ArrayView array, hid_t memory_t
                 // bounded row fragment, not the array or its owning dataset.
                 axes.back() = Axis::stride(first, length);
                 tile_shape.back() = length;
-                auto tile = visit_dtype(array.dtype(),[&]<class T> {
+                auto tile = visit_dense_dtype(array.dtype(),[&]<class T> {
                     return Array::borrow_dense(reinterpret_cast<T*>(output),tile_shape,tile_strides,Validation::none);
                 });
                 array.select(axes.data(),axes.size()).copy_into(tile.edit(),Validation::none);
@@ -1021,15 +1043,22 @@ void write_array(Context& c, hid_t parent, std::string_view key, ArrayView array
     if (c.validation == Validation::full) array.validate();
     if (array.layout() == Layout::dense) {
         const auto type = array.dtype();
-        auto file_bool = type == DType::boolean ? boolean_type(c, false, path) : Handle{};
-        auto memory_bool = type == DType::boolean ? boolean_type(c, true, path) : Handle{};
-        const hid_t file_type = type == DType::boolean ? static_cast<hid_t>(file_bool) : file_numeric_type(type, output_order(c, array.serialization_byte_order()));
-        const hid_t memory_type = type == DType::boolean ? static_cast<hid_t>(memory_bool) : native_type(type);
+        const auto order = output_order(c, array.serialization_byte_order());
+        Handle file_type;
+        if (type == DType::boolean) file_type = boolean_type(c, false, path);
+        else if (type == DType::float16) {
+            const auto endian = order == ByteOrder::native ? native_order :
+                order == ByteOrder::little ? H5T_ORDER_LE : H5T_ORDER_BE;
+            file_type = Handle(c.id(binary16_file_type(endian), path, "create binary16 file datatype"), H5Tclose);
+        } else file_type = Handle(file_numeric_type(type, order), nullptr);
+        auto memory_type = type == DType::boolean ? boolean_type(c, true, path) : dense_memory_type(c, type, file_type, path);
         auto dataset = create_dataset(c, parent, key, file_type, array_shape(array), dtype_size(type), path);
         write_encoding(c, dataset, "array", "0.2.0", path);
         write_dense_data(c, dataset, array, memory_type, path);
         return;
     }
+    if (array.dtype() == DType::float16)
+        c.fail(ErrorCode::unsupported_dtype, path, "binary16 storage requires a dense array");
     std::optional<Array> selected;
     std::optional<SparseBytesView<const std::byte>> bytes;
     try { bytes.emplace(array.sparse_bytes()); }
@@ -1224,6 +1253,8 @@ void validate_dictionary(Context& c, ColumnView categories, std::string_view pat
 }
 
 void write_column(Context& c, hid_t parent, std::string_view key, ColumnView column, std::string_view path) try {
+    if (column.kind() == ColumnKind::numeric && column.values().dtype() == DType::float16)
+        c.fail(ErrorCode::unsupported_dtype, path, "binary16 table columns are unsupported");
     if (column.kind() == ColumnKind::categorical) {
         auto group = create_group(c, parent, key, path);
         write_encoding(c, group, "categorical", "0.2.0", path);

@@ -13,16 +13,28 @@ export module anndatapp.core:arrays;
 
 export namespace anndatapp {
 
-enum class DType { boolean, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64 };
+enum class DType { boolean, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, float16 };
 enum class Layout { dense, csr, csc };
 enum class Validation { full, none };
 enum class ByteOrder { native, little, big };
 enum class ErrorCode { invalid_argument, out_of_bounds, dtype_mismatch, unsupported_layout, shape_mismatch, invalid_sparse_structure, non_contiguous, io_error, unsupported_encoding, unsupported_version, unsupported_dtype, unavailable_filter };
+
+// Binary16 storage for dense arrays. Numeric conversions round to nearest,
+// ties to even, and canonicalize NaNs. Bit access preserves every encoding.
+struct Float16 {
+    std::uint16_t bits;
+    [[nodiscard]] static constexpr Float16 from_bits(std::uint16_t value) noexcept { return {value}; }
+    [[nodiscard]] static Float16 from_float(float value) noexcept;
+    [[nodiscard]] static Float16 from_double(double value) noexcept;
+    [[nodiscard]] float to_float() const noexcept;
+    [[nodiscard]] double to_double() const noexcept;
+};
+
 enum class NativeType : std::uint8_t {
     boolean, character, signed_character, unsigned_character, wide_character,
     character8, character16, character32, short_integer, unsigned_short_integer,
     integer, unsigned_integer, long_integer, unsigned_long_integer,
-    long_long_integer, unsigned_long_long_integer, single, double_precision
+    long_long_integer, unsigned_long_long_integer, single, double_precision, half
 };
 
 class Error : public std::runtime_error {
@@ -138,6 +150,7 @@ template<class T> constexpr NativeType native_type_of() {
     else if constexpr (std::is_same_v<U, unsigned long long>) return NativeType::unsigned_long_long_integer;
     else if constexpr (std::is_same_v<U, float>) return NativeType::single;
     else if constexpr (std::is_same_v<U, double>) return NativeType::double_precision;
+    else if constexpr (std::is_same_v<U, Float16>) return NativeType::half;
     else static_assert(unsupported_dtype<U>, "unsupported anndatapp numerical type");
 }
 }
@@ -155,6 +168,7 @@ template<class T> constexpr DType dtype_of() {
     else if constexpr (std::is_integral_v<U> && std::is_unsigned_v<U> && sizeof(U) == 8) return DType::uint64;
     else if constexpr (std::is_same_v<U, float>) return DType::float32;
     else if constexpr (std::is_same_v<U, double>) return DType::float64;
+    else if constexpr (std::is_same_v<U, Float16>) return DType::float16;
     else static_assert(detail::unsupported_dtype<U>, "unsupported anndatapp numerical type");
 }
 

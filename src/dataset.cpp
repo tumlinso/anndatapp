@@ -364,6 +364,7 @@ Array allocate(DType dtype, std::vector<std::size_t> shape) {
     case DType::uint64: return allocate<std::uint64_t>(std::move(shape));
     case DType::float32: return allocate<float>(std::move(shape));
     case DType::float64: return allocate<double>(std::move(shape));
+    case DType::float16: return allocate<Float16>(std::move(shape));
     }
     fail(ErrorCode::unsupported_dtype, "AnnDataSet/X", "unsupported dtype");
 }

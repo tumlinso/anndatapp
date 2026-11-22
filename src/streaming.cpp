@@ -25,7 +25,7 @@ std::size_t product(const std::vector<std::size_t>& v) {
 std::size_t width(DType t) {
     switch(t) {
     case DType::boolean: case DType::int8: case DType::uint8: return 1;
-    case DType::int16: case DType::uint16: return 2;
+    case DType::int16: case DType::uint16: case DType::float16: return 2;
     case DType::int32: case DType::uint32: case DType::float32: return 4;
     default: return 8;
     }
@@ -72,6 +72,8 @@ struct BlockStreamImpl {
         const bool writing=o.operation==StreamOperation::write;
         if (writing && !g.writable) fail("write stream requires writable storage");
         if (g.layout!=Layout::dense && (rank!=2 || writing)) fail("only dense writes and native-major sparse reads are supported");
+        if (g.layout!=Layout::dense && g.dtype==DType::float16)
+            throw Error(ErrorCode::unsupported_dtype, "block stream", "FP16 sparse values are unsupported");
         for(std::size_t i=0;i<rank;++i) {
             const auto& a=g.axes[i];
             if (a.affine && g.shape[i]) {

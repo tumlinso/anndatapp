@@ -251,6 +251,8 @@ struct Session {
 };
 std::string child(std::string_view parent, std::string_view name);
 std::string encoding(const NodeInfo&, std::string_view path);
+void require_dense_float16(std::string_view path, std::string_view encoding, std::string_view parent_encoding);
+void require_dense_float16(Backend&, std::string_view path, std::string_view encoding);
 std::shared_ptr<detail::BackedNode> checked_table_index_node(const std::shared_ptr<detail::BackedNode>&);
 std::string string_attr(const NodeInfo&, std::string_view key, std::string_view path);
 std::vector<std::string> strings_attr(const NodeInfo&, std::string_view key, std::string_view path);

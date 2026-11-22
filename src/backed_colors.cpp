@@ -139,8 +139,14 @@ template<class T> Array scalar_array(const Node& n, std::size_t length) {
     result.set_serialization_byte_order(info.byte_order);
     return result;
 }
+NodeInfo numeric_color_info(const Node& n) {
+    auto info = n->session->backend->inspect(n->path);
+    if (info.dtype == DType::float16 && encoding(info, n->path) != "array")
+        fail(ErrorCode::unsupported_dtype, n->path, "FP16 requires a dense array encoding");
+    return info;
+}
 Array numeric_scalar_array(const Node& n, std::size_t length) {
-    switch (n->session->backend->inspect(n->path).dtype) {
+    switch (numeric_color_info(n).dtype) {
     case DType::boolean: return scalar_array<bool>(n, length);
     case DType::int8: return scalar_array<std::int8_t>(n, length);
     case DType::uint8: return scalar_array<std::uint8_t>(n, length);
@@ -150,6 +156,7 @@ Array numeric_scalar_array(const Node& n, std::size_t length) {
     case DType::uint32: return scalar_array<std::uint32_t>(n, length);
     case DType::int64: return scalar_array<std::int64_t>(n, length);
     case DType::uint64: return scalar_array<std::uint64_t>(n, length);
+    case DType::float16: return scalar_array<Float16>(n, length);
     case DType::float32: return scalar_array<float>(n, length);
     case DType::float64: return scalar_array<double>(n, length);
     }
@@ -218,7 +225,7 @@ void copy_promoted_color(Backend& destination, std::string_view path, const Node
     const auto budget = std::min(scratch_bytes, n->session->options.scratch_bytes);
     if (budget < 64) fail(ErrorCode::invalid_argument, path, "scratch budget must be at least 64 bytes");
     if (n->color_override->kind == ColorPromotion::numeric_array) {
-        const auto info = n->session->backend->inspect(n->path);
+        const auto info = numeric_color_info(n);
         const auto width = dtype_size(info.dtype);
         destination.create_numeric(path, info.dtype, {size}, encoding_attrs("array", "0.2.0"), info.byte_order);
         if (!size) return;

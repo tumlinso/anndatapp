@@ -129,6 +129,7 @@ void validate_unique_numeric(ArrayView values, std::string_view path) {
         case DType::uint64: validate_unique_values<std::uint64_t>(values, path); return;
         case DType::float32: validate_unique_values<float>(values, path); return;
         case DType::float64: validate_unique_values<double>(values, path); return;
+        case DType::float16: fail(ErrorCode::unsupported_dtype, path, "FP16 category values are unsupported");
     }
 }
 
@@ -136,8 +137,10 @@ void validate_array(ArrayView array, std::string_view path, Validation validatio
     with_validation_path(path, [&] {
         if (validation == Validation::full) array.validate();
         (void)element_count(shape_of(array), path);
-        if (array.layout() != Layout::dense && array.rank() != 2)
-            fail(ErrorCode::unsupported_layout, path, "sparse arrays must be rank two");
+        if (array.layout() != Layout::dense) {
+            if (array.dtype() == DType::float16) fail(ErrorCode::unsupported_dtype, path, "FP16 sparse values are unsupported");
+            if (array.rank() != 2) fail(ErrorCode::unsupported_layout, path, "sparse arrays must be rank two");
+        }
     });
 }
 
@@ -164,6 +167,7 @@ void validate_column(ColumnView column, std::string_view path, Validation valida
     if (validation == Validation::full) detail::validate_column_storage(column);
     if (column.kind() == ColumnKind::numeric) {
         auto values = column.values();
+        if (values.dtype() == DType::float16) fail(ErrorCode::unsupported_dtype, path, "FP16 column values are unsupported");
         validate_array(values, child_path(path, "values"), validation);
         if (column.nullable() && (values.dtype() == DType::float32 || values.dtype() == DType::float64))
             fail(ErrorCode::unsupported_dtype, path, "nullable floating-point columns have no supported AnnData codec");
@@ -209,7 +213,9 @@ void validate_element(ElementView value, std::string_view path, Validation valid
         case ElementKind::boolean:
         case ElementKind::signed_integer:
         case ElementKind::unsigned_integer:
-        case ElementKind::floating: (void)value.dtype(); return;
+        case ElementKind::floating:
+            if (value.dtype() == DType::float16) require_dense_float16(path, "numeric-scalar", {});
+            return;
         case ElementKind::string: validate_text(value.string(), path, validation); return;
         case ElementKind::array: validate_array(value.array(), path, validation); return;
         case ElementKind::record_array:
@@ -264,6 +270,7 @@ void write_array(Backend& backend, std::string_view path, ArrayView array, std::
     if (!prevalidated) validate_array(array, path, validation);
     const auto type = array.dtype();
     if (array.layout() != Layout::dense) {
+        if (type == DType::float16) fail(ErrorCode::unsupported_dtype, path, "FP16 sparse values are unsupported");
         std::optional<Array> copied;
         std::optional<SparseBytesView<const std::byte>> bytes;
         try { auto view = array.sparse_bytes(); bytes.emplace(view); }
@@ -588,6 +595,7 @@ void write_element_impl(Backend& backend, std::string_view path, ElementView val
         case ElementKind::unsigned_integer:
         case ElementKind::floating: {
             const auto type = value.dtype();
+            if (type == DType::float16) require_dense_float16(path, "numeric-scalar", {});
             auto attrs = encoding("numeric-scalar", "0.2.0");
             backend.create_numeric(path, type, {}, attrs, value.serialization_byte_order());
             switch (type) {
@@ -602,6 +610,7 @@ void write_element_impl(Backend& backend, std::string_view path, ElementView val
                 case DType::uint64: { const auto x = value.scalar<std::uint64_t>(); backend.write_numeric(path, {}, {}, &x); return; }
                 case DType::float32: { const auto x = value.scalar<float>(); backend.write_numeric(path, {}, {}, &x); return; }
                 case DType::float64: { const auto x = value.scalar<double>(); backend.write_numeric(path, {}, {}, &x); return; }
+                case DType::float16: break;
             }
             return;
         }

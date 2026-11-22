@@ -117,10 +117,20 @@ std::shared_ptr<Session> store_session(const std::shared_ptr<detail::BackedStore
     if (!impl || !impl->session) fail(ErrorCode::invalid_argument, "store", "empty store");
     impl->session->check_open(); return impl->session;
 }
+std::string_view element_encoding_attribute(ElementView attrs) {
+    if (attrs.kind() != ElementKind::mapping || !attrs.contains("encoding-type")) return {};
+    const auto value = attrs.at("encoding-type");
+    return value.kind() == ElementKind::string ? value.string() : std::string_view{};
+}
 std::shared_ptr<detail::BackedNode> raw_node(std::shared_ptr<Session> session, std::string path, bool strings) {
     const auto info = session->backend->inspect(path);
     if (!info.exists) fail(ErrorCode::out_of_bounds, path, "stored array does not exist");
     if (info.group || info.record || info.strings != strings) fail(ErrorCode::unsupported_encoding, path, "stored payload has the wrong array kind");
+    if (info.dtype == DType::float16) {
+        const auto attr = info.attrs.find("encoding-type");
+        const auto* code = attr == info.attrs.end() ? nullptr : std::get_if<std::string>(&attr->second);
+        require_dense_float16(*session->backend, path, code ? std::string_view(*code) : std::string_view{});
+    }
     auto& revision = session->revisions[path]; if (!revision) revision = std::make_shared<Revision>();
     auto node = std::make_shared<detail::BackedNode>(); node->session = std::move(session); node->path = std::move(path);
     node->revision = revision; node->observed_revision = revision->value; node->raw_array = true;
@@ -232,6 +242,9 @@ std::vector<std::string> BackedStore::children(std::string_view path) const { re
 Element BackedStore::attributes(std::string_view path) const { return store_session(impl_)->backend->metadata(checked_path(path)); }
 void BackedStore::set_attributes(std::string_view path, ElementView attrs) {
     auto s = store_session(impl_); s->check_writable(); const auto p = checked_path(path);
+    const auto code = backed_detail::element_encoding_attribute(attrs);
+    if (code == "numeric-scalar" && s->backend->inspect(p).dtype == DType::float16)
+        backed_detail::require_dense_float16(p, code, {});
     s->backend->metadata(p, attrs); s->invalidate(p); ++s->dataset_revision;
 }
 void BackedStore::create_group(std::string_view path, ElementView attrs) {
@@ -251,6 +264,8 @@ BackedStringArray BackedStore::strings(std::string_view path) const {
 BackedArray BackedStore::create_array(std::string_view path, DType type, std::vector<std::size_t> shape, ElementView attrs) {
     auto s = store_session(impl_); const auto p = checked_path(path);
     if (p == "/") throw Error(ErrorCode::invalid_argument, p, "store root must be a group");
+    if (type == DType::float16)
+        backed_detail::require_dense_float16(*s->backend, p, backed_detail::element_encoding_attribute(attrs));
     const auto size = backed_detail::shape_size(shape, p), width = dtype_size(type);
     if (!width || size > std::numeric_limits<std::size_t>::max() / width)
         throw Error(ErrorCode::invalid_argument, p, "array byte size overflows size_t");
@@ -280,6 +295,8 @@ BackedElement BackedStore::element(std::string_view path) const {
 void BackedStore::write_array(std::string_view path, ArrayView value, ElementView attrs) {
     auto s = store_session(impl_); const auto p = checked_path(path);
     if (p == "/") throw Error(ErrorCode::invalid_argument, p, "store root must be a group");
+    if (value.dtype() == DType::float16)
+        backed_detail::require_dense_float16(*s->backend, p, backed_detail::element_encoding_attribute(attrs));
     backed_detail::replace(s, p, [&](const std::string& temporary) {
         backed_detail::write_raw_array(*s->backend, temporary, value, s->options.scratch_bytes);
         if (attrs.kind() != ElementKind::null) s->backend->metadata(temporary, attrs);

@@ -21,11 +21,15 @@ StorageGeometry BackedArray::storage_geometry() const {
         g.layout = encoding == "csr_matrix" ? Layout::csr : Layout::csc;
         g.source_shape = backed_detail::logical_shape(s, node_->path);
         auto data = s.backend->inspect(backed_detail::child(node_->path, "data"));
+        if (data.dtype == DType::float16)
+            throw Error(ErrorCode::unsupported_dtype, node_->path, "FP16 sparse values are unsupported");
         g.data = data.physical; g.dtype = data.dtype;
         g.indices = s.backend->inspect(backed_detail::child(node_->path, "indices")).physical;
         g.offsets = s.backend->inspect(backed_detail::child(node_->path, "indptr")).physical;
         g.parallel_reads = data.parallel_reads;
     } else if ((encoding == "array" || encoding == "numeric-scalar") && !info.group && !info.strings && !info.record) {
+        if (encoding == "numeric-scalar" && info.dtype == DType::float16)
+            throw Error(ErrorCode::unsupported_dtype, node_->path, "FP16 requires a dense array encoding");
         g.source_shape = info.shape; g.dtype = info.dtype; g.data = info.physical;
         g.parallel_reads = info.parallel_reads; g.parallel_writes = info.parallel_writes;
     } else throw Error(ErrorCode::unsupported_layout, node_->path, "storage geometry requires a numerical array");

@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -1013,6 +1014,78 @@ void sparse_copy_major_preflight() {
         "CSC copy rejects an unaddressable staging offset span");
 }
 
+void binary16_dense_storage() {
+    using namespace anndatapp;
+    static_assert(sizeof(Float16) == 2 && std::is_trivially_copyable_v<Float16>);
+    static_assert(dtype_of<Float16>() == DType::float16);
+    bool exact = true;
+    for (unsigned i = 0; i != 65536; ++i) {
+        const auto x = Float16::from_bits(std::uint16_t(i));
+        const auto y = Float16::from_double(x.to_double());
+        const bool nan = (i & 0x7c00) == 0x7c00 && (i & 0x3ff);
+        if (y.bits != (nan ? 0x7e00 : i)) { exact = false; break; }
+    }
+    expect(exact, "all binary16 patterns round trip with canonical numeric NaNs");
+    const double tie = 1.0 + std::ldexp(1.0, -11);
+    expect(Float16::from_double(tie).bits == 0x3c00 &&
+           Float16::from_double(std::nextafter(tie, 2.0)).bits == 0x3c01 &&
+           Float16::from_double(std::nextafter(tie, 1.0)).bits == 0x3c00,
+           "direct double conversion distinguishes binary16 tie and adjacent doubles");
+    expect(Float16::from_double(std::ldexp(1.0, -25)).bits == 0 &&
+           Float16::from_double(std::nextafter(std::ldexp(1.0, -25), 1.0)).bits == 1 &&
+           Float16::from_double(65520.0).bits == 0x7c00 &&
+           Float16::from_double(-0.0).bits == 0x8000,
+           "binary16 underflow, overflow and signed zero");
+
+    auto array = Array::zeros<Float16>({2, 2});
+    auto view = array.edit().dense<Float16>();
+    expect(array.dtype() == DType::float16 && array.native_type() == NativeType::half &&
+           dtype_size(array.dtype()) == 2 && view.data()[3].bits == 0,
+           "binary16 owning dense storage has the correct width and zero fill");
+    view.data()[0] = Float16::from_bits(0x7d01);
+    view.data()[1] = Float16::from_bits(0x8000);
+    view.data()[2] = Float16::from_float(3.0f);
+    view.data()[3] = Float16::from_bits(1);
+    auto reversed = array.view().select({Axis::stride(1, 2, 1, true), Axis::all()});
+    auto copied = reversed.copy();
+    auto dense = copied.view().dense<Float16>();
+    expect(dense.data()[0].to_float() == 3.0f && dense.data()[1].bits == 1 &&
+           dense.data()[2].bits == 0x7d01 && dense.data()[3].bits == 0x8000,
+           "reverse-stride binary16 copy preserves stored bits");
+    Float16 buffer[6]{};
+    auto borrowed = Array::borrow_dense(buffer, {2, 2}, {3, 1});
+    reversed.copy_into(borrowed.edit());
+    expect(buffer[0].bits == 0x4200 && buffer[1].bits == 1 && buffer[2].bits == 0 &&
+           buffer[3].bits == 0x7d01 && buffer[4].bits == 0x8000,
+           "binary16 copy into a caller-owned strided buffer preserves raw bits");
+    expect_error(ErrorCode::dtype_mismatch, [&] { (void)array.view().dense<std::uint16_t>(); },
+                 "binary16 typed access requires its own native type");
+}
+
+void binary16_requires_dense_arrays() {
+    using namespace anndatapp;
+    expect_error(ErrorCode::unsupported_dtype, [] { (void)Array::csr<Float16, int, int>(1, 1, 1); },
+                 "binary16 CSR allocation is rejected");
+    expect_error(ErrorCode::unsupported_dtype, [] { (void)Array::csc<Float16, int, int>(1, 1, 1); },
+                 "binary16 CSC allocation is rejected");
+    Float16 values[]{Float16::from_float(1)};
+    int indices[]{0}, offsets[]{0, 1};
+    expect_error(ErrorCode::unsupported_dtype, [&] {
+        (void)Array::borrow_sparse(Layout::csr, 1, 1, 1, values, indices, offsets, Validation::none);
+    }, "unchecked binary16 sparse borrowing is rejected");
+    expect_error(ErrorCode::unsupported_dtype, [&] {
+        (void)Array::from_sparse_buffers(Layout::csc, Array::borrow_dense(values, {1}, {1}),
+            Array::borrow_dense(indices, {1}, {1}), Array::borrow_dense(offsets, {2}, {1}),
+            1, 1, Validation::none);
+    }, "unchecked binary16 sparse assembly is rejected");
+    expect_error(ErrorCode::unsupported_dtype, [] { (void)Column::numeric(Array::zeros<Float16>({1})); },
+                 "binary16 remains unavailable to numeric table columns");
+    expect_error(ErrorCode::unsupported_dtype, [] {
+        auto records = RecordArray::with_shape({1});
+        records.set("value", Array::zeros<Float16>({1}), Validation::none);
+    }, "binary16 remains unavailable to compound records");
+}
+
 } // namespace
 
 void sparse_repeated_minor_gather() {
@@ -1049,6 +1122,8 @@ void sparse_repeated_minor_gather() {
 }
 
 int main() {
+    binary16_dense_storage();
+    binary16_requires_dense_arrays();
     sparse_repeated_minor_gather();
     dense_storage_and_mutation();
     direct_borrowed_dense_views();

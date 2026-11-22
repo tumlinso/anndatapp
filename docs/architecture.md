@@ -50,8 +50,9 @@ UTF-8 string arrays, nullable/categorical metadata columns, and native records
 with numerical/text members. Records have field-buffer and interleaved
 representations, including explicit pointer-and-length text references; see
 [records.md](records.md). H5AD supports the declared record subset. Zarr record
-codecs, nested/subarray members, complex/half-precision arrays, and ragged/Awkward
-values require later work. Native numerical memory and preferred serialization
+codecs, nested/subarray members, complex arrays, and ragged/Awkward values
+require later work. Binary16 is available for [dense numerical arrays](fp16.md).
+Native numerical memory and preferred serialization
 byte order are separate properties: HDF5 converts at the transfer boundary.
 
 | Ecosystem | Kind | Foundation | Required later work |

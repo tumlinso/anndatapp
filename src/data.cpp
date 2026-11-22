@@ -179,6 +179,7 @@ decltype(auto) visit_numeric(DType dtype, F&& f) {
         case DType::uint64: return f.template operator()<std::uint64_t>();
         case DType::float32: return f.template operator()<float>();
         case DType::float64: return f.template operator()<double>();
+        case DType::float16: break;
     }
     fail(ErrorCode::dtype_mismatch, "column", "unsupported dtype");
 }
@@ -472,6 +473,8 @@ Column::Column(std::shared_ptr<detail::ColumnImpl> p) : impl_(std::move(p)) {}
 Column Column::numeric(Array values, std::vector<std::uint8_t> validity) {
     if (values.rank() != 1 || values.layout() != Layout::dense)
         fail(ErrorCode::shape_mismatch, "column/values", "numeric columns require a one-dimensional dense array");
+    if (values.dtype() == DType::float16)
+        fail(ErrorCode::unsupported_dtype, "column/values", "float16 is unsupported for columns");
     check_validity(values.extent(0), validity);
     auto p = std::make_shared<detail::ColumnImpl>();
     p->values.emplace(std::move(values));

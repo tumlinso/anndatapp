@@ -36,6 +36,7 @@ template<class F> decltype(auto) visit_dtype(DType dtype, F&& function) {
         case DType::uint64: return function.template operator()<std::uint64_t>();
         case DType::float32: return function.template operator()<float>();
         case DType::float64: return function.template operator()<double>();
+        case DType::float16: break;
     }
     throw Error(ErrorCode::unsupported_dtype, "backed element", "unknown numeric dtype");
 }
@@ -293,17 +294,18 @@ std::string optional_string(const NodeInfo& info, std::string_view key,
 
 std::shared_ptr<detail::BackedNode> child_node(
     const std::shared_ptr<detail::BackedNode>& parent, std::string_view name,
-    bool inherit_axes = true) {
+    bool inherit_axes = true, std::string_view parent_encoding = {}) {
     check_node(parent);
     const auto path = child(parent->path, name);
     std::vector<Axis> axes;
-    if (inherit_axes && !parent->axes.empty()) {
+    if ((inherit_axes && !parent->axes.empty()) || !parent_encoding.empty()) {
         const auto info = parent->session->backend->inspect(path);
         if (!info.exists)
             codec_fail(ErrorCode::io_error, path, "storage element does not exist");
-        if (info.group) {
+        if (info.dtype == DType::float16) require_dense_float16(path, {}, parent_encoding);
+        if (inherit_axes && info.group) {
             axes = parent->axes;
-        } else if (info.shape.size() >= parent->axes.size()) {
+        } else if (inherit_axes && info.shape.size() >= parent->axes.size()) {
             axes = parent->axes;
             for (std::size_t i = axes.size(); i < info.shape.size(); ++i)
                 axes.push_back(Axis{info.shape[i], 0, 1, {}});
@@ -358,6 +360,8 @@ Column read_column(const std::shared_ptr<detail::BackedNode>& value) {
     const auto info = inspect_node(value);
     const auto code = encoding(info, value->path);
     if (code == "array") {
+        if (info.dtype == DType::float16)
+            codec_fail(ErrorCode::unsupported_dtype, value->path, "FP16 column values are unsupported");
         auto array = read_array(value);
         return Column::numeric(std::move(array));
     }
@@ -368,7 +372,7 @@ Column read_column(const std::shared_ptr<detail::BackedNode>& value) {
     if (code == "categorical") {
         if(!info.group)codec_fail(ErrorCode::unsupported_encoding,value->path,"categorical encoding requires a group");
         require_children(value,{"codes","categories"});
-        auto codes_node = child_node(value, "codes");
+        auto codes_node = child_node(value, "codes", true, code);
         if (element_encoding(codes_node) != "array")
             codec_fail(ErrorCode::unsupported_encoding, codes_node->path,
                        "categorical codes must be a numerical array");
@@ -401,6 +405,8 @@ Column read_column(const std::shared_ptr<detail::BackedNode>& value) {
                        "nullable mask must be a numerical array");
         const auto mask_info=inspect_node(mask_node);
         const auto values_info=inspect_node(values_node);
+        if (values_info.dtype == DType::float16)
+            require_dense_float16(values_node->path, {}, code);
         const auto selected_mask_shape=selected_shape(mask_node);
         if(mask_info.group || mask_info.strings || mask_info.dtype!=DType::boolean || selected_mask_shape.size()!=1)
             codec_fail(ErrorCode::unsupported_dtype,mask_node->path,
@@ -683,7 +689,10 @@ std::size_t BackedColumn::size() const {
 ColumnKind BackedColumn::kind() const {
     backed_detail::check_node(node_);
     if(node_->color_override) return ColumnKind::string;
-    const auto code = backed_detail::element_encoding(node_);
+    const auto info = backed_detail::inspect_node(node_);
+    const auto code = backed_detail::encoding(info, node_->path);
+    if (code == "array" && info.dtype == DType::float16)
+        throw Error(ErrorCode::unsupported_dtype, node_->path, "FP16 column values are unsupported");
     if (code == "array" || code == "nullable-integer" || code == "nullable-boolean")
         return ColumnKind::numeric;
     if (code == "string-array" || code == "nullable-string-array")
@@ -711,10 +720,15 @@ bool BackedColumn::ordered() const {
 
 BackedArray BackedColumn::values() const {
     backed_detail::check_node(node_);
-    const auto code = backed_detail::element_encoding(node_);
-    if (code == "array") return BackedArray(node_);
+    const auto info = backed_detail::inspect_node(node_);
+    const auto code = backed_detail::encoding(info, node_->path);
+    if (code == "array") {
+        if (info.dtype == DType::float16)
+            throw Error(ErrorCode::unsupported_dtype, node_->path, "FP16 column values are unsupported");
+        return BackedArray(node_);
+    }
     if (code == "nullable-integer" || code == "nullable-boolean")
-        return BackedArray(backed_detail::child_node(node_, "values"));
+        return BackedArray(backed_detail::child_node(node_, "values", true, code));
     throw Error(ErrorCode::invalid_argument, node_->path,
                 "column does not have numerical values");
 }
@@ -723,7 +737,7 @@ BackedArray BackedColumn::codes() const {
     backed_detail::check_node(node_);
     if (backed_detail::element_encoding(node_) != "categorical")
         throw Error(ErrorCode::invalid_argument, node_->path, "column is not categorical");
-    auto codes=backed_detail::child_node(node_, "codes");
+    auto codes=backed_detail::child_node(node_, "codes", true, "categorical");
     codes->writable=false;
     if(node_->prune_categories) codes->code_recode=backed_detail::make_category_plan(node_,backed_detail::scratch_remaining(node_));
     return BackedArray(std::move(codes));
@@ -748,7 +762,7 @@ BackedArray BackedColumn::unsafe_codes() const {
     if(backed_detail::element_encoding(node_)!="categorical")throw Error(ErrorCode::invalid_argument,node_->path,"column is not categorical");
     node_->session->check_writable();
     if(!node_->writable)throw Error(ErrorCode::invalid_argument,node_->path,"backed view is read-only");
-    auto codes=backed_detail::child_node(node_,"codes");
+    auto codes=backed_detail::child_node(node_,"codes",true,"categorical");
     codes->prune_categories=false;
     codes->code_recode.reset();
     return BackedArray(std::move(codes));
@@ -908,6 +922,7 @@ ElementKind BackedElement::kind() const {
         return ElementKind::column;
     if (code == "numeric-scalar") {
         const auto info = backed_detail::inspect_node(node_);
+        if (info.dtype == DType::float16) backed_detail::require_dense_float16(node_->path, code, {});
         if (info.dtype == DType::boolean) return ElementKind::boolean;
         if (info.dtype == DType::float32 || info.dtype == DType::float64)
             return ElementKind::floating;

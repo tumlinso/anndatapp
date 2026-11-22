@@ -56,6 +56,7 @@ Array allocate(DType t, std::vector<std::size_t> shape) {
     case DType::uint32: return Array::empty<std::uint32_t>(std::move(shape));
     case DType::int64: return Array::empty<std::int64_t>(std::move(shape));
     case DType::uint64: return Array::empty<std::uint64_t>(std::move(shape));
+    case DType::float16: return Array::empty<Float16>(std::move(shape));
     case DType::float32: return Array::empty<float>(std::move(shape));
     case DType::float64: return Array::empty<double>(std::move(shape));
     }
@@ -73,6 +74,8 @@ Descriptor describe(const NodePtr& n, NodeInfo info) {
     auto& s = *n->session;
     if (!info.exists) fail(ErrorCode::out_of_bounds, n, "backed array does not exist");
     auto code = n->raw_array ? std::string("array") : backed_detail::encoding(info, n->path);
+    if (code == "numeric-scalar" && info.dtype == DType::float16)
+        fail(ErrorCode::unsupported_dtype, n, "FP16 requires a dense array encoding");
     Descriptor d;
     if (n->color_override) {
         if (n->color_override->kind != backed_detail::ColorPromotion::numeric_array ||
@@ -104,6 +107,8 @@ Descriptor describe(const NodePtr& n, NodeInfo info) {
             d.data.strings || d.indices.strings || d.offsets.strings || d.data.shape.size() != 1 ||
             d.indices.shape.size() != 1 || d.offsets.shape.size() != 1)
             fail(ErrorCode::unsupported_encoding, n, "sparse buffers must be one-dimensional numeric datasets");
+        if (d.data.dtype == DType::float16)
+            fail(ErrorCode::unsupported_dtype, n, "FP16 sparse values are unsupported");
         if (!integer_type(d.indices.dtype) || !integer_type(d.offsets.dtype))
             fail(ErrorCode::unsupported_dtype, n, "sparse indices and offsets must have integer dtypes");
         const auto major = d.source_shape[d.layout == Layout::csr ? 0 : 1];
@@ -1417,6 +1422,7 @@ auto view_packer(DType type) -> void (*)(void*,const std::vector<std::vector<std
     case DType::int16:return pack_view<std::int16_t>;case DType::uint16:return pack_view<std::uint16_t>;
     case DType::int32:return pack_view<std::int32_t>;case DType::uint32:return pack_view<std::uint32_t>;
     case DType::int64:return pack_view<std::int64_t>;case DType::uint64:return pack_view<std::uint64_t>;
+    case DType::float16:return pack_view<Float16>;
     case DType::float32:return pack_view<float>;case DType::float64:return pack_view<double>;
     }
     throw Error(ErrorCode::unsupported_dtype,"selected write","unsupported numerical dtype");

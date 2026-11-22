@@ -20,9 +20,9 @@ cmake --workflow --preset shared-release
 
 `cmake --workflow --preset native-check` configures, builds, and runs the entire native/import/installed-consumer suite in one command with Python tests disabled. It is the standalone integrated verification contract used by the Todo foundation milestone.
 
-AnnData++ supplies boolean, fixed-width integer, FP32, and FP64 storage. Portable
-binary16 conversion and velocity's explicit FP16 storage views are Cellerator-owned.
-This package has no FP16 storage or CUDA component.
+AnnData++ supplies boolean, fixed-width integer, FP32, and FP64 storage.
+[Dense FP16 storage](fp16.md) adds a dependency-free binary16 value type to the
+core. HDF5 and Zarr remain optional private backends.
 
 Compiler dependency scanning uses CMake's CXX_MODULES file sets. CMake normally detects the versioned scanner; `CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS` is an override for unusual installations. Install the scanner corresponding to the selected compiler, rather than an unrelated LLVM development library.
 

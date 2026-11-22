@@ -23,15 +23,15 @@ concurrent uncommitted fp16 work was preserved and is outside these results.
 
 ## Package boundary
 
-The [current package-boundary validation](package-boundary-validation.md)
+The [1.0 package-boundary validation](package-boundary-validation.md)
 records the removal, Python dtype rejection, installed consumers and downstream
 CPU checks against the migrated source.
 
 The unpublished FP16 storage and CUDA implementations, together with their exact
 source snapshots and historical receipts, are preserved in Cellerator's
 `quarantine/anndatapp-extensions/`. Those receipts describe earlier source and
-are not qualification of the current AnnData++ package. Portable binary16
-conversion and velocity's FP16 inputs and outputs are owned by Cellerator.
+cover the historical snapshot. AnnData++ 1.1.1 restores
+[dense FP16 storage](fp16.md) as a standalone feature.
 
 ## Storage completeness
 

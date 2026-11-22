@@ -79,6 +79,7 @@ Array make_array(DType t, const Shape& shape, std::string_view path) {
     case DType::uint64: return Array::empty<std::uint64_t>(shape);
     case DType::float32: return Array::empty<float>(shape);
     case DType::float64: return Array::empty<double>(shape);
+    case DType::float16: break;
     }
     fail(ErrorCode::unsupported_dtype, path, "unknown record field dtype");
 }
@@ -164,6 +165,8 @@ void write_record(Backend& backend, std::string_view path, RecordArrayView recor
     fields.reserve(names.size());
     for (const auto& name : names) {
         const auto field = records.field(name);
+        if (field.kind == RecordFieldKind::numeric && field.dtype == DType::float16)
+            fail(ErrorCode::unsupported_dtype, field_path(path, name), "FP16 record fields are unsupported");
         fields.push_back({name, field.kind != RecordFieldKind::numeric, field.dtype, field.byte_order});
     }
     backend.create_record(path, shape, fields, {{"encoding-type", std::string("rec-array")}, {"encoding-version", std::string("0.2.0")}});
@@ -223,6 +226,9 @@ void copy_record(Backend& out, std::string_view path, const Node& node,
     if (info.group || !info.record) fail(ErrorCode::unsupported_encoding, node->path, "rec-array must be a compound dataset");
     auto shape = shape_of(node);
     const auto n = count(shape, node->path);
+    for (const auto& field : info.fields)
+        if (!field.strings && field.dtype == DType::float16)
+            fail(ErrorCode::unsupported_dtype, field_path(node->path, field.name), "FP16 record fields are unsupported");
     out.create_record(path, shape, info.fields, info.attrs);
     Shape logical(shape.size()), start(shape.size()), size(shape.size(), 1);
     std::unique_ptr<std::byte[]> packed;

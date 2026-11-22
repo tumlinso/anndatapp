@@ -80,6 +80,7 @@ ze::Json array_scalar(DType type,const std::byte* data) {
         case DType::uint64: return load_scalar<std::uint64_t>(data);
         case DType::float32: { auto v=load_scalar<float>(data); if(std::isfinite(v)) return v; break; }
         case DType::float64: { auto v=load_scalar<double>(data); if(std::isfinite(v)) return v; break; }
+        case DType::float16: throw Error(ErrorCode::unsupported_dtype,"attributes","float16 attributes are unsupported");
     }
     throw Error(ErrorCode::unsupported_encoding,"attributes","non-finite floating point metadata is not JSON");
 }
@@ -106,6 +107,7 @@ ze::Json element_json(ElementView value) {
         case ElementKind::array: {
             auto array=value.array();
             if(array.layout()!=Layout::dense) throw Error(ErrorCode::unsupported_encoding,"attributes","sparse metadata arrays are not JSON");
+            if(array.dtype()==DType::float16) throw Error(ErrorCode::unsupported_dtype,"attributes","float16 attributes are unsupported");
             auto bytes=array.bytes();
             std::function<ze::Json(std::size_t,const std::byte*)> convert = [&](std::size_t axis,const std::byte* data) -> ze::Json {
                 if(axis==bytes.rank()) return array_scalar(array.dtype(),data);
@@ -166,6 +168,7 @@ DType native_dtype(ze::Type type) {
         case ze::Type::uint64: return DType::uint64;
         case ze::Type::float32: return DType::float32;
         case ze::Type::float64: return DType::float64;
+        case ze::Type::float16: return DType::float16;
         case ze::Type::string: break;
     }
     throw Error(ErrorCode::unsupported_dtype,"zarr","Zarr scalar is not a supported numerical dtype");
@@ -183,6 +186,7 @@ ze::Type storage_dtype(DType type) {
         case DType::uint64: return ze::Type::uint64;
         case DType::float32: return ze::Type::float32;
         case DType::float64: return ze::Type::float64;
+        case DType::float16: return ze::Type::float16;
     }
     throw Error(ErrorCode::unsupported_dtype,"zarr","numerical dtype has no Zarr storage representation");
 }

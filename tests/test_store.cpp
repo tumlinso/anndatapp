@@ -196,6 +196,55 @@ void raw_prepared(BackedStore store) {
     bounded.read_into({0, 0}, {2, 2}, DenseBuffer::from(selected, {2, 2}));
     require(selected[0] == 11 && selected[3] == 66, "raw transfer lost retained physical session");
 }
+void raw_float16(BackedStore store) {
+    auto raw = store.create_array("/images/image/s0", DType::float16, {2});
+    auto transfer = raw.prepare_transfer();
+    Float16 values[] = {Float16::from_bits(0x8000), Float16::from_bits(0x7e4a)};
+    transfer.write_from({0}, {2}, DenseBuffer::from(values, {2}));
+    auto copy = raw.read();
+    auto view = copy.view().dense<Float16>();
+    require(raw.storage_geometry().dtype == DType::float16 &&
+            view.data()[0].bits == values[0].bits && view.data()[1].bits == values[1].bits,
+            "raw dense FP16 transfer or geometry differs");
+    BlockStream stream(raw.storage_geometry());
+    auto request = stream.next();
+    require(request && request->estimated_bytes == 4, "FP16 stream size differs");
+
+    auto rank_zero = Array::empty<Float16>({});
+    rank_zero.edit().dense<Float16>().data()[0] = values[1];
+    auto attrs = Element::mapping();
+    attrs.set("encoding-type", Element("array"));
+    attrs.set("encoding-version", Element("0.2.0"));
+    store.write_array("/scalar-array", rank_zero.view(), attrs.view());
+    auto element = store.element("/scalar-array").read();
+    require(element.view().kind() == ElementKind::array &&
+            element.view().array().dense<Float16>().data()[0].bits == values[1].bits,
+            "rank-zero FP16 array lost its encoding or payload");
+
+    auto unsupported = [](auto operation, const char* message) {
+        try { operation(); } catch (const Error& error) {
+            require(error.code() == ErrorCode::unsupported_dtype, message);
+            return;
+        }
+        throw std::runtime_error(message);
+    };
+    attrs.set("encoding-type", Element("numeric-scalar"));
+    unsupported([&] { store.set_attributes("/scalar-array", attrs.view()); },
+                "FP16 array was relabeled as a numeric scalar");
+    unsupported([&] { store.write_array("/new-scalar", rank_zero.view(), attrs.view()); },
+                "FP16 numeric scalar write succeeded");
+    require(!store.exists("/new-scalar"), "rejected FP16 scalar write created output");
+
+    auto sparse = AnnData::empty(1, 1);
+    sparse.set_x(Array::csr<float, std::int32_t, std::int32_t>(1, 1, 0));
+    store.write_anndata("/sparse", sparse.view());
+    unsupported([&] { (void)store.create_array("/sparse/X/data", DType::float16, {0}); },
+                "raw creation accepted FP16 sparse values");
+    unsupported([&] { store.write_array("/sparse/X/data", copy.view()); },
+                "raw write accepted FP16 sparse values");
+    require(store.anndata("/sparse").x().dtype() == DType::float32,
+            "rejected raw FP16 write replaced valid sparse values");
+}
 void raw_read_only(BackedStore store) {
     auto array = store.array("/X"); require(!array.storage_geometry().writable, "read-only raw geometry is writable");
     auto selected = array.select({indices{2, 0}, indices{1}}); auto transfer = selected.prepare_transfer(4096);
@@ -213,12 +262,14 @@ int main(int argc, char** argv) {
         exercise(create_hdf5_store((root / "store.h5").string()), false);
         root_and_retention(create_hdf5_store((root / "root.h5").string()));
         raw_prepared(create_hdf5_store((root / "raw.h5").string()));
+        raw_float16(create_hdf5_store((root / "raw-fp16.h5").string()));
         raw_read_only(open_hdf5_store((root / "raw.h5").string()));
 #endif
 #if ANNDATAPP_HAS_ZARR
         exercise(create_zarr_store((root / "store.zarr").string()), true);
         root_and_retention(create_zarr_store((root / "root.zarr").string()));
         raw_prepared(create_zarr_store((root / "raw.zarr").string()));
+        raw_float16(create_zarr_store((root / "raw-fp16.zarr").string()));
         raw_read_only(open_zarr_store((root / "raw.zarr").string()));
 #endif
         std::cout << "rooted store tests passed\n";

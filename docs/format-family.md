@@ -25,6 +25,9 @@ H5MU, H5TD, and SpatialData use the existing HDF5 or Zarr storage implementation
 
 ## Shared construction, selection, and storage
 
+[Dense binary16 arrays](fp16.md) retain their dtype in embedded AnnData,
+same-dtype dense H5AD collections, and SpatialData image rasters.
+
 The models reuse AnnData's arrays, strings, columns, tables, and views. Large owners are move-only. Calling `copy()` explicitly creates independent data; a view retains its source binding and may represent a selection without making a contiguous numerical copy. Use the format's read/materialize function when an owning eager value is needed.
 
 `Element::sequence()` represents an ordered heterogeneous sequence for native metadata. Generic AnnData serializers reject sequences when a format has no established sequence encoding. TreeData's JSON representation and store-attribute conversion provide explicit encodings. Missing attributes remain different from explicit null values.

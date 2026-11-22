@@ -345,7 +345,7 @@ std::size_t checked_product(const Shape& shape) {
 std::size_t type_size(Type type) {
     switch (type) {
     case Type::boolean: case Type::int8: case Type::uint8: return 1;
-    case Type::int16: case Type::uint16: return 2;
+    case Type::int16: case Type::uint16: case Type::float16: return 2;
     case Type::int32: case Type::uint32: case Type::float32: return 4;
     case Type::int64: case Type::uint64: case Type::float64: return 8;
     case Type::string: return 0;

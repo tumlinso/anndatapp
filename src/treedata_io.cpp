@@ -69,6 +69,8 @@ Json array_json(ArrayView a) {
 #define CASE(dt, type) case DType::dt: return dense_json<type>(a)
     CASE(boolean,bool); CASE(int8,std::int8_t); CASE(uint8,std::uint8_t); CASE(int16,std::int16_t); CASE(uint16,std::uint16_t); CASE(int32,std::int32_t); CASE(uint32,std::uint32_t); CASE(int64,std::int64_t); CASE(uint64,std::uint64_t); CASE(float32,float); CASE(float64,double);
 #undef CASE
+    case DType::float16:
+        throw Error(ErrorCode::unsupported_dtype, "tree", "binary16 arrays require a typed array encoding");
     } fail("tree", "unsupported array type");
 }
 Tree tree_from_json(const Json& g) {
@@ -327,6 +329,8 @@ void emit_element(JsonSink& out, ElementView value) {
         EMIT_CASE(uint32,std::uint32_t); EMIT_CASE(int64,std::int64_t); EMIT_CASE(uint64,std::uint64_t);
         EMIT_CASE(float32,float); EMIT_CASE(float64,double);
 #undef EMIT_CASE
+        case DType::float16:
+            throw Error(ErrorCode::unsupported_dtype, "tree", "binary16 arrays require a typed array encoding");
         }
         break;
     }

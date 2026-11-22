@@ -58,7 +58,7 @@ int main() {
 }
 ```
 
-Numerical storage supports booleans, fixed-width integers, FP32, and FP64. Binary16 conversion and velocity's FP16 input/output belong to Cellerator; FP16 storage and CUDA are outside this package.
+Numerical storage supports booleans, fixed-width integers, FP32, and FP64. Dense arrays also support opt-in IEEE binary16 storage through `anndatapp::Float16`, including H5AD and Zarr v2/v3. CSR and CSC use the existing dtype set. See [dense FP16 storage](docs/fp16.md) for the native and file contracts.
 
 Owners are move-only. `copy()` creates independent data. Typed memory views retain storage by default and expose pointers, dimensions, and strides. Borrowed and unchecked paths give callers explicit control over lifetimes and validation. Parallel execution and synchronization belong to the caller.
 

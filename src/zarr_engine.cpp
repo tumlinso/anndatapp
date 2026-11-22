@@ -9,6 +9,8 @@
 #include <numeric>
 #include <set>
 
+import anndatapp.core;
+
 namespace anndatapp_zarr {
 namespace {
 Json load_json(const std::filesystem::path& file) {
@@ -74,7 +76,8 @@ constexpr TypeName type_names[] = {
     {"b1","bool",Type::boolean}, {"i1","int8",Type::int8}, {"u1","uint8",Type::uint8},
     {"i2","int16",Type::int16}, {"u2","uint16",Type::uint16}, {"i4","int32",Type::int32},
     {"u4","uint32",Type::uint32}, {"i8","int64",Type::int64}, {"u8","uint64",Type::uint64},
-    {"f4","float32",Type::float32}, {"f8","float64",Type::float64}, {"O","string",Type::string}
+    {"f4","float32",Type::float32}, {"f8","float64",Type::float64}, {"O","string",Type::string},
+    {"f2","float16",Type::float16}
 };
 Type parse_type(std::string dtype, int format, char& endian, const std::string& path) {
     if (format==2) {
@@ -202,6 +205,23 @@ template<class T> void fill_values(Bytes& bytes,const Json& value) {
     }
     for(std::size_t i=0;i<bytes.size();i+=sizeof(T)) std::memcpy(bytes.data()+i,&scalar,sizeof(T));
 }
+std::uint16_t float16_fill(const Json& value,int format) {
+    if(value.is_null()) return 0;
+    if(value.is_number()) return anndatapp::Float16::from_double(value.get<double>()).bits;
+    if(value.is_string()) {
+        const auto& text=value.get_ref<const std::string&>();
+        if(text=="NaN") return 0x7e00;
+        if(text=="Infinity") return 0x7c00;
+        if(text=="-Infinity") return 0xfc00;
+        if(format==3 && text.size()==6 && text.starts_with("0x")) {
+            std::uint16_t bits=0;
+            const auto end=text.data()+text.size();
+            const auto parsed=std::from_chars(text.data()+2,end,bits,16);
+            if(parsed.ec==std::errc{} && parsed.ptr==end) return bits;
+        }
+    }
+    throw Error(Failure::encoding,"fill_value","invalid float16 fill value");
+}
 void fill_numeric(Bytes& bytes,const ArrayMetadata& m) {
     switch(m.type) {
         case Type::boolean: std::fill(bytes.begin(),bytes.end(),std::byte(!m.fill.is_null() && (m.fill.is_boolean()?m.fill.get<bool>():m.fill.get<double>()!=0.0))); break;
@@ -215,6 +235,11 @@ void fill_numeric(Bytes& bytes,const ArrayMetadata& m) {
         case Type::uint64: fill_values<std::uint64_t>(bytes,m.fill); break;
         case Type::float32: fill_values<float>(bytes,m.fill); break;
         case Type::float64: fill_values<double>(bytes,m.fill); break;
+        case Type::float16: {
+            const auto bits=float16_fill(m.fill,m.format);
+            for(std::size_t i=0;i<bytes.size();i+=sizeof(bits)) __builtin_memcpy(bytes.data()+i,&bits,sizeof(bits));
+            break;
+        }
         case Type::string: break;
     }
 }

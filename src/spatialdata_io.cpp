@@ -120,6 +120,8 @@ detail::SpatialStoredElement inspect_raster(BackedStore& store,std::string name,
 
         auto raw=store.array(child(out.path,p));
         if(raw.rank()!=out.axes.size())fail(out.path,"raster array rank differs from axes");
+        if(kind==SpatialElementKind::labels && raw.dtype()==DType::float16)
+            fail(out.path,"binary16 raster data requires an image",ErrorCode::unsupported_dtype);
         auto ts=entry.at("coordinateTransformations");
         if(!sequence_size(ts,out.path)||text(ts.at(0).at("type"),out.path)!="scale")fail(out.path,"raster level must start with scale metadata");
         auto factors=ts.at(0).at("scale");
@@ -334,8 +336,12 @@ void write_spatialdata(std::string_view path,const SpatialDataView& data,Spatial
             auto r=data.raster(n);
             auto attrs=raster_attrs(r);
             detail::preflight_zarr_attributes(attrs.view());
-            for(std::size_t i=0;i<r.n_levels();++i)
-                detail::preflight_array_write(r.level(i),options.validation,budgets,n);
+            for(std::size_t i=0;i<r.n_levels();++i) {
+                auto a=r.level(i);
+                if(kind==SpatialElementKind::labels && a.dtype()==DType::float16)
+                    fail(n,"binary16 raster data requires an image",ErrorCode::unsupported_dtype);
+                detail::preflight_array_write(a,options.validation,budgets,n);
+            }
         }else if(kind==SpatialElementKind::points){
             auto p=data.points(n);
             auto attrs=vector_attrs("ngff:points","0.2",p.axes(),p.transforms(),p.feature_key(),p.instance_key());

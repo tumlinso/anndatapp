@@ -88,6 +88,21 @@ std::string encoding(const NodeInfo& info, std::string_view path) {
     if (version != expected) fail(ErrorCode::unsupported_version, path, "unsupported " + code + " version '" + version + "'");
     return code;
 }
+void require_dense_float16(std::string_view path, std::string_view code, std::string_view parent) {
+    if (parent == "csr_matrix" || parent == "csc_matrix")
+        fail(ErrorCode::unsupported_dtype, path, "FP16 sparse values are unsupported");
+    if (code == "numeric-scalar" || parent == "dataframe" || parent == "categorical" ||
+        parent == "nullable-integer" || parent == "nullable-boolean" || parent == "nullable-string-array")
+        fail(ErrorCode::unsupported_dtype, path, "FP16 requires a dense array encoding");
+}
+void require_dense_float16(Backend& backend, std::string_view path, std::string_view code) {
+    const auto slash = path.rfind('/');
+    const auto parent_path = path.substr(0, slash ? slash : 1);
+    const auto parent = backend.inspect(parent_path);
+    const auto attr = parent.attrs.find("encoding-type");
+    const auto* parent_code = attr == parent.attrs.end() ? nullptr : std::get_if<std::string>(&attr->second);
+    require_dense_float16(path, code, parent_code ? std::string_view(*parent_code) : std::string_view{});
+}
 void Session::check_open() const {
     if (parent) parent->check_open();
     if (!open || !backend) fail(ErrorCode::invalid_argument, "store", "backed store is closed");

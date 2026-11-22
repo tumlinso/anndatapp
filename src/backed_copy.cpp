@@ -92,7 +92,7 @@ template<class T> void validate_codes_as(const Node& codes,std::size_t dictionar
 void validate_codes(const Node& codes,std::size_t dictionary,std::size_t budget){
     const auto info=codes->session->backend->inspect(codes->path);
     if(info.group||info.strings||info.shape.size()!=1||codes->axes.size()!=1)fail(ErrorCode::shape_mismatch,codes->path,"category codes must be one-dimensional numeric arrays");
-    if(info.dtype==DType::boolean||info.dtype==DType::float32||info.dtype==DType::float64)fail(ErrorCode::unsupported_dtype,codes->path,"category codes require integer dtype");
+    if(info.dtype==DType::boolean||info.dtype==DType::float16||info.dtype==DType::float32||info.dtype==DType::float64)fail(ErrorCode::unsupported_dtype,codes->path,"category codes require integer dtype");
     if(codes->session->options.validation==Validation::none)return;
     switch(info.dtype){
     case DType::int8:validate_codes_as<std::int8_t>(codes,dictionary,budget);return;
@@ -115,7 +115,14 @@ void check_table(const Node& n,const NodeInfo& info){
     auto index_info=n->session->backend->inspect(child(n->path,index));
     if(encoding(index_info,child(n->path,index))!="string-array"||index_info.shape.size()!=1||!index_info.strings)fail(ErrorCode::unsupported_encoding,n->path,"dataframe index must be a string array");
     auto total=index_info.shape[0];
-    for(const auto& column:columns){auto shape=logical_shape(*n->session,child(n->path,column));if(shape.size()!=1||shape[0]!=total)fail(ErrorCode::shape_mismatch,child(n->path,column),"column length differs from stored dataframe index");}
+    for (const auto& column : columns) {
+        const auto path = child(n->path, column);
+        const auto column_info = n->session->backend->inspect(path);
+        if (column_info.dtype == DType::float16) require_dense_float16(path, {}, "dataframe");
+        const auto shape = logical_shape(*n->session, path, column_info);
+        if (shape.size()!=1 || shape[0]!=total)
+            fail(ErrorCode::shape_mismatch, path, "column length differs from stored dataframe index");
+    }
 }
 void check_aligned_shape(const Node& n,std::size_t first,std::optional<std::size_t> second={},bool matrix=false){
     auto shape=shape_of(n);if(shape.empty()||shape[0]!=first||(second&&(shape.size()<2||shape[1]!=*second))||(matrix&&shape.size()!=2))fail(ErrorCode::shape_mismatch,n->path,"stored element does not match aligned axes");
@@ -140,17 +147,19 @@ void check_dataset(const BackedAnnDataView& source){
         for(const auto& key:source.raw_varm_names()){auto item=source.raw_varm(key);check_aligned_shape(detail::BackedAccess::get(item),nr);if(item.kind()==ElementKind::table)compare_table_index(item.table(),source.raw_var());}
     }
 }
-void check_export_metadata(Session& session,std::string_view path,bool same_store,const Node& selected_uns){
+void check_export_metadata(Session& session,std::string_view path,bool same_store,const Node& selected_uns,
+                           std::string_view parent_encoding = {}){
     const auto info=session.backend->inspect(path);
     if(!info.exists)fail(ErrorCode::out_of_bounds,path,"stored element does not exist");
     if(info.has_opaque_attrs&&!same_store)fail(ErrorCode::unsupported_dtype,path,"opaque backend attributes cannot be represented in a different store");
-    if(info.attrs.contains("encoding-type"))(void)encoding(info,path);
+    const auto code = info.attrs.contains("encoding-type") ? encoding(info,path) : std::string{};
+    if (info.dtype == DType::float16) require_dense_float16(path, code, parent_encoding);
     if(!info.group)return;
     // A selected view may remove an invalid palette. Only surviving values
     // belong to the logical export; inspect all other source subtrees normally.
     const auto names=path=="/uns" && selected_uns && selected_uns->slice_history
         ? color_keys(selected_uns) : session.backend->children(path);
-    for(const auto& key:names)check_export_metadata(session,child(path,key),same_store,selected_uns);
+    for(const auto& key:names)check_export_metadata(session,child(path,key),same_store,selected_uns,code);
 }
 class BorrowedBackend final:public Backend {
 public:
@@ -248,7 +257,7 @@ void validate_category_dictionary(const Node& dictionary,std::size_t scratch_byt
             }
         }else{
             if(values_code!="array"||v.group||v.strings)fail(ErrorCode::unsupported_encoding,values->path,"nullable numeric dictionary requires numeric values");
-            if(code=="nullable-boolean" ? v.dtype!=DType::boolean : v.dtype==DType::boolean||v.dtype==DType::float32||v.dtype==DType::float64)
+            if(code=="nullable-boolean" ? v.dtype!=DType::boolean : v.dtype==DType::boolean||v.dtype==DType::float16||v.dtype==DType::float32||v.dtype==DType::float64)
                 fail(ErrorCode::unsupported_dtype,values->path,"nullable dictionary values have an incompatible dtype");
         }
         if(session.options.validation==Validation::full){
@@ -269,6 +278,7 @@ void validate_category_dictionary(const Node& dictionary,std::size_t scratch_byt
     }
     const auto v=session.backend->inspect(values->path);
     if(v.group||v.shape.size()!=1||v.strings!=is_string)fail(ErrorCode::unsupported_encoding,values->path,"invalid category dictionary values");
+    if (v.dtype == DType::float16) require_dense_float16(values->path, {}, "categorical");
     if(session.options.validation==Validation::full){
         auto budget=std::min(scratch_bytes,scratch_remaining(values));
         if(is_string)require_unique_index(values,values->axes.front(),budget);
@@ -280,6 +290,7 @@ void copy_node_impl(Backend& destination,std::string_view path,const Node& sourc
     check_node(source);
     if(source->empty_mapping){destination.create_group(path,attrs("dict","0.1.0"));return;}
     auto& session=*source->session;auto info=session.backend->inspect(source->path);auto code=encoding(info,source->path);
+    if (info.dtype == DType::float16) require_dense_float16(*session.backend, source->path, code);
     const bool same_store=&destination==session.backend.get() || destination.identity()==session.backend->identity();
     if(info.has_opaque_attrs && !same_store)
         fail(ErrorCode::unsupported_dtype,source->path,"opaque backend attributes cannot be represented in a different store");
@@ -325,7 +336,7 @@ void copy_node_impl(Backend& destination,std::string_view path,const Node& sourc
                 auto value=string_attr(info,"na-value",source->path);
                 if(value!="NA"&&value!="NaN")fail(ErrorCode::unsupported_encoding,source->path,"unsupported nullable string sentinel");
             }
-        } else if(values_code!="array"||values_info.strings||(code=="nullable-boolean"?values_info.dtype!=DType::boolean:values_info.dtype==DType::boolean||values_info.dtype==DType::float32||values_info.dtype==DType::float64))
+        } else if(values_code!="array"||values_info.strings||(code=="nullable-boolean"?values_info.dtype!=DType::boolean:values_info.dtype==DType::boolean||values_info.dtype==DType::float16||values_info.dtype==DType::float32||values_info.dtype==DType::float64))
             fail(ErrorCode::unsupported_dtype,values->path,"nullable values have an incompatible dtype");
         destination.create_group(path,info.attrs);
         copy_node(destination,child(path,"values"),values,budget,string_scratch_bytes);

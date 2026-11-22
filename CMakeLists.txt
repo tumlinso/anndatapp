@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(anndatapp VERSION 1.1.0 LANGUAGES CXX)
+project(anndatapp VERSION 1.1.1 LANGUAGES CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
@@ -161,6 +161,17 @@ endif()
 if(ANNDATAPP_BUILD_TESTS)
   enable_testing()
   find_package(Threads REQUIRED)
+  if(ANNDATAPP_ENABLE_HDF5 OR ANNDATAPP_ENABLE_ZARR)
+    add_executable(test_fp16_family tests/test_fp16_family.cpp)
+    target_link_libraries(test_fp16_family PRIVATE anndatapp::anndatapp)
+    if(ANNDATAPP_ENABLE_HDF5)
+      target_compile_definitions(test_fp16_family PRIVATE ANNDATAPP_TEST_HDF5)
+    endif()
+    if(ANNDATAPP_ENABLE_ZARR)
+      target_compile_definitions(test_fp16_family PRIVATE ANNDATAPP_TEST_ZARR)
+    endif()
+    add_test(NAME fp16_family COMMAND test_fp16_family "${CMAKE_CURRENT_BINARY_DIR}/fp16-family-tests")
+  endif()
   foreach(_suite arrays data strings records copy_into copy_footprint checked_views sequence mudata treedata spatialdata spatialdata_transform)
     add_executable(test_${_suite} tests/test_${_suite}.cpp)
     target_link_libraries(test_${_suite} PRIVATE anndatapp::anndatapp)
@@ -334,20 +345,20 @@ if(ANNDATAPP_ENABLE_INTEROP_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_storage.py $<TARGET_FILE:storage_interop_driver>)
   endif()
   if(ANNDATAPP_ENABLE_HDF5 OR ANNDATAPP_ENABLE_ZARR)
-    add_executable(dtype_rejection_driver tests/dtype_rejection_driver.cpp)
-    target_link_libraries(dtype_rejection_driver PRIVATE anndatapp::anndatapp)
+    add_executable(float16_interop_driver tests/float16_interop_driver.cpp)
+    target_link_libraries(float16_interop_driver PRIVATE anndatapp::anndatapp)
     if(ANNDATAPP_ENABLE_HDF5)
-      add_test(NAME python_unsupported_dtype_h5ad COMMAND ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_unsupported_dtype.py
-        $<TARGET_FILE:dtype_rejection_driver> h5ad
-        "${CMAKE_CURRENT_BINARY_DIR}/unsupported-dtype-h5ad")
+      add_test(NAME python_float16_interop_h5ad COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_float16_interop.py
+        $<TARGET_FILE:float16_interop_driver> h5ad
+        "${CMAKE_CURRENT_BINARY_DIR}/float16-interop-h5ad")
     endif()
     if(ANNDATAPP_ENABLE_ZARR)
       foreach(_format zarr2 zarr3)
-        add_test(NAME python_unsupported_dtype_${_format} COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_unsupported_dtype.py
-          $<TARGET_FILE:dtype_rejection_driver> ${_format}
-          "${CMAKE_CURRENT_BINARY_DIR}/unsupported-dtype-${_format}")
+        add_test(NAME python_float16_interop_${_format} COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/tests/python_float16_interop.py
+          $<TARGET_FILE:float16_interop_driver> ${_format}
+          "${CMAKE_CURRENT_BINARY_DIR}/float16-interop-${_format}")
       endforeach()
     endif()
   endif()
