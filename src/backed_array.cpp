@@ -146,29 +146,53 @@ std::ptrdiff_t mul_stride(std::ptrdiff_t a, std::size_t b, const NodePtr& n) {
         fail(ErrorCode::invalid_argument, n, "buffer byte offset overflows ptrdiff_t");
     return out;
 }
-std::vector<std::ptrdiff_t> contiguous_strides(const std::vector<std::size_t>& shape, std::size_t width, const NodePtr& n) {
-    std::vector<std::ptrdiff_t> result(shape.size());
+void contiguous_strides(const std::vector<std::size_t>& shape, std::size_t width,
+                        std::ptrdiff_t* result, const NodePtr& n) {
     auto step = static_cast<std::ptrdiff_t>(width);
     for (std::size_t i = shape.size(); i-- > 0;) {
         result[i] = step;
         step = mul_stride(step, shape[i], n);
     }
+}
+std::vector<std::ptrdiff_t> contiguous_strides(const std::vector<std::size_t>& shape, std::size_t width, const NodePtr& n) {
+    std::vector<std::ptrdiff_t> result(shape.size());
+    contiguous_strides(shape, width, result.data(), n);
     return result;
 }
-void validate_buffer(const Descriptor& d, const DenseBuffer& b, const NodePtr& n) {
+DenseBufferView borrow_buffer(const DenseBuffer& b, const NodePtr& n) {
+    if (!b.strides.empty() && b.strides.size() != b.shape.size())
+        fail(ErrorCode::shape_mismatch, n, "destination strides differ from rank");
+    return {b.data, b.dtype, b.shape.size(), b.shape.data(),
+            b.strides.empty() ? nullptr : b.strides.data()};
+}
+void validate_buffer(const Descriptor& d, const DenseBufferView& b, const NodePtr& n) {
     if (d.layout != Layout::dense) fail(ErrorCode::unsupported_layout, n, "dense destination supplied for sparse array");
     if (b.dtype != d.data.dtype) fail(ErrorCode::dtype_mismatch, n, "destination dtype does not match stored dtype");
-    if (b.shape != d.shape) fail(ErrorCode::shape_mismatch, n, "destination shape does not match selected shape");
-    if (!b.strides.empty() && b.strides.size() != b.shape.size()) fail(ErrorCode::shape_mismatch, n, "destination strides differ from rank");
-    if (!b.data && elements(b.shape, n)) fail(ErrorCode::invalid_argument, n, "destination data is null");
-    auto strides = b.strides.empty() ? contiguous_strides(b.shape, dtype_size(b.dtype), n) : b.strides;
+    if (b.rank != d.shape.size()) fail(ErrorCode::shape_mismatch, n, "destination rank does not match selected rank");
+    if (b.rank && !b.shape) fail(ErrorCode::invalid_argument, n, "destination shape is null");
+    for (std::size_t i = 0; i < b.rank; ++i)
+        if (b.shape[i] != d.shape[i]) fail(ErrorCode::shape_mismatch, n, "destination shape does not match selected shape");
+    if (!b.data && elements(d.shape, n)) fail(ErrorCode::invalid_argument, n, "destination data is null");
     std::ptrdiff_t lo = 0, hi = 0;
-    for (std::size_t i = 0; i < b.shape.size(); ++i) {
+    auto step = static_cast<std::ptrdiff_t>(dtype_size(b.dtype));
+    for (std::size_t i = b.rank; i-- > 0;) {
+        const auto stride = b.byte_strides ? b.byte_strides[i] : step;
+        if (!b.byte_strides) step = mul_stride(step, b.shape[i], n);
         if (b.shape[i] == 0) continue;
-        auto span = mul_stride(strides[i], b.shape[i] - 1, n);
+        auto span = mul_stride(stride, b.shape[i] - 1, n);
         if (span < 0) lo = add_stride(lo, span, n); else hi = add_stride(hi, span, n);
     }
     (void)lo; (void)hi;
+}
+bool packed_buffer(const DenseBufferView& b, std::size_t width, const NodePtr& n) {
+    if (!b.byte_strides) return true;
+    auto step = static_cast<std::ptrdiff_t>(width);
+    bool packed = true;
+    for (std::size_t i = b.rank; i-- > 0;) {
+        packed &= b.byte_strides[i] == step;
+        step = mul_stride(step, b.shape[i], n);
+    }
+    return packed;
 }
 bool forward_rectangle(const Descriptor& d) {
     for (const auto& axis : d.axes)
@@ -232,7 +256,7 @@ struct ReadAxis {
 
 // Reordering scatter is valid only if distinct destination elements cannot
 // alias. Conservative rejection preserves the original logical write order.
-bool disjoint_dense(const std::vector<std::size_t>& shape,const std::vector<std::ptrdiff_t>& strides,std::size_t width) {
+bool disjoint_dense(const std::vector<std::size_t>& shape,const std::ptrdiff_t* strides,std::size_t width) {
     std::vector<std::size_t> order(shape.size());
     for(std::size_t i=0;i<order.size();++i)order[i]=i;
     auto magnitude=[&](std::size_t i) {auto s=strides[i];return s<0?std::size_t(-(s+1))+1:std::size_t(s);};
@@ -250,7 +274,7 @@ bool disjoint_dense(const std::vector<std::size_t>& shape,const std::vector<std:
 // product or scan unselected chunk coordinates. Each touched codec tile is
 // read once, then scattered to its distinct logical destinations.
 bool grouped_chunk_read(const NodePtr& node,const Descriptor& d,const std::vector<std::size_t>& start,
-                        const std::vector<std::size_t>& count,const std::vector<std::ptrdiff_t>& strides,
+                        const std::vector<std::size_t>& count,const std::ptrdiff_t* strides,
                         std::byte* output,backed_detail::NumericTransfer* source,
                         std::vector<std::byte>& tile,std::size_t available,std::size_t& tile_allocations) {
     const auto rank=count.size(),width=dtype_size(d.data.dtype);
@@ -342,40 +366,43 @@ bool grouped_chunk_read(const NodePtr& node,const Descriptor& d,const std::vecto
 }
 // Each transfer is a rectangle in storage. Contiguous selected runs go directly
 // to/from the caller's buffer; non-contiguous memory uses a bounded packing tile.
-void dense_preflight(const NodePtr& n, const Descriptor& d, const DenseBuffer& b, bool writing) {
+bool dense_preflight(const NodePtr& n, const Descriptor& d, const DenseBufferView& b,
+                     bool writing, bool rectangle) {
     validate_buffer(d, b, n);
     const auto available_scratch = backed_detail::scratch_remaining(n);
     const auto count = elements(d.shape, n);
-    if (!count) return;
+    if (!count) return false;
     auto& backend = *n->session->backend;
     const auto stage_bytes = staging_budget(available_scratch,
         backend.numeric_workspace_bytes(d.data, writing), n);
     const auto width = dtype_size(d.data.dtype);
-    auto strides = b.strides.empty() ? contiguous_strides(b.shape, width, n) : b.strides;
     if (n->color_override) {
         if (writing) fail(ErrorCode::invalid_argument, n, "promoted scalar colors are read-only");
         if (stage_bytes < 8) fail(ErrorCode::invalid_argument, n, "remaining scratch budget is smaller than one promoted scalar");
-        return;
+        return false;
     }
-    if (!d.shape.empty() && !(strides == contiguous_strides(d.shape, width, n) && forward_rectangle(d))) {
-        const auto run_budget = strides.back() != static_cast<std::ptrdiff_t>(width) ? stage_bytes : available_scratch;
+    const bool packed = packed_buffer(b, width, n);
+    if (b.rank && !(packed && rectangle)) {
+        const auto column = b.byte_strides ? b.byte_strides[b.rank - 1] : static_cast<std::ptrdiff_t>(width);
+        const auto run_budget = column != static_cast<std::ptrdiff_t>(width) ? stage_bytes : available_scratch;
         if (run_budget < width) fail(ErrorCode::invalid_argument, n, "remaining scratch budget is smaller than one numeric element");
     }
-    if (!writing && d.data.sharded_payload && !forward_rectangle(d) && !n->code_recode) {
+    if (!writing && d.data.sharded_payload && !rectangle && !n->code_recode) {
         const auto workspace = std::max(backend.numeric_workspace_bytes(d.data, false),
             n->writable && n->session->options.mode == AccessMode::read_write ? backend.numeric_workspace_bytes(d.data, true) : std::size_t{0});
         (void)staging_budget(available_scratch, workspace, n);
     }
+    return packed;
 }
-void dense_transfer(const NodePtr& n, const Descriptor& d, const DenseBuffer& b, bool writing) {
-    dense_preflight(n, d, b, writing);
+void dense_transfer(const NodePtr& n, const Descriptor& d, const DenseBufferView& b, bool writing) {
+    const bool rectangle = forward_rectangle(d);
+    const bool packed = dense_preflight(n, d, b, writing, rectangle);
     const auto available_scratch = backed_detail::scratch_remaining(n);
     const auto count = elements(d.shape, n);
     if (!count) return;
     auto& backend = *n->session->backend;
     const auto stage_bytes = staging_budget(available_scratch, backend.numeric_workspace_bytes(d.data, writing), n);
     const auto width = dtype_size(d.data.dtype);
-    auto strides = b.strides.empty() ? contiguous_strides(b.shape, width, n) : b.strides;
     std::unique_ptr<backed_detail::NumericTransfer> source;
     auto transfer = [&](const std::vector<std::size_t>& start, const std::vector<std::size_t>& ext, std::byte* p) {
         if (writing) backend.write_numeric(n->path, start, ext, p);
@@ -392,12 +419,13 @@ void dense_transfer(const NodePtr& n, const Descriptor& d, const DenseBuffer& b,
     auto* dest = static_cast<std::byte*>(b.data);
     if (n->color_override) {
         std::array<std::byte, 8> scalar{};
+        const auto stride = b.byte_strides ? b.byte_strides[0] : static_cast<std::ptrdiff_t>(width);
         backend.read_numeric(n->path, {}, {}, scalar.data());
         if (d.data.dtype == DType::boolean && n->session->options.validation == Validation::full)
             scalar[0] = scalar[0] == std::byte{0} ? std::byte{0} : std::byte{1};
         for (std::size_t i = 0; i < d.shape[0]; ++i) {
             if (d.axes[0].at(i) != 0) fail(ErrorCode::out_of_bounds, n, "promoted scalar color selection exceeds its single value");
-            std::memcpy(dest + mul_stride(strides[0], i, n), scalar.data(), width);
+            std::memcpy(dest + mul_stride(stride, i, n), scalar.data(), width);
         }
         return;
     }
@@ -408,9 +436,24 @@ void dense_transfer(const NodePtr& n, const Descriptor& d, const DenseBuffer& b,
             *dest = *dest == std::byte{0} ? std::byte{0} : std::byte{1};
         return;
     }
-    const bool packed = strides == contiguous_strides(d.shape, width, n);
-    const bool rectangle = forward_rectangle(d);
-    if (!writing && !(packed && rectangle) && backend.reuse_numeric_reads())
+    if (packed && rectangle) {
+        std::vector<std::size_t> start(rank);
+        for (std::size_t axis = 0; axis < rank; ++axis) start[axis] = d.axes[axis].at(0);
+        transfer(start, d.shape, dest);
+        if (!writing && d.data.dtype == DType::boolean && n->session->options.validation == Validation::full)
+            for (std::size_t i = 0; i < count; ++i) dest[i] = dest[i] == std::byte{0} ? std::byte{0} : std::byte{1};
+        return;
+    }
+    std::ptrdiff_t small[2];
+    std::vector<std::ptrdiff_t> large;
+    const auto* strides = b.byte_strides;
+    if (!strides) {
+        if (rank > 2) large.resize(rank);
+        auto* computed = rank <= 2 ? small : large.data();
+        contiguous_strides(d.shape, width, computed, n);
+        strides = computed;
+    }
+    if (!writing && backend.reuse_numeric_reads())
         source = backend.prepare_numeric(n->path);
     if (!writing && (d.data.sharded_payload || d.data.prefer_chunk_grouping) && !rectangle && !n->code_recode) {
         const auto workspace=std::max({backend.numeric_workspace_bytes(d.data,false),backend.retained_scratch_bytes(),
@@ -422,14 +465,6 @@ void dense_transfer(const NodePtr& n, const Descriptor& d, const DenseBuffer& b,
             std::size_t tile_allocations=0;
             if(grouped_chunk_read(n,d,std::vector<std::size_t>(rank,0),d.shape,strides,dest,sharded ? sharded.get() : source.get(),tile,available_scratch-workspace,tile_allocations))return;
         }
-    }
-    if (packed && rectangle) {
-        std::vector<std::size_t> start(rank);
-        for (std::size_t axis = 0; axis < rank; ++axis) start[axis] = d.axes[axis].at(0);
-        transfer(start, d.shape, dest);
-        if (!writing && d.data.dtype == DType::boolean && n->session->options.validation == Validation::full)
-            for (std::size_t i = 0; i < count; ++i) dest[i] = dest[i] == std::byte{0} ? std::byte{0} : std::byte{1};
-        return;
     }
     std::size_t outer = 1;
     for (std::size_t i = 0; i + 1 < rank; ++i) outer = multiply(outer, d.shape[i], n);
@@ -1218,7 +1253,7 @@ Array read_prepared(const NodePtr& n, const ReadRequirements& r, const Descripto
         fail(ErrorCode::invalid_sparse_structure, n, "stored array changed after preparation");
     if (r.layout == Layout::dense) {
         auto result = allocate(r.dtype, r.shape);
-        DenseBuffer b{result.edit().bytes().data(), r.dtype, r.shape, {}};
+        DenseBufferView b{result.edit().bytes().data(), r.dtype, r.shape.size(), r.shape.data(), nullptr};
         dense_transfer(n, d, b, false);
         result.set_serialization_byte_order(d.data.byte_order);
         return result;
@@ -1281,6 +1316,9 @@ void copy_array(Backend& destination, std::string_view dest_path, const NodePtr&
 PreparedRead::PreparedRead() = default;
 PreparedRead::PreparedRead(std::shared_ptr<detail::PreparedReadImpl> impl) : impl_(std::move(impl)) {}
 ReadRequirements PreparedRead::requirements() const {
+    return requirements_ref();
+}
+const ReadRequirements& PreparedRead::requirements_ref() const & {
     if (!impl_) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
     backed_detail::check_node(impl_->node);
     return impl_->requirements;
@@ -1291,10 +1329,14 @@ Array PreparedRead::read() const {
 }
 void PreparedRead::preflight(const DenseBuffer& b) const {
     if (!impl_) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
+    preflight(borrow_buffer(b, impl_->node));
+}
+void PreparedRead::preflight(const DenseBufferView& b) const {
+    if (!impl_) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
     auto d = describe(impl_->node);
     if (d.layout != impl_->requirements.layout || d.shape != impl_->requirements.shape || d.data.dtype != impl_->requirements.dtype)
         fail(ErrorCode::invalid_sparse_structure, impl_->node, "stored array changed after preparation");
-    dense_preflight(impl_->node, d, b, false);
+    dense_preflight(impl_->node, d, b, false, forward_rectangle(d));
 }
 void PreparedRead::preflight(const SparseBuffer& b) const {
     if (!impl_) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
@@ -1305,6 +1347,10 @@ void PreparedRead::preflight(const SparseBuffer& b) const {
     sparse_preflight(impl_->node, d, r, b);
 }
 void PreparedRead::read_into(const DenseBuffer& b) const {
+    if (!impl_) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
+    read_into(borrow_buffer(b, impl_->node));
+}
+void PreparedRead::read_into(const DenseBufferView& b) const {
     if (!impl_) throw Error(ErrorCode::invalid_argument, "prepared read", "empty prepared read");
     auto d = describe(impl_->node);
     if (d.layout != impl_->requirements.layout || d.shape != impl_->requirements.shape || d.data.dtype != impl_->requirements.dtype)
@@ -1369,7 +1415,11 @@ PreparedRead BackedArray::prepare_read() const {
     return PreparedRead(std::move(p));
 }
 Array BackedArray::read() const { return backed_detail::read_array(node_); }
-void BackedArray::read_into(const DenseBuffer& b) const { auto d = describe(node_); dense_transfer(node_, d, b, false); }
+void BackedArray::read_into(const DenseBuffer& b) const { read_into(borrow_buffer(b, node_)); }
+void BackedArray::read_into(const DenseBufferView& b) const {
+    auto d = describe(node_);
+    dense_transfer(node_, d, b, false);
+}
 void BackedArray::read_into(const SparseBuffer& b) const {
     auto d = describe(node_);
     SparseReadResources resources;
@@ -1523,7 +1573,10 @@ void BackedArray::write(const ArrayView& source) const {
     for (std::size_t i = 0; i < bytes->rank(); ++i) strides.push_back(bytes->stride_bytes(i));
     DenseBuffer b{const_cast<std::byte*>(bytes->data()), d.data.dtype, d.shape, std::move(strides)};
     if(d.data.sharded_payload) {auto transfer=prepare_transfer();transfer.write_from(std::vector<std::size_t>(d.shape.size(),0),d.shape,b);}
-    else { node_->revision->content.fetch_add(1, std::memory_order_relaxed); dense_transfer(node_, d, b, true); }
+    else {
+        node_->revision->content.fetch_add(1, std::memory_order_relaxed);
+        dense_transfer(node_, d, borrow_buffer(b, node_), true);
+    }
 }
 namespace detail {
 struct TransferContextImpl {
@@ -1586,7 +1639,7 @@ struct TransferContextImpl {
         const auto& d = descriptor;
         if (d.layout != Layout::dense) fail(ErrorCode::unsupported_layout, node, "dense buffer supplied for sparse transfer");
         Descriptor selected; selected.layout = Layout::dense; selected.data.dtype = d.data.dtype; selected.shape = count;
-        validate_buffer(selected, b, node);
+        validate_buffer(selected, borrow_buffer(b, node), node);
         if (writing) {
             node->session->check_writable();
             if (!node->writable) fail(ErrorCode::invalid_argument, node, "backed view is read-only");
@@ -1602,7 +1655,7 @@ struct TransferContextImpl {
         if(!writing && (d.data.sharded_payload || d.data.prefer_chunk_grouping) && !forward_rectangle(d)) {
             const auto workspace=std::max({backend->numeric_workspace_bytes(d.data,false),backend->retained_scratch_bytes(),
                                           geometry.writable?backend->numeric_workspace_bytes(d.data,true):std::size_t{0}});
-            if(workspace<=budget && grouped_chunk_read(node,d,start,count,strides,p,sparse.data.get(),tile,budget-workspace,tile_allocations))return;
+            if(workspace<=budget && grouped_chunk_read(node,d,start,count,strides.data(),p,sparse.data.get(),tile,budget-workspace,tile_allocations))return;
         }
         const bool canonical = !writing && d.data.dtype == DType::boolean && node->session->options.validation == Validation::full;
         auto transfer = [&](const std::vector<std::size_t>& source, const std::vector<std::size_t>& ext, std::byte* q) {

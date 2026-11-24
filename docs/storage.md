@@ -23,6 +23,15 @@ Opening reads schemas, shapes and encoding metadata. Numerical arrays, table ind
 
 `DenseBuffer` strides are signed byte strides, including negative strides, and its pointer denotes the first logical cell. Empty strides request contiguous row-major output. Acquired typed in-memory views continue to expose strides in elements.
 
+`BackedArray::read_into` and `PreparedRead::read_into` also accept a
+`DenseBufferView` with caller-owned shape and byte-stride arrays. Supply one
+entry per axis and keep both arrays and the payload live through the call.
+A null stride pointer requests contiguous row-major output. Use
+`PreparedRead::requirements_ref()` to inspect the prepared requirements
+while retaining the plan. These calls avoid owning destination descriptors and
+copies of prepared requirements. Backend metadata and decoding can still
+require working memory.
+
 The dataset owner is move-only. Retained storage descriptors keep its session alive after owner destruction. Explicit `close()` invalidates storage operations. Structural replacement/deletion invalidates affected descriptors instead of redirecting them to new data at the same path; captured dataset views are invalidated by structural changes. Already materialized arrays keep their independent allocations.
 
 Dataset views and slices are read-only, including when obtained from a read/write session. Direct array writes are available from the owning dataset's handles after opening with `BackedOptions::mode = AccessMode::read_write`.

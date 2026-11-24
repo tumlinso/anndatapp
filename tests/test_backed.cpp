@@ -301,9 +301,10 @@ void check_read_contract(const std::filesystem::path& path, std::string_view bac
     expect_error(ErrorCode::invalid_argument,
         [&] { (void)detail::prepared_read_retained_bytes(PreparedRead{}); },
         "empty prepared metadata query must reject");
-    const auto required = prepared.requirements();
+    const auto& required = prepared.requirements_ref();
     require(required.layout == Layout::dense && required.dtype == DType::float32 &&
-            required.shape == std::vector<std::size_t>({3, 2}),
+            required.shape == std::vector<std::size_t>({3, 2}) &&
+            &required == &prepared.requirements_ref(),
             "dense prepared-read requirements differ");
     std::array<float, 6> caller{99, 99, 99, 99, 99, 99};
     auto buffer = DenseBuffer::from(caller.data(), {3, 2});
@@ -311,6 +312,21 @@ void check_read_contract(const std::filesystem::path& path, std::string_view bac
     prepared.read_into(buffer);
     require(buffer.data == original && caller == std::array<float, 6>{0, 1, 2, 3, 4, 5},
             "read_into did not fill the supplied caller buffer directly");
+
+    const std::size_t shape[]{3, 2};
+    const std::ptrdiff_t backwards[]{-2 * std::ptrdiff_t(sizeof(float)), sizeof(float)};
+    float borrowed[6]{};
+    const DenseBufferView borrowed_view{borrowed + 4, DType::float32, 2, shape, backwards};
+    prepared.preflight(borrowed_view);
+    prepared.read_into(borrowed_view);
+    require(borrowed[0] == 4 && borrowed[1] == 5 && borrowed[4] == 0 && borrowed[5] == 1,
+            "borrowed dense strides differ");
+    expect_error(ErrorCode::invalid_argument,
+        [&] { x.read_into(DenseBufferView{borrowed, DType::float32, 2, nullptr, nullptr}); },
+        "borrowed dense destination requires valid shape metadata");
+    const std::size_t empty_shape[]{0, 2};
+    x.select({range{0, 0}, all}).read_into(
+        DenseBufferView{nullptr, DType::float32, 2, empty_shape, nullptr});
 
     std::array<float, 8> padded{99, 99, -777, 99, 99, -777, 99, 99};
     auto strided = DenseBuffer::from(padded.data(), {3, 2},

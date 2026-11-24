@@ -31,6 +31,20 @@ struct DenseBuffer {
         return {data, dtype_of<T>(), std::move(shape), std::move(byte_strides)};
     }
 };
+// The payload and rank entries of shape and byte_strides are caller-owned
+// and need only remain valid through the transfer. Where byte_strides is null,
+// the payload is contiguous row-major. data addresses the first logical cell.
+struct DenseBufferView {
+    void* data;
+    DType dtype;
+    std::size_t rank;
+    const std::size_t* shape;
+    const std::ptrdiff_t* byte_strides;
+
+    constexpr DenseBufferView(void* data, DType dtype, std::size_t rank,
+                              const std::size_t* shape, const std::ptrdiff_t* byte_strides) noexcept
+        : data(data), dtype(dtype), rank(rank), shape(shape), byte_strides(byte_strides) {}
+};
 struct SparseBuffer {
     void* values = nullptr;
     void* indices = nullptr;
@@ -142,11 +156,16 @@ private:
 class PreparedRead {
 public:
     void preflight(const DenseBuffer&) const;
+    void preflight(const DenseBufferView&) const;
     void preflight(const SparseBuffer&) const;
     PreparedRead();
     ReadRequirements requirements() const;
+    // The reference is valid while the prepared plan remains owned.
+    const ReadRequirements& requirements_ref() const &;
+    const ReadRequirements& requirements_ref() const && = delete;
     Array read() const;
     void read_into(const DenseBuffer&) const;
+    void read_into(const DenseBufferView&) const;
     void read_into(const SparseBuffer&) const;
 private:
     std::shared_ptr<detail::PreparedReadImpl> impl_;
@@ -171,6 +190,7 @@ public:
     StorageGeometry storage_geometry() const;
     TransferContext prepare_transfer(std::size_t scratch_bytes = 0) const;
     void read_into(const DenseBuffer&) const;
+    void read_into(const DenseBufferView&) const;
     void read_into(const SparseBuffer&) const;
     // Only an eligible full array can map. Failure is explicit and never falls
     // back to an allocating read. The returned owner is read-only.

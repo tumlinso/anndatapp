@@ -123,7 +123,8 @@ void check_dense_reads(const BackedAnnData& backed) {
         require(eager_values.data()[i] == expected[i], "gathered dense read differs");
 
     float contiguous[4]{};
-    x.read_into(DenseBuffer::from(contiguous, {2, 2}));
+    const std::size_t shape[]{2, 2};
+    x.read_into(DenseBufferView{contiguous, DType::float32, 2, shape, nullptr});
     for (std::size_t i = 0; i < 4; ++i)
         require(contiguous[i] == expected[i], "gathered dense read_into differs");
 

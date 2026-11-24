@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(anndatapp VERSION 1.1.1 LANGUAGES CXX)
+project(anndatapp VERSION 1.2.0 LANGUAGES CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
